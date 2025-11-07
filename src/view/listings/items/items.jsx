@@ -1,7 +1,7 @@
 import React from "react";
 import { Container, Col, Row } from "react-bootstrap";
 
-const DashBoard = () => {
+const Items = () => {
   return (
     <div id="main">
       <Container>
@@ -13,4 +13,4 @@ const DashBoard = () => {
   );
 };
 
-export default DashBoard;
+export default Items;

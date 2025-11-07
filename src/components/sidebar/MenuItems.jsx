@@ -1,4 +1,7 @@
 import { MdOutlineHome } from "react-icons/md";
+import { MdOutlineGroup } from "react-icons/md"; 
+import { MdOutlineShoppingBag } from "react-icons/md";
+
 
 const MenuItems = [
   {
@@ -9,7 +12,12 @@ const MenuItems = [
   {
     path: "/parties",
     text: "Parties",
-    icon: <MdOutlineHome />,
+    icon: <MdOutlineGroup/>,
+  },
+  {
+    path: "/items",
+    text: "Items",
+    icon: <MdOutlineShoppingBag/>,
   },
 ];
 
