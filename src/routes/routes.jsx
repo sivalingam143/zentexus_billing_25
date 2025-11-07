@@ -1,8 +1,8 @@
 import DashBoard from "../view/listings/Dashboard/Dashboard";
 import Login from "../view/Login";
 import Parties from "../view/listings/Parties/Parties";
-import Items from "../view/listings/items/items";
-
+import Items from "../view/listings/Items/items";
+//import Sale from "../view/listings/Sale/sale";
 
 const routes = [
   {
@@ -18,8 +18,9 @@ const routes = [
     component: Parties,
   },
   {
-    path: "/items",
+    path: "/Items",
     component: Items,
   },
+ 
 ];
 export default routes;
