@@ -4,7 +4,6 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import "react-quill/dist/quill.snow.css";
 import "./components/components.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-
 import routes from "./routes/routes";
 import Login from "./view/Login";
 import PrivateRoute from "./routes/PrivateRoute";
