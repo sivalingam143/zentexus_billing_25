@@ -21,6 +21,11 @@ const MenuItems = [
     icon: <MdOutlineShoppingBag/>,
 
   },
+  [
+    path: "/sale",
+    text: "Sale",
+    icon: <MdOutlineShell/>,
+  ]
 
 ];
 

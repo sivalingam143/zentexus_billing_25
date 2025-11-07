@@ -1,9 +1,9 @@
 import DashBoard from "../view/listings/Dashboard/Dashboard";
 import Login from "../view/Login";
 import Parties from "../view/listings/Parties/Parties";
-import Items from "../view/listings/Items/items";
-//import Sale from "../view/listings/Sale/sale";
-
+import items from "../view/listings/Items/items";
+import Sale from "../view/listings/Sale/sale";
+ 
 const routes = [
   {
     path: "/",
@@ -18,9 +18,13 @@ const routes = [
     component: Parties,
   },
   {
-    path: "/Items",
-    component: Items,
+    path: "/items",
+    component: items,
   },
+  {
+    path:"/Sale",
+    component: Sale, }
+  
  
 ];
 export default routes;
