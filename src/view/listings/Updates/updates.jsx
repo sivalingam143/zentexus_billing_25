@@ -1,16 +1,16 @@
 import React from "react";
 import { Container, Col, Row } from "react-bootstrap";
 
-const GrowYourBusiness = () => {
+const Updates = () => {
   return (
     <div id="main">
       <Container>
         <Row>
-          <Col xl="12">jhkugiuguggjghukhhik</Col>
+          <Col >hiiihufiehkfejkfuhjhkugiuguggjgdfghkl;xcvbnhukhhikbestrfyguiopuutyetio</Col>
         </Row>
       </Container>
     </div>
   );
 };
 
-export default GrowYourBusiness;
+export default Updates;
