@@ -8,7 +8,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const DashBoard = () => {
   return (
     <div id="main">
-      <Container className="mt-2">
+      <Container className="mt-1">
         <Row>
           <Col xl={12}>
             {/* Business Name */}
@@ -20,9 +20,14 @@ const DashBoard = () => {
                 <Button variant="danger" 
                 style={{ fontWeight:600, borderRadius:"20px", minWidth:"110px"}} > +Add Sale
                 </Button>
-                 <Button variant="primary" 
+                 <Button variant="success" 
                 style={{ fontWeight:600, borderRadius:"20px", minWidth:"110px"}} > +Add Purchase
                 </Button>
+                <Button variant="light" 
+                style={{ fontWeight:600, borderRadius:"20px", minWidth:"110px"}} > +Add More
+                </Button>
+                <Button variant="light"
+                style={{  borderRadius:"50%", padding:"0 10px", minWidth:"40px"}} >:</Button>
                </div>  
             </div>
 
