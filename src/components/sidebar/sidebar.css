@@ -112,19 +112,19 @@ ul {
   transform: rotate(90deg); /* Adjust the rotation angle as needed */
 }
 
-/* #main,
+#main,
 #footer {
   margin-left: 228px;
   padding: 0 20px;
-} */
+}
 .toggle-sidebar .top-navbar {
   width: 100% !important;
 }
-/* .toggle-sidebar #main,
+.toggle-sidebar #main,
 .toggle-sidebar #footer,
 .toggle-sidebar .top-navbar {
   margin-left: 0px;
-} */
+}
 
 #main {
   margin-top: 75px;
