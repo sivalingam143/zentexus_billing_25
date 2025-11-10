@@ -127,7 +127,7 @@ ul {
 }
 
 #main {
-  margin-top: 0px;
+  margin-top: 75px;
   padding: 10px 28px;
   transition: 0.5s all;
 }
@@ -182,88 +182,3 @@ ul {
 .side-bar::-webkit-scrollbar-corner {
   background: transparent; /* Hide the corner where both scrollbars meet */
 }
-<<<<<<< HEAD
-
-
-
-/* Header area */
-.top-navbar {
-  margin-left: 235px;
-  width: calc(100% - 235px);
-  transition: all 0.3s ease;
-  z-index: 999;
-}
-
-/* When sidebar is hidden */
-.toggle-sidebar .top-navbar {
-  margin-left: 0;
-  width: 100%;
-}
-
-.sidebar {
-  width: 235px;
-  transition: all 0.3s ease;
-}
-
-
-.main-wrapper {
-  display: flex;
-  transition: all 0.3s ease;
-}
-
-.side-bar {
-  width: 235px;
-  transition: all 0.3s ease;
-}
-
-.content {
-  flex: 1;
-  /* margin-left: 235px; */
-  transition: margin-left 0.3s ease;
-  padding: 20px;
-}
-
-/* When sidebar is hidden */
-.toggle-sidebar .side-bar {
-  margin-left: -235px;
-}
-
-
-
- /* .action-btn {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  padding: 4px !important; 
-  margin-left: 10px !important;
-  z-index: 1000;
-  position: relative;
-}
-
-.action-btn svg {
-  pointer-events: none; 
-}
-
-
-.top-navbar {
-  height: 60px; 
-  line-height: 60px;
-  position: fixed;
-  top: 0;
-  width: 100%;
-  z-index: 999;
-  background-color: #fff;
-}   */
-
-/* .content {
-  margin-left: 235px;
-  
-  padding: 20px;
-  transition: all 0.3s ease;
-}
-
-.toggle-sidebar .content {
-  margin-left: 0;
-}   */
-=======
->>>>>>> ddb2b3d1be645f253baa6963dbc566821ca5d21d
