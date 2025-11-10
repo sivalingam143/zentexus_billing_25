@@ -1,8 +1,7 @@
-
 import Login from "../view/Login";
 import Parties from "../view/listings/Parties/Parties";
-import items from "../view/listings/Items/items";
-import Sale from "../view/listings/Sale/sale";
+import items from "../view/listings/items/items";
+import Sale from "../view/listings/sale/sale";
 import Purchase from "../view/listings/Purchase/purchase";
 import Grow from "../view/listings/Grow/grow";
 import Cash from "../view/listings/Cash/cash";
@@ -11,8 +10,6 @@ import Sync from "../view/listings/Sync/sync";
 import Updates from "../view/listings/Updates/updates";
 import DashBoard from "../view/listings/Dashboard/DashBoard";
 
-
- 
 const routes = [
   {
     path: "/",
@@ -25,18 +22,17 @@ const routes = [
   {
     path: "/parties",
     component: Parties,
-    
   },
   {
     path: "/items",
     component: items,
   },
   {
-    path:"/Sale",
-    component: Sale, 
+    path: "/Sale",
+    component: Sale,
   },
   {
-    path:"/purchase",
+    path: "/purchase",
     component: Purchase,
   },
   {
@@ -59,9 +55,5 @@ const routes = [
     path: "/updates",
     component: Updates,
   },
- 
-  
-  
- 
 ];
 export default routes;
