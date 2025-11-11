@@ -1,0 +1,177 @@
+---------- Top Bar ----------
+.container-main {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.enter-business {
+  font-weight: 500;
+  color: #333;
+}
+
+.dot {
+  color: #007bff;
+  font-size: 18px;
+}
+
+/* ---------- Buttons ---------- */
+.btn-add-sale {
+  background-color: red;
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 4px 14px;
+}
+
+.btn-add-purchase {
+  background-color: #28a745;
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 20px;
+  padding: 4px 14px;
+}
+
+.btn-circle {
+  background-color: #6c757d;
+  border: none;
+  color: white;
+  font-weight: 600;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  text-align: center;
+  padding: 0;
+}
+
+.btn-ellipsis {
+  background-color: #f0f0f0;
+  border: none;
+  color: #333;
+  font-weight: bold;
+  border-radius: 8px;
+}
+
+/* ---------- Sale Invoices Header ---------- */
+.sale-invoice-header h5 {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  color: #222;
+}
+
+.arrow-dropdown {
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+  margin-left: 4px;
+}
+
+.arrow-dropdown:hover {
+  color: #000;
+}
+
+/* ---------- Filters ---------- */
+.filter-label {
+  font-weight: 500;
+}
+
+.filter-dropdown {
+  background-color: white;
+  border: 1px solid #ccc;
+  color: #333;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+.date-range input {
+  border-radius: 6px;
+}
+
+/* ---------- Amount Card ---------- */
+.amount-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  position: relative;
+}
+
+.card-title {
+  font-weight: 500;
+  color: #666;
+}
+
+.total-amount {
+  font-size: 28px;
+  font-weight: 700;
+  color: #007bff;
+}
+
+.growth-label {
+  font-size: 14px;
+  color: #28a745;
+  font-weight: 600;
+}
+
+.growth-subtext {
+  font-size: 12px;
+  color: #777;
+}
+
+.received-balance {
+  margin-top: 6px;
+  font-size: 14px;
+  color: #333;
+}
+
+/* ---------- Transactions ---------- */
+.transactions-header {
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 6px;
+}
+
+.transactions-title {
+  font-weight: 600;
+  color: #222;
+}
+
+.icon-btn {
+  color: #333;
+  text-decoration: none;
+}
+
+.icon-btn:hover {
+  color: #007bff;
+}
+
+/* ---------- Table ---------- */
+.transactions-table th {
+  background-color: #f2f2f2;
+  color: #333;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.transactions-table td {
+  vertical-align: middle;
+}
+
+.filter-icon {
+  margin-left: 5px;
+  font-size: 12px;
+  color: #888;
+}
+
+.actions-cell button {
+  color: #007bff;
+}
+
+.actions-cell button:hover {
+  color: #0056b3;
+}
+.btn-sale{
+  background-color: red;
+}

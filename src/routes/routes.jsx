@@ -9,6 +9,8 @@ import Reports from "../view/listings/Reports/reports";
 import Sync from "../view/listings/Sync/sync";
 import Updates from "../view/listings/Updates/updates";
 import DashBoard from "../view/listings/Dashboard/DashBoard";
+import DashboardSale from "../view/listings/Sale/DashboardSale";
+import DashboardPurchase from "../view/listings/Sale/DashboardPurchase";
 
 const routes = [
   {
@@ -55,5 +57,15 @@ const routes = [
     path: "/updates",
     component: Updates,
   },
+  {
+  path: "/dashboardsale",
+  component: DashboardSale,
+  },
+  {
+    path:"/dashboardpurchase",
+    component: DashboardPurchase,
+  },
+
+
 ];
 export default routes;

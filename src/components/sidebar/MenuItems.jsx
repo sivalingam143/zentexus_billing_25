@@ -15,6 +15,7 @@ import { MdReceiptLong } from "react-icons/md";
 
 
 
+
 const MenuItems = [
   {
     path: "/dashboard",
@@ -36,6 +37,7 @@ const MenuItems = [
     path: "/sale",
     text: "Sale",
     icon: <MdOutlineSell/>,
+    
   },
   {
     path:"/purchaseandexpanse",
