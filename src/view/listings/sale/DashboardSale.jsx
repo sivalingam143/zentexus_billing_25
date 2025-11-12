@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {Container, Row, Col, Form, Button, InputGroup,Table,} from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 const initialRows = [
   {id: 1,item: "", qty: "", unit: "NONE",priceUnitType: "Without Tax",price: "",discountPercent: "",discountAmount: "",
@@ -20,6 +21,7 @@ const DashboardSale = () => {
   const [phone, setPhone] = useState("");
   const [billingAddress, setBillingAddress] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
+  const navigate = useNavigate();
 
   // State variables for main form table and others
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -90,51 +92,83 @@ const DashboardSale = () => {
 
   return (
     <div id="main">
+      
       <Container fluid className="dashboard-sale-container">
+        
         {/* Header with Sale and Credit/Cash toggle */}
-        <Row className="sale-header align-items-center mb-4">
-          <Col xs="auto">
-            <h5 className="sale-title">
-              Sale{" "}
-              <span
-                className={`credit-toggle ${credit ? "active" : ""}`}
-                onClick={() => setCredit(true)}
-                style={{ cursor: "pointer", color: credit ? "blue" : "black" }}>Credit
-              </span>{" "}
-              
-                
-              <Form.Check
-                type="switch"
-                id="credit-switch"
-                checked={credit}
-                onChange={toggleCredit}
-                className="mx-2"/>
-              <span
-                className={`cash-label ${!credit ? "active" : ""}`}
-                onClick={() => setCredit(false)}
-                style={{ cursor: "pointer", color: !credit ? "blue" : "black" }}>Cash</span>  
-            </h5>
-          </Col>
-        </Row>
+        <Row className="sale-header align-items-center mt-5">
+          <Col xs="auto" className="d-flex align-items-center">
+  <h5 className="mb-0 me-2" style={{ fontWeight: 'bold' }}>Sale</h5>
+
+  <span
+    className="me-2"
+    onClick={() => setCredit(true)}
+    style={{ 
+      cursor: "pointer", 
+      color: credit ? "blue" : "black", 
+      fontWeight: credit? "bold" : "normal",
+      userSelect: 'none'
+    }}
+  >
+    Credit
+  </span>
+
+  <Form.Check
+    type="switch"
+    id="credit-switch"
+    checked={credit}
+    onChange={() => setCredit(prev => !prev)}
+    // className="mx-2"
+    style={{ cursor: "pointer" }}
+  />
+
+  <span
+    // className="ms-2"
+    onClick={() => setCredit(false)}
+    style={{ 
+      cursor: "pointer", 
+      color: !credit ? "blue" : "black",
+      fontWeight: !credit ? "bold" : "normal",
+      userSelect: 'none'
+    }}
+  >
+    Cash
+  </span>
+</Col>
+
+          <Col xs="auto" className="ms-auto">
+        <Button
+           variant="light"
+           onClick={() => navigate("/sale")}
+           style={{
+           border: "1px solid #ccc",
+           borderRadius: "50%",
+           padding: "4px 8px",
+         }}><FaTimes /></Button>
+     </Col>
+      
+    
+ 
+      </Row>
 
         {/* Top form: Customer, Billing Name, Phone No. */}
         <Row className="mb-3 align-items-center">
-          <Col xs={4}>
+          <Col xs={2}>
             <Form.Group controlId="customerSelect">
               <Form.Label>
-                Customer <span style={{ color: "red" }}>*</span>
+                Name<span style={{ color: "red" }}>*</span>
               </Form.Label>
               <Form.Select
                 value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-              >
-                <option value="">Search by Name/Phone </option>
-                <option value="Customer 1">Customer 1</option>
+                onChange={(e) => setCustomer(e.target.value)}>
+              
+                
+                <option value="Customer 1">Customer</option>
               
               </Form.Select>
             </Form.Group>
           </Col>
-          <Col xs={4}>
+          {/* <Col xs={2}>
             <Form.Group controlId="billingName">
               <Form.Label>Billing Name (Optional)</Form.Label>
               <Form.Control
@@ -143,8 +177,8 @@ const DashboardSale = () => {
                 onChange={(e) => setBillingName(e.target.value)}
                 placeholder="Billing Name (Optional)"/>
               </Form.Group> 
-          </Col>
-          <Col xs={4}>
+          </Col> */}
+          <Col xs={2}>
             <Form.Group controlId="phoneInput">
               <Form.Label>Phone No.</Form.Label>
               <Form.Control
@@ -154,11 +188,35 @@ const DashboardSale = () => {
                 placeholder="Phone No."/>
               </Form.Group>
           </Col>
+          <Col xs={2}>
+          
+            
+
+            <Form.Group controlId="invoiceNumber">
+              <Form.Label>Invoice Number</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Invoice Number"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}/>
+            </Form.Group>
+          </Col>
+          <Col xs={2}>
+            <Form.Group controlId="invoiceDate" className="invoice-date-group">
+              <Form.Label>Invoice Date</Form.Label>
+              <Form.Control
+                type="date"
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}/>  
+            </Form.Group>
+          </Col>
+          
         </Row>
 
         {/* Addresses: Billing Address, Shipping Address */}
+        {!credit && (
         <Row className="mb-4">
-          <Col xs={6}>
+          <Col xs={3}>
             <Form.Group controlId="billingAddress">
               <Form.Label>Billing Address</Form.Label>
               <Form.Control
@@ -170,7 +228,7 @@ const DashboardSale = () => {
               
             </Form.Group>
           </Col>
-          <Col xs={6}>
+          <Col xs={3}>
             <Form.Group controlId="shippingAddress">
               <Form.Label>Shipping Address</Form.Label>
               <Form.Control
@@ -181,30 +239,7 @@ const DashboardSale = () => {
                 placeholder="Shipping Address"/>
             </Form.Group>
           </Col>
-        </Row>
-
-        {/* Invoice info on a single row */}
-        <Row className="customer-info-row mb-4">
-          <Col xs={4}>
-            <Form.Group controlId="invoiceNumber">
-              <Form.Label>Invoice Number</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Invoice Number"
-                value={invoiceNumber}
-                onChange={(e) => setInvoiceNumber(e.target.value)}/>
-            </Form.Group>
-          </Col>
-          <Col xs={4}>
-            <Form.Group controlId="invoiceDate" className="invoice-date-group">
-              <Form.Label>Invoice Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={invoiceDate}
-                onChange={(e) => setInvoiceDate(e.target.value)}/>  
-            </Form.Group>
-          </Col>
-          <Col xs={4}>
+          <Col xs={2}>
             <Form.Group controlId="stateOfSupply" className="state-supply-group">
               <Form.Label>State of supply</Form.Label>
               <Form.Select
@@ -221,10 +256,16 @@ const DashboardSale = () => {
               </Form.Select>
             </Form.Group>
           </Col>
+          
         </Row>
+        )}
+        {/* Invoice info on a single row */}
+        {/* <Row className="customer-info-row mb-4"> */}
+          
+        {/* </Row> */}
 
         {/* Items table */}
-        <Row className="items-table-row">
+        <Row className="items-table-row mb-8">
           <Col>
             <Table bordered hover size="sm" className="items-table">
               <thead>

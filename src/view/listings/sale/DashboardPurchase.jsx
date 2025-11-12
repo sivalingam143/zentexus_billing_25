@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import {Container, Row, Col,Form,Button,InputGroup,Table, Dropdown,} from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
+import { FaTimes } from "react-icons/fa";
 const initialRows = [
   {id: 1,item: "",qty: "",unit: "NONE",priceUnitType: "Without Tax",price: "",discountPercent: "",discountAmount: "",
     taxPercent: "",
@@ -25,6 +27,7 @@ const DashboardPurchase= () => {
   const [stateOfSupply, setStateOfSupply] = useState("");
   const [rows, setRows] = useState(initialRows);
   const [roundOff, setRoundOff] = useState(0);
+  const navigate = useNavigate();
 
   // Handle toggling Credit/Cash
   const toggleCredit = () => setCredit(!credit);
@@ -86,10 +89,10 @@ const DashboardPurchase= () => {
   return (
    <div id = "main">
      <Container fluid className="dashboard-sale-container">
-      <Row className="sale-header align-items-center mb-5">
-        <Col xs="auto">
+      <Row className="sale-header align-items-center mt-5">
+        <Col>
           <h5 className="sale-title">
-            Sale{" "}
+            Purchase{" "}
             <span
               className={`credit-toggle ${credit ? "active" : ""}`}
               onClick={toggleCredit}>Credit</span>{" "}
@@ -102,10 +105,20 @@ const DashboardPurchase= () => {
             <span className={`cash-label ${!credit ? "active" : ""}`}>Cash</span>
           </h5>
         </Col>
+         <Col xs="auto" className="ms-auto">
+                <Button
+                   variant="light"
+                   onClick={() => navigate("/sale")}
+                   style={{
+                   border: "1px solid #ccc",
+                   borderRadius: "50%",
+                   padding: "4px 8px",
+                 }}><FaTimes /></Button>
+             </Col>
       </Row>
 
       <Row className="customer-info-row mb-4">
-        <Col xs={4}>
+        <Col xs={2}>
           <Form.Group controlId="customerSelect">
             <Form.Label>Customer
              <span className="required-star">*</span>
@@ -120,7 +133,7 @@ const DashboardPurchase= () => {
             </Form.Select>
           </Form.Group>
         </Col>
-        <Col xs={3}>
+        <Col xs={2}>
           <Form.Group controlId="phoneInput">
             <Form.Label>Phone No.</Form.Label>
             <Form.Control
@@ -132,7 +145,8 @@ const DashboardPurchase= () => {
             
           </Form.Group>
         </Col>
-        <Col xs={5}>
+        
+        <Col xs={2}>
           <Form.Group controlId="invoiceNumber">
             <Form.Label>Invoice Number</Form.Label>
             <Form.Control
@@ -143,6 +157,8 @@ const DashboardPurchase= () => {
               className="invoice-number"/>
             
           </Form.Group>
+        </Col>
+        <Col xs={2}>
           <Form.Group controlId="invoiceDate" className="invoice-date-group">
             <Form.Label>Invoice Date</Form.Label>
             <Form.Control
@@ -152,6 +168,7 @@ const DashboardPurchase= () => {
               className="invoice-date"/>
             
           </Form.Group>
+
           <Form.Group controlId="stateOfSupply" className="state-supply-group">
             <Form.Label>State of supply</Form.Label>
             <Form.Select

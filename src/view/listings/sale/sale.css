@@ -17,7 +17,7 @@
 
 /* ---------- Buttons ---------- */
 .btn-add-sale {
-  background-color: red;
+  background-color:  #007bff;
   border: none;
   color: white;
   font-weight: 600;
@@ -70,7 +70,7 @@
 }
 
 .arrow-dropdown:hover {
-  color: #000;
+  color: gray
 }
 
 /* ---------- Filters ---------- */
@@ -139,7 +139,11 @@
 }
 
 .icon-btn {
-  color: #333;
+  background-color: transparent;
+  border: none;
+  padding: 4px 6px;
+  font-size: 1.1rem;
+  box-shadow: none;
   text-decoration: none;
 }
 

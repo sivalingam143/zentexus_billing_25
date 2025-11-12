@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {Container,Row,Col,Button,Dropdown, InputGroup,FormControl,Table,} from "react-bootstrap";
+import {Container,Row,Col,Button,Dropdown, InputGroup,FormControl,Table,Form} from "react-bootstrap";
 import {FaFilter, FaSearch, FaChartBar,FaPrint,FaFileExcel,FaEllipsisV,FaReply,} from "react-icons/fa"
 import "./sale.css";
 import { useNavigate } from "react-router-dom";
@@ -63,7 +63,7 @@ const Sale = () => {
           </Col>
 
           <Col className="d-flex justify-content-end gap-2">
-         <Button size="sm" className="btn-add-sale" onClick={() => navigate("/dashboardsale")} >+ Add Sale</Button>
+         <Button size="sm"className="btn-add-sale" onClick={() => navigate("/dashboardsale")} >+ Add Sale</Button>
          <Button size="sm" className="btn-add-purchase" onClick={() => navigate("/dashboardpurchase")}>+Add Purchase</Button>
         <Button size="sm" className="btn-settings">&#9881;</Button>
           </Col>
@@ -132,104 +132,98 @@ const Sale = () => {
           </Col>
           <Col className="d-flex justify-content-end gap-2">
             <Button
-              variant="link"
+            
               size="sm"
               title="Search"
               className="icon-btn"
             ><FaSearch /></Button>
             <Button
-              variant="link"
+              
               size="sm"
               title="Analytics"
               className="icon-btn"
             ><FaChartBar /></Button>
             <Button
-              variant="link"
+              
               size="sm"
               title="Export XLS"
               className="icon-btn export-icon"
             ><FaFileExcel /></Button>
-            <Button variant="link" size="sm" title="Print" className="icon-btn"><FaPrint /></Button>
+            <Button size="sm" title="Print" className="icon-btn"><FaPrint /></Button>
           </Col>
         </Row>
 
-        {/* Transactions table */}
         <Row>
-          <Col>
-            <Table
-              responsive
-              bordered
-              hover
+  <Col>
+    <Table responsive bordered hover size="sm" className="transactions-table">
+      <thead>
+        <tr>
+          <th>Date <FaFilter className="filter-icon" /></th>
+          <th>Invoice No <FaFilter className="filter-icon" /></th>
+          <th>Party Name <FaFilter className="filter-icon" /></th>
+          <th>Transaction <FaFilter className="filter-icon" /></th>
+          <th>Payment Type <FaFilter className="filter-icon" /></th>
+          <th>Amount <FaFilter className="filter-icon" /></th>
+          <th>Balance <FaFilter className="filter-icon" /></th>
+          <th>Status <FaFilter className="filter-icon" /></th>
+          <th>Actions <FaFilter className="filter-icon" /></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>06/11/2025</td>
+          <td>1</td>
+          <td>sathya</td>
+          <td>Lite Sale</td>
+          <td>Cash</td>
+          <td>₹ 1,000</td>
+          <td>₹ 0</td>
+          <td>
+            {/* Status dropdown */}
+            <Form.Select size="sm" defaultValue="Paid">
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Unpaid</option>
+            </Form.Select>
+          </td>
+          <td className="d-flex gap-2 actions-cell">
+            {/* Action icons */}
+            <Button
               size="sm"
-              className="transactions-table"
+              title="Print"
+              className="icon-btn"
+              style={{ backgroundColor: "transparent", border: "none", padding: 0 }}
             >
-              <thead>
-                <tr>
-                  <th>
-                    Date <FaFilter className="filter-icon" />
-                  </th>
-                  <th>
-                    Invoice no <FaFilter className="filter-icon" />
-                  </th>
-                  <th>
-                    Party Name <FaFilter className="filter-icon" />
-                  </th>
-                  <th>
-                    Transaction <FaFilter className="filter-icon" />
-                  </th>
-                  <th>
-                    Payment Type <FaFilter className="filter-icon" />
-                  </th>
-                  <th>
-                    Amount <FaFilter className="filter-icon" />
-                  </th>
-                  <th>
-                    Balance <FaFilter className="filter-icon" />
-                  </th>
-                  <th className="actions-header">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>06/11/2025</td>
-                  <td>1</td>
-                  <td>sathya</td>
-                  <td>Lite Sale</td>
-                  <td>Cash</td>
-                  <td>₹ 1,000</td>
-                  <td>₹ 0</td>
-                  <td className="d-flex gap-2 actions-cell">
-                    <Button
-                      variant="link"
-                      size="sm"
-                      title="Print"
-                      className="icon-btn"
-                    ><FaPrint /></Button>
-                    <Button
-                      variant="link"
-                      size="sm"
-                      title="Share"
-                      className="icon-btn"
-                    ><FaReply /></Button>
-                    <Dropdown align="end" drop="down">
-                      <Dropdown.Toggle
-                        variant="link"
-                        size="sm"
-                        className="icon-btn dropdown-toggle"
-                      ><FaEllipsisV />
-                      </Dropdown.Toggle>
-                      <Dropdown.Menu>
-                        <Dropdown.Item>View</Dropdown.Item>
-                        <Dropdown.Item>Edit</Dropdown.Item>
-                        <Dropdown.Item>Delete</Dropdown.Item>
-                      </Dropdown.Menu>
-                    </Dropdown>
-                  </td>
-                </tr>
-              </tbody>
-            </Table>
-          </Col>
-        </Row>
+              <FaPrint />
+            </Button>
+            <Button
+              size="sm"
+              title="Share"
+              className="icon-btn"
+              style={{ backgroundColor: "transparent", border: "none", padding: 0 }}
+            >
+              <FaReply />
+            </Button>
+            <Dropdown align="end" drop="down">
+              <Dropdown.Toggle
+                size="sm"
+                className="icon-btn dropdown-toggle"
+                style={{ backgroundColor: "transparent", border: "none", padding: 0 }}
+              >
+                <FaEllipsisV />
+              </Dropdown.Toggle>
+              <Dropdown.Menu>
+                <Dropdown.Item>View</Dropdown.Item>
+                <Dropdown.Item>Edit</Dropdown.Item>
+                <Dropdown.Item>Delete</Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </td>
+        </tr>
+      </tbody>
+    </Table>
+  </Col>
+</Row>
+
       </Container>
     </div>
   );
