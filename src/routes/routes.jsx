@@ -1,7 +1,7 @@
 import Login from "../view/Login";
 import Parties from "../view/listings/Parties/Parties";
-import items from "../view/listings/items/items";
-import Sale from "../view/listings/sale/sale";
+import items from "../view/listings/Items/items";
+import Sale from "../view/listings/Sale/sale";
 import Purchase from "../view/listings/Purchase/purchase";
 import Grow from "../view/listings/Grow/grow";
 import Cash from "../view/listings/Cash/cash";
@@ -9,8 +9,8 @@ import Reports from "../view/listings/Reports/reports";
 import Sync from "../view/listings/Sync/sync";
 import Updates from "../view/listings/Updates/updates";
 import DashBoard from "../view/listings/Dashboard/DashBoard";
-import DashboardSale from "../view/listings/sale/DashboardSale";
-import DashboardPurchase from "../view/listings/sale/DashboardPurchase";
+import DashboardSale from "../view/listings/Sale/DashboardSale";
+import DashboardPurchase from "../view/listings/Sale/DashboardPurchase";
 
 const routes = [
   {

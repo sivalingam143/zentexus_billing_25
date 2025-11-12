@@ -3,15 +3,11 @@ import { Container, Row, Col, Card, Button, Dropdown } from "react-bootstrap";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate } from "react-router-dom";
-
-
-
 const DashBoard = () => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [businessName, setBusinessName] = useState("");
-  const navigate = useNavigate();
-
-  return (
+const [isEditing, setIsEditing] = useState(false);
+const [businessName, setBusinessName] = useState("");
+const navigate = useNavigate();
+ return (
     <div id="main" style={{backgroundColor:"#DEE2E6",minHeight: "100vh"}}>
       <Container className="mt-5">
         <Row>
@@ -19,48 +15,20 @@ const DashBoard = () => {
             {/* Business Name Row */}
             <div className="mb-2 d-flex align-items-center">
               <span
-                style={{ color: "red", fontWeight: "bold", fontSize: "1.5rem" }}
-              >
-                •
-              </span>
-
-              {isEditing ? (
+                style={{ color: "red", fontWeight: "bold", fontSize: "1.5rem" }}>•</span>
+                {isEditing ? (
                 <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginLeft: "8px",
-                  }}
-                >
-                  <input
-                    type="text"
-                    value={businessName}
-                    onChange={(e) => setBusinessName(e.target.value)}
-                    placeholder="Enter Business Name"
-                    autoFocus
-                    style={{
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                      padding: "5px 10px",
-                      fontSize: "1rem",
-                      width: "250px",
-                    }}
+                  style={{display: "flex",alignItems: "center",gap: "8px",marginLeft: "8px",}}>
+                  <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)}placeholder="Enter Business Name"autoFocus
+                    style={{border: "1px solid #ccc",borderRadius: "6px",padding: "5px 10px",fontSize: "1rem",width: "250px",}}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") setIsEditing(false);
-                    }}
-                  />
+                      if (e.key === "Enter") setIsEditing(false);}}/>
                   {/* Save Button */}
                   <Button
-                    variant="info"
-                    onClick={() => {
+                    variant="info"onClick={() => {
                       console.log("Saved business:", businessName);
-                      setIsEditing(false); // hide input after save
-                    }}
-                    style={{ borderRadius: "6px", fontWeight: 600, color:"white" }}
-                  >
-                    Save
-                  </Button>
+                      setIsEditing(false); }}// hide input after save
+                      style={{ borderRadius: "6px", fontWeight: 600, color:"white" }}> Save</Button>
                 </div>
               ) : (
                 <span
