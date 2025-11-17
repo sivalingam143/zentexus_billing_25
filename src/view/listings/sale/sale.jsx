@@ -38,6 +38,11 @@ const Sale = () => {
   const [invoiceType, setInvoiceType] = useState("Sale Invoices");
   const [selectedPeriod, setSelectedPeriod] = useState("This Month");
   const [selectedFirm, setSelectedFirm] = useState("All Firms");
+  const [editingSale, setEditingSale] = useState(null); // sale object being edited
+const [showEditModal, setShowEditModal] = useState(false);
+const [addingSale, setAddingSale] = useState(false);
+const [addOrUpdateSale, setAddOrUpdateSale] = useState(null);
+
   
 
   const [salesList, setSalesList] = useState([]);
@@ -75,6 +80,10 @@ const Sale = () => {
     console.error("Delete error:", error);
     alert("Something went wrong while deleting the sale.");
   }
+};
+const handleEdit = (sale) => {
+  setEditingSale(sale);
+  setShowEditModal(true);
 };
 
 
@@ -402,7 +411,9 @@ const Sale = () => {
 
                             <Dropdown.Menu>
                               <Dropdown.Item>View</Dropdown.Item>
-                              <Dropdown.Item>Edit</Dropdown.Item>
+                              <Dropdown.Item onClick={() => handleEdit(sale)}>Edit</Dropdown.Item>
+
+                              {/* <Dropdown.Item>Edit</Dropdown.Item> */}
                               {/* <Dropdown.Item>Delete</Dropdown.Item> */}
                               <Dropdown.Item onClick={() => handleDelete(sale.sale_id)}>Delete</Dropdown.Item>
 
@@ -414,6 +425,83 @@ const Sale = () => {
                   </tbody>
 
                 </Table>
+                {showEditModal && editingSale && (
+  <div className="edit-modal">
+    <div className="modal-content p-3">
+      <h5>Edit Sale - {editingSale.invoice_no}</h5>
+      <Form>
+        <Form.Group className="mb-2">
+          <Form.Label>Party Name</Form.Label>
+          <Form.Control
+            type="text"
+            value={editingSale.name}
+            onChange={(e) =>
+              setEditingSale({ ...editingSale, name: e.target.value })
+            }
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-2">
+          <Form.Label>Invoice No</Form.Label>
+          <Form.Control
+            type="text"
+            value={editingSale.invoice_no}
+            onChange={(e) =>
+              setEditingSale({ ...editingSale, invoice_no: e.target.value })
+            }
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-2">
+          <Form.Label>Total</Form.Label>
+          <Form.Control
+            type="number"
+            value={editingSale.total}
+            onChange={(e) =>
+              setEditingSale({ ...editingSale, total: e.target.value })
+            }
+          />
+        </Form.Group>
+
+        <div className="d-flex justify-content-end gap-2 mt-2">
+          <Button
+            variant="secondary"
+            onClick={() => setShowEditModal(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={async () => {
+              const res = await addOrUpdateSale({
+                edit_sales_id: editingSale.sale_id,
+                name: editingSale.name,
+                invoice_no: editingSale.invoice_no,
+                total: editingSale.total,
+                parties_id: editingSale.parties_id,
+                // add other fields as needed
+              });
+              if (res.head.code === 200) {
+                alert(res.head.msg);
+                setSalesList((prev) =>
+                  prev.map((s) =>
+                    s.sale_id === editingSale.sale_id ? editingSale : s
+                  )
+                );
+                setShowEditModal(false);
+              } else {
+                alert(res.head.msg);
+              }
+            }}
+          >
+            Save
+          </Button>
+        </div>
+      </Form>
+    </div>
+  </div>
+)}
+
               </Col>
             </Row>
 

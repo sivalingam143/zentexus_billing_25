@@ -86,6 +86,9 @@ const DashboardSale = () => {
   const [showPartyModal, setShowPartyModal] = useState(false);
   const [paymentType,setPaymentType]=useState("");
  const [customerName, setCustomerName] = useState("");
+ const [editingSaleId, setEditingSaleId] = useState(null);
+ const [editingSaleData, setEditingSaleData] = useState({});
+
   const navigate = useNavigate();
 
   // Fetch parties from backend
@@ -366,9 +369,9 @@ const handleSave = async () => {
         onChange={(e) => setPaymentType(e.target.value)}
         style={{ width: "160px",marginLeft:"10px" }}
       >
-        <option value="">Select</option>
+        <option value="">Phone pay</option>
         <option value="Cash">Cash</option>
-        <option value="Online">Online Payment</option>
+        <option value="Online">G-pay</option>
       </Form.Select>
     </div>
           <Col xs="auto" className="ms-auto d-flex align-items-center gap-2">
