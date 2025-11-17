@@ -1,19 +1,254 @@
 
  
-import React, { useState } from "react";
+// import React, { useState } from "react";
+// import { Modal, Button, Form, Row, Col, Nav } from "react-bootstrap";
+// import StateSelect from "./States";
+// import DatePicker from "react-datepicker";
+// import "react-datepicker/dist/react-datepicker.css";
+// import { useDispatch } from "react-redux";
+// import { addNewParty,fetchParties } from "../../../slice/partySlice"/
+// import { addNewParty, fetchParties, updateExistingParty, deleteExistingParty } from "../../../slice/partySlice"
+
+
+// function PartyModal({ show, handleClose, isEdit, partyToEdit }) {
+//   const dispatch = useDispatch(); 
+//   const [activeTab, setActiveTab] = useState("gst");
+//    const [partyName, setPartyName] = useState("");
+//   const [phone, setPhone] = useState("");
+//   const [email, setEmail] = useState("");
+//    const [amount, setAmount] = useState("");
+//   const [date, setDate] = useState(new Date());
+//   const [limitType, setLimitType] = useState("no"); // "no" or "custom"
+//   const [creditLimit, setCreditLimit] = useState("");
+//   const [isEditingAddress, setIsEditingAddress] = useState(false);
+// const [shippingaddress, setShippingAddress] = useState("");
+// const [billingaddress, setBillingAddress] = useState(""); // missing
+// const [gstin, setGstin] = useState("");
+
+
+// const handleSave = async () => { // <-- Make it async
+//   const newParty = {
+//     name: partyName,
+//     gstin,
+//     phone,
+//     email,
+//     billingaddress,
+//     shippingaddress,
+//     amount: parseFloat(amount) || 0,
+//     creditLimit: parseFloat(creditLimit) || 0,
+//     limitType,
+    
+//   };
+
+//   try {
+//     // Await the dispatch. We use .unwrap() to handle success/failure.
+//     await dispatch(addNewParty(newParty)).unwrap();
+//     dispatch(fetchParties()); 
+//     handleClose(); 
+//     setPartyName("");
+//   setGstin("");
+//   setPhone("");
+//   setEmail("");
+//   setBillingAddress("");
+//   setShippingAddress("");
+//   setAmount("");
+//   setCreditLimit("");
+//   setLimitType("no");
+//   // setDate(new Date());
+//   setActiveTab("gst");
+    
+//   } catch (error) {
+//     console.error("Failed to save party: ", error);
+    
+//   }
+// };
+
+import React, { useState, useEffect } from "react"; // 🌟 ADDED useEffect
 import { Modal, Button, Form, Row, Col, Nav } from "react-bootstrap";
 import StateSelect from "./States";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useDispatch } from "react-redux";
+// 🌟 UPDATED: Import new thunks
+import { addNewParty, fetchParties, updateExistingParty, deleteExistingParty } from "../../../slice/partySlice" 
 
-function PartyModal({ show, handleClose, isEdit }) {
+
+// 🌟 UPDATED: Accept partyToEdit prop
+function PartyModal({ show, handleClose, isEdit, partyToEdit }) {
+  const dispatch = useDispatch(); 
   const [activeTab, setActiveTab] = useState("gst");
-  const [asOfDate, setAsOfDate] = useState(new Date());
+  const [partyName, setPartyName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(new Date());
   const [limitType, setLimitType] = useState("no"); // "no" or "custom"
   const [creditLimit, setCreditLimit] = useState("");
   const [isEditingAddress, setIsEditingAddress] = useState(false);
-const [shippingAddress, setShippingAddress] = useState("");
+  const [shippingaddress, setShippingAddress] = useState("");
+  const [billingaddress, setBillingAddress] = useState("");
+  const [gstin, setGstin] = useState("");
 
+
+  // 🌟 NEW HELPER: Reset all fields
+  const resetFields = () => {
+    setPartyName("");
+    setGstin("");
+    setPhone("");
+    setEmail("");
+    setBillingAddress("");
+    setShippingAddress("");
+    setAmount("");
+    setCreditLimit("");
+    setLimitType("no");
+    setDate(new Date()); 
+    setActiveTab("gst");
+  }
+
+
+  // 🌟 NEW EFFECT: Populate fields for editing
+  useEffect(() => {
+    if (isEdit && partyToEdit) {
+      // Set state based on the partyToEdit object (using lowercase keys for consistency)
+      setPartyName(partyToEdit.name || "");
+      setGstin(partyToEdit.gstin || "");
+      setPhone(partyToEdit.phone || "");
+      setEmail(partyToEdit.email || "");
+      setBillingAddress(partyToEdit.billingaddress || ""); 
+      setShippingAddress(partyToEdit.shippingaddress || "");
+      setAmount(partyToEdit.amount || ""); 
+      setCreditLimit(partyToEdit.creditlimit || "");
+      setLimitType(partyToEdit.limittype || "no");
+    } else {
+      // Reset fields when opening for 'Add' or when closing edit mode
+      resetFields();
+    }
+  }, [isEdit, partyToEdit]); 
+  
+  
+  // // UPDATED handleSave to use resetFields
+  // const handleSave = async () => { 
+  //   const newParty = {
+  //     name: partyName,
+  //     gstin,
+  //     phone,
+  //     email,
+  //     billingaddress,
+  //     shippingaddress,
+  //     amount: parseFloat(amount) || 0,
+  //     creditlimit: parseFloat(creditLimit) || 0,
+  //     limitType,
+  //   };
+
+  //   try {
+  //     await dispatch(addNewParty(newParty)).unwrap();
+  //     dispatch(fetchParties()); 
+  //     handleClose(); 
+  //     resetFields(); // Use the helper
+      
+  //   } catch (error) {
+  //     console.error("Failed to save party: ", error);
+  //   }
+  // };
+
+  const savePartyLogic = async () => {
+      const newParty = {
+        name: partyName,
+        gstin,
+        phone,
+        email,
+        billingaddress,
+        shippingaddress,
+        amount: parseFloat(amount) || 0,
+        creditlimit: parseFloat(creditLimit) || 0,
+        limitType,
+      };
+
+      try {
+        await dispatch(addNewParty(newParty)).unwrap();
+        // Always re-fetch the list to update the main Parties page
+        dispatch(fetchParties()); 
+        return true; // Success
+      } catch (error) {
+        console.error("Failed to save party: ", error)
+        return false; // Failure
+      }
+  }
+
+  // UPDATED: handleSave closes the modal after saving
+  const handleSave = async () => { 
+    const success = await savePartyLogic();
+    if (success) {
+        handleClose(); // Close the modal
+        resetFields(); 
+    }
+  };
+
+  const handleSaveAndNew = async () => {
+    const success = await savePartyLogic();
+    if (success) {
+        // Do NOT call handleClose() here, just reset fields for the next entry
+        resetFields(); 
+    }
+  };
+
+  // 🌟 NEW FUNCTION: handleUpdate
+  const handleUpdate = async () => {
+    if (!partyToEdit || !partyToEdit.parties_id) {
+      console.error("Cannot update: Party ID is missing.");
+      return;
+    }
+
+    const updatedParty = {
+      // CRUCIAL: Include the unique ID required for update
+      parties_id: partyToEdit.parties_id, 
+      // Current form values (lowercase keys for PHP)
+      name: partyName,
+      gstin,
+      phone,
+      email,
+      billingaddress,
+      shippingaddress,
+      amount: parseFloat(amount) || 0,
+      creditlimit: parseFloat(creditLimit) || 0,
+      limitType,
+    };
+
+    try {
+      // Dispatch the new update thunk
+      await dispatch(updateExistingParty(updatedParty)).unwrap(); 
+      handleClose(); 
+      resetFields(); 
+      
+      dispatch(fetchParties());
+      
+    } catch (error) {
+      console.error("Failed to update party: ", error);
+    }
+  };
+
+  // 🌟 NEW FUNCTION: handleDelete
+  const handleDelete = async () => {
+    if (!partyToEdit || !partyToEdit.parties_id) {
+      console.error("Cannot delete: Party ID is missing.");
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${partyToEdit.name}?`)) {
+      return;
+    }
+
+    try {
+      // Dispatch the new delete thunk
+      await dispatch(deleteExistingParty(partyToEdit.parties_id)).unwrap(); 
+      handleClose(); 
+      resetFields(); 
+      dispatch(fetchParties());
+      
+    } catch (error) {
+      console.error("Failed to delete party: ", error);
+    }
+  };
 
   return (
     <Modal show={show} onHide={handleClose} size="lg" centered>
@@ -25,13 +260,16 @@ const [shippingAddress, setShippingAddress] = useState("");
         {/* Top fields */}
         <Row className="mb-3">
           <Col>
-            <Form.Control type="text" placeholder="Party Name *" />
+            <Form.Control type="text" placeholder="Party Name *" value={partyName}
+      onChange={(e) => setPartyName(e.target.value)} />
           </Col>
           <Col>
-            <Form.Control type="text" placeholder="GSTIN" />
+            <Form.Control type="text" placeholder="GSTIN"  value={gstin}
+      onChange={(e) => setGstin(e.target.value)}/>
           </Col>
           <Col>
-            <Form.Control type="text" placeholder="Phone Number" />
+            <Form.Control type="text" placeholder="Phone Number" value={phone}
+      onChange={(e) => setPhone(e.target.value)} />
           </Col>
         </Row>
 
@@ -75,7 +313,8 @@ const [shippingAddress, setShippingAddress] = useState("");
 
               <Form.Group className="mb-3">
                 <Form.Label>Email ID</Form.Label>
-                <Form.Control type="email" placeholder="Email ID" />
+                <Form.Control type="email" placeholder="Email ID" value={email} // <-- ADD THIS
+                  onChange={(e) => setEmail(e.target.value)} />
               </Form.Group>
             </Col>
 
@@ -86,6 +325,8 @@ const [shippingAddress, setShippingAddress] = useState("");
                   as="textarea"
                   rows={3}
                   placeholder="Billing Address"
+                  value={billingaddress}
+  onChange={(e) => setBillingAddress(e.target.value)}
                 />
               </Form.Group>
             </Col>
@@ -101,7 +342,7 @@ const [shippingAddress, setShippingAddress] = useState("");
           as="textarea"
           rows={3}
           placeholder="Enter address"
-          value={shippingAddress}
+          value={shippingaddress}
           onChange={(e) => setShippingAddress(e.target.value)}
           autoFocus
         />
@@ -122,7 +363,7 @@ const [shippingAddress, setShippingAddress] = useState("");
         className="p-0 text-primary"
         onClick={() => setIsEditingAddress(true)}
       >
-        {shippingAddress ? shippingAddress : "+ Add Address"}
+        {shippingaddress ? shippingaddress : "+ Add Address"}
       </Button>
     )}
   </div>
@@ -143,8 +384,8 @@ const [shippingAddress, setShippingAddress] = useState("");
             <Col md={4}>
               <Form.Group className="mb-3">
                 <DatePicker
-                  selected={asOfDate}
-                  onChange={(date) => setAsOfDate(date)}
+                  selected={date}
+                  onChange={(date) => setDate(date)}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
                   placeholderText="As of Date"
@@ -262,8 +503,8 @@ const [shippingAddress, setShippingAddress] = useState("");
                 
 
                 <DatePicker
-                  selected={asOfDate}
-                  onChange={(date) => setAsOfDate(date)}
+                  selected={date}
+                  onChange={(date) => setDate(date)}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
                   placeholderText="Select Date"
@@ -278,20 +519,21 @@ const [shippingAddress, setShippingAddress] = useState("");
       <Modal.Footer>
         {isEdit ? (
           <>
-            <Button variant="danger" className="px-4 py-2">
+            <Button variant="danger" className="px-4 py-2" onClick={handleDelete}>
               Delete
             </Button>
             <Button
               variant="primary bg-primary"
               className="text-white px-4 py-2"
+              onClick={handleUpdate}
             >
               Update
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline-primary">Save & New</Button>
-            <Button variant="primary bg-primary" className="text-white px-4 py-2">
+            <Button variant="outline-primary" onClick={handleSaveAndNew}>Save & New</Button>
+            <Button variant="primary bg-primary" className="text-white px-4 py-2" onClick={handleSave} >
               Save
             </Button>
           </>
