@@ -2,10 +2,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as partyService from "../services/PartyService";
 
-<<<<<<< HEAD
-=======
-// Fetch all parties
-// src/slice/partySlice.js
+
 
 
 // Fetch all parties
@@ -29,60 +26,6 @@ export const fetchParties = createAsyncThunk(
 );
 
 
-// const partySlice = createSlice({
-//   name: "party",
-//   initialState: {
-//     parties: [],
-//     selectedParty: null, // static selected party
-//   },
-//   reducers: {
-//     setParties: (state, action) => {
-//       state.parties = action.payload;
-//     },
-//     addParty: (state, action) => {
-//       state.parties.push(action.payload);
-//       if (!state.selectedParty) {
-//         state.selectedParty = action.payload; // select first party by default
-//       }
-//     },
-//   },
-// });
-
-// export const { setParties, addParty } = partySlice.actions;
-// export default partySlice.reducer;
-// src/slice/partySlice.js
-// import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-// import * as partyService from "../services/PartyService";
-
-// // Fetch all parties
-// // src/slice/partySlice.js
->>>>>>> d81038e2d6c6c57ef20f91f2f1c2aa1d65292399
-
-// // Fetch all parties
-// export const fetchParties = createAsyncThunk(
-//   "party/fetchParties",
-//   // FIX: Accept 'searchText' here
-//   async (searchText, { rejectWithValue }) => {
-//     try {
-//       // 1. Await the response from the service, PASSING searchText
-//       const response = await partyService.getParties(searchText); 
-      
-//       // 2. Extract the actual array from the nested 'body.parties' property
-//       const partiesArray = response?.body?.parties || []; 
-      
-//       // 3. Return only the array to Redux
-//       return partiesArray; 
-//     } catch (error) {
-//       return rejectWithValue(error.message);
-//     }
-//   }
-// );
-
-
-<<<<<<< HEAD
-=======
-// ... other code remains the same
->>>>>>> d81038e2d6c6c57ef20f91f2f1c2aa1d65292399
 
 // Add new party
 export const addNewParty = createAsyncThunk(
