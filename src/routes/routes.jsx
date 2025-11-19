@@ -34,6 +34,18 @@ const routes = [
     component: Sale,
   },
   {
+    path: "/sale/create",
+    component: DashboardSale,
+  },
+  {
+    path: "/sale/edit/:id",
+    component: DashboardSale,
+  },
+  {
+    path: "/sale/view/:id",
+    component: DashboardSale,
+  },
+  {
     path: "/purchase",
     component: Purchase,
   },
@@ -56,10 +68,6 @@ const routes = [
   {
     path: "/updates",
     component: Updates,
-  },
-  {
-    path: "/dashboardsale",
-    component: DashboardSale,
   },
   {
     path: "/dashboardpurchase",
