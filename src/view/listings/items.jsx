@@ -119,7 +119,7 @@ function Items() {
               className="p-0 border-0 bg-transparent"
             >
               <Dropdown.Item onClick={() => handleEditUnit(unit)}>
-                View / Edit
+                View or Edit
               </Dropdown.Item>
               <Dropdown.Item
                 onClick={() => handleDeleteUnit(unit)}
