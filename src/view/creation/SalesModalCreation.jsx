@@ -1,4 +1,4 @@
-// Updated creations/SalesModalCreation.js (now full screen with button at bottom)
+// creations/SalesModalCreation.js
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -29,25 +29,10 @@ import {
 } from "../../components/Forms";
 import NotifyData from "../../components/NotifyData";
 
-// STATIC OPTIONS
-const units = ["NONE", "KG", "Litre", "Piece"];
-const priceUnitTypes = ["Without Tax", "With Tax"];
-const initialRows = [
-  {
-    id: 1,
-    item: "",
-    qty: "",
-    unit: "NONE",
-    priceUnitType: "Without Tax",
-    price: "",
-    discountPercent: "",
-    discountAmount: "0.00",
-    taxPercent: 0,
-    taxAmount: "0.00",
-    amount: "0.00",
-  },
-];
-const taxOptionsFormatted = [
+// Static options
+const UNITS = ["NONE", "KG", "Litre", "Piece"];
+const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
+const TAX_OPTIONS = [
   { value: "", label: "Select" },
   { value: 0, label: "0%" },
   { value: 5, label: "5%" },
@@ -55,12 +40,7 @@ const taxOptionsFormatted = [
   { value: 18, label: "18%" },
   { value: 28, label: "28%" },
 ];
-const unitsOptions = units.map((u) => ({ value: u, label: u }));
-const priceUnitTypesOptions = priceUnitTypes.map((pt) => ({
-  value: pt,
-  label: pt,
-}));
-const stateOfSupplyOptions = [
+const STATE_OF_SUPPLY_OPTIONS = [
   { value: "", label: "Select" },
   { value: "AndraPradesh", label: "AndraPradesh" },
   { value: "Kerala", label: "Kerala" },
@@ -71,12 +51,26 @@ const stateOfSupplyOptions = [
   { value: "punjab", label: "punjab" },
   { value: "bihar", label: "bihar" },
 ];
-const paymentOptions = [
+const PAYMENT_OPTIONS = [
   { value: "", label: "Select Payment Type" },
   { value: "Phone Pay", label: "Phone Pay" },
   { value: "Cash", label: "Cash" },
   { value: "G-pay", label: "G-pay" },
 ];
+
+const INITIAL_ROW = {
+  id: 1,
+  item: "",
+  qty: "",
+  unit: "NONE",
+  priceUnitType: "Without Tax",
+  price: "",
+  discountPercent: "",
+  discountAmount: "0.00",
+  taxPercent: 0,
+  taxAmount: "0.00",
+  amount: "0.00",
+};
 
 const SaleCreation = () => {
   const dispatch = useDispatch();
@@ -84,9 +78,11 @@ const SaleCreation = () => {
   const { id } = useParams();
   const location = useLocation();
   const { parties, partiesStatus, sales } = useSelector((state) => state.sale);
+
   const isEditMode = location.pathname.startsWith("/sale/edit");
   const isViewMode = location.pathname.startsWith("/sale/view");
   const isCreateMode = location.pathname === "/sale/create";
+  const isDisabled = isViewMode;
 
   const [formData, setFormData] = useState({
     parties_id: "",
@@ -98,7 +94,7 @@ const SaleCreation = () => {
     invoice_date: new Date().toISOString().split("T")[0],
     state_of_supply: "",
     payment_type: "",
-    rows: initialRows,
+    rows: [INITIAL_ROW],
     rount_off: 0,
     round_off_amount: "0",
     total: "0.00",
@@ -111,18 +107,21 @@ const SaleCreation = () => {
 
   const saleToEdit = id ? sales.find((s) => s.sale_id == id) : null;
 
-  // FETCH PARTIES
+  // Fetch parties on mount
   useEffect(() => {
-    if (partiesStatus === "idle") dispatch(fetchParties());
+    if (partiesStatus === "idle") {
+      dispatch(fetchParties());
+    }
   }, [partiesStatus, dispatch]);
 
-  // FETCH SALES FOR EDIT/VIEW
+  // Fetch sales for edit/view
   useEffect(() => {
     if ((isEditMode || isViewMode) && sales.length === 0) {
       dispatch(searchSales(""));
     }
   }, [isEditMode, isViewMode, sales.length, dispatch]);
 
+  // Update customers options
   useEffect(() => {
     const customerOptions = parties.map((p) => ({
       value: p.id,
@@ -135,9 +134,10 @@ const SaleCreation = () => {
     ]);
   }, [parties]);
 
-  // PREFILL IF EDIT OR VIEW
+  // Prefill form for edit/view
   useEffect(() => {
     if (!saleToEdit) return;
+
     const itemsArray = JSON.parse(saleToEdit.products || "[]");
     const rows =
       Array.isArray(itemsArray) && itemsArray.length > 0
@@ -154,14 +154,22 @@ const SaleCreation = () => {
             taxAmount: String(item.taxAmount || "0.00"),
             amount: String(item.amount || "0.00"),
           }))
-        : initialRows;
+        : [INITIAL_ROW];
+
     const totalAmountRaw = rows.reduce((a, r) => a + Number(r.amount || 0), 0);
     const rount_off = Number(saleToEdit.rount_off || 0) === 1 ? 1 : 0;
-    let round_off_amount = String(saleToEdit.round_off_amount || "0");
+    const round_off_amount = String(saleToEdit.round_off_amount || "0");
     const finalRound = rount_off ? Number(round_off_amount) : 0;
     const total = (totalAmountRaw + finalRound).toFixed(2);
-    const manual = rount_off === 1;
+
+    // Determine if manual round off
+    let manual = false;
+    if (rount_off === 1) {
+      const autoRound = calculateAutoRoundOff(totalAmountRaw);
+      manual = Math.abs(Number(round_off_amount) - Number(autoRound)) > 0.01;
+    }
     setIsManualRoundOff(manual);
+
     setFormData({
       parties_id: saleToEdit.parties_id || "",
       name: saleToEdit.name || "",
@@ -180,7 +188,7 @@ const SaleCreation = () => {
     });
   }, [saleToEdit]);
 
-  // Compute totals for display
+  // Computed totals
   const totalQty = formData.rows.reduce((a, r) => a + (Number(r.qty) || 0), 0);
   const totalDiscount = formData.rows.reduce(
     (a, r) => a + (Number(r.discountAmount) || 0),
@@ -195,11 +203,10 @@ const SaleCreation = () => {
     0
   );
 
-  const calculateAutoRoundOff = (amount) => {
-    return (Math.round(amount) - amount).toFixed(2);
-  };
+  const calculateAutoRoundOff = (amount) =>
+    (Math.round(amount) - amount).toFixed(2);
 
-  // PARTY SELECT
+  // Handlers
   const handlePartySelect = (selectedOption) => {
     if (!selectedOption) {
       setFormData((prev) => ({
@@ -213,7 +220,9 @@ const SaleCreation = () => {
       }));
       return;
     }
+
     if (selectedOption.value === "add_party") return;
+
     const selectedParty = parties.find((p) => p.id === selectedOption.value);
     setFormData((prev) => ({
       ...prev,
@@ -228,7 +237,6 @@ const SaleCreation = () => {
 
   const toggleCredit = () => setCredit(!credit);
 
-  // ROW OPERATIONS
   const deleteRow = (id) => {
     const newRows = formData.rows.filter((r) => r.id !== id);
     const newTotalAmountRaw = newRows.reduce(
@@ -237,11 +245,13 @@ const SaleCreation = () => {
     );
     let finalRound =
       formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
+
     if (formData.rount_off === 1 && !isManualRoundOff) {
       const autoRound = calculateAutoRoundOff(newTotalAmountRaw);
       finalRound = Number(autoRound);
       setFormData((prev) => ({ ...prev, round_off_amount: autoRound }));
     }
+
     const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
@@ -250,54 +260,48 @@ const SaleCreation = () => {
     const newId = formData.rows.length
       ? Math.max(...formData.rows.map((r) => r.id)) + 1
       : 1;
-    const newRows = [...formData.rows, { ...initialRows[0], id: newId }];
+    const newRows = [...formData.rows, { ...INITIAL_ROW, id: newId }];
     const newTotalAmountRaw = newRows.reduce(
       (a, r) => a + Number(r.amount || 0),
       0
     );
     let finalRound =
       formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
+
     if (formData.rount_off === 1 && !isManualRoundOff) {
       const autoRound = calculateAutoRoundOff(newTotalAmountRaw);
       finalRound = Number(autoRound);
       setFormData((prev) => ({ ...prev, round_off_amount: autoRound }));
     }
+
     const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
 
   const onRowChange = (id, field, value) => {
     let actualValue = value;
-    if (value && typeof value === "object" && value.value !== undefined) {
+    if (value?.value !== undefined) {
       actualValue = value.value;
-    } else if (
-      value &&
-      typeof value === "object" &&
-      value.target?.value !== undefined
-    ) {
+    } else if (value?.target?.value !== undefined) {
       actualValue = value.target.value;
     }
+
     const newRows = formData.rows.map((row) => {
       if (row.id !== id) return row;
+
       const updatedRow = { ...row, [field]: actualValue };
-      let taxPercentValue = updatedRow.taxPercent;
-      if (
-        field !== "taxPercent" &&
-        typeof taxPercentValue === "object" &&
-        taxPercentValue?.value !== undefined
-      ) {
-        taxPercentValue = taxPercentValue.value;
-      }
-      const taxPercent = Number(taxPercentValue) || 0;
+      const taxPercent = Number(updatedRow.taxPercent || 0);
       const qty = Number(updatedRow.qty) || 0;
       const price = Number(updatedRow.price) || 0;
       const discountPercent = Number(updatedRow.discountPercent) || 0;
       const priceUnitType = String(updatedRow.priceUnitType || "Without Tax");
+
       let basicTotal = qty * price;
       const discountAmount = (basicTotal * discountPercent) / 100;
       let taxableAmount = basicTotal - discountAmount;
       let taxAmount = 0;
       let finalAmount = taxableAmount;
+
       if (priceUnitType === "Without Tax") {
         taxAmount = (taxableAmount * taxPercent) / 100;
         finalAmount = taxableAmount + taxAmount;
@@ -306,26 +310,30 @@ const SaleCreation = () => {
         taxAmount = (totalWithTax * taxPercent) / (100 + taxPercent);
         finalAmount = totalWithTax;
       }
+
       return {
         ...updatedRow,
-        taxPercent: taxPercent,
+        taxPercent,
         discountAmount: discountAmount.toFixed(2),
         taxAmount: taxAmount.toFixed(2),
         amount: finalAmount.toFixed(2),
       };
     });
+
     const newTotalAmountRaw = newRows.reduce(
       (a, r) => a + Number(r.amount || 0),
       0
     );
     let finalRound = 0;
     let newRoundOffAmount = formData.round_off_amount;
+
     if (formData.rount_off === 1) {
       if (!isManualRoundOff) {
         newRoundOffAmount = calculateAutoRoundOff(newTotalAmountRaw);
       }
       finalRound = Number(newRoundOffAmount);
     }
+
     const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({
       ...prev,
@@ -359,6 +367,7 @@ const SaleCreation = () => {
     );
     let roundOffAmt = "0";
     let finalRound = 0;
+
     if (checked === 1) {
       setIsManualRoundOff(false);
       roundOffAmt = calculateAutoRoundOff(newTotalAmountRaw);
@@ -366,6 +375,7 @@ const SaleCreation = () => {
     } else {
       setIsManualRoundOff(false);
     }
+
     const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({
       ...prev,
@@ -380,9 +390,15 @@ const SaleCreation = () => {
   };
 
   const handleSave = async () => {
-    if (!formData.parties_id) return alert("Please select or add a customer.");
-    if (!formData.invoice_no)
-      return alert("Please enter a unique Invoice Number.");
+    if (!formData.parties_id) {
+      alert("Please select or add a customer.");
+      return;
+    }
+    if (!formData.invoice_no) {
+      alert("Please enter a unique Invoice Number.");
+      return;
+    }
+
     try {
       const submitData = {
         ...formData,
@@ -390,6 +406,7 @@ const SaleCreation = () => {
         rount_off: formData.rount_off,
         round_off_amount: formData.round_off_amount || "0",
       };
+
       if (isEditMode) {
         submitData.edit_sales_id = id;
         await dispatch(updateSale(submitData)).unwrap();
@@ -398,6 +415,7 @@ const SaleCreation = () => {
         await dispatch(createSale(submitData)).unwrap();
         NotifyData("Sale Created Successfully", "success");
       }
+
       navigate("/Sale");
     } catch (error) {
       console.error("Save error:", error);
@@ -408,17 +426,18 @@ const SaleCreation = () => {
     }
   };
 
-  const handleBack = () => {
-    navigate("/Sale");
-  };
+  const handleBack = () => navigate("/Sale");
 
   const title = isViewMode
     ? "View Sale"
     : isEditMode
     ? "Edit Sale"
     : "Create Sale";
-
-  const isDisabled = isViewMode;
+  const unitOptions = UNITS.map((u) => ({ value: u, label: u }));
+  const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({
+    value: pt,
+    label: pt,
+  }));
 
   return (
     <div id="main">
@@ -506,13 +525,12 @@ const SaleCreation = () => {
                   onChange={(e) =>
                     handleInputChange("state_of_supply", e.target.value)
                   }
-                  options={stateOfSupplyOptions}
+                  options={STATE_OF_SUPPLY_OPTIONS}
                   disabled={isDisabled}
                 />
               </Col>
             </Row>
 
-            {/* Credit Toggle */}
             {!isViewMode && (
               <div className="mb-3">
                 <label className="me-2">Credit</label>
@@ -524,10 +542,9 @@ const SaleCreation = () => {
               </div>
             )}
 
-            {/* ITEMS TABLE */}
             <Row className="item-table-row mt-4">
               <Col>
-                <Table bordered responsive>
+                <Table bordered>
                   <thead>
                     <tr>
                       <th>Item</th>
@@ -567,7 +584,7 @@ const SaleCreation = () => {
                           <DropDown
                             value={row.unit}
                             onChange={(v) => onRowChange(row.id, "unit", v)}
-                            options={unitsOptions}
+                            options={unitOptions}
                             disabled={isDisabled}
                           />
                         </td>
@@ -587,7 +604,7 @@ const SaleCreation = () => {
                             onChange={(v) =>
                               onRowChange(row.id, "priceUnitType", v)
                             }
-                            options={priceUnitTypesOptions}
+                            options={priceUnitTypeOptions}
                             disabled={isDisabled}
                           />
                         </td>
@@ -612,15 +629,15 @@ const SaleCreation = () => {
                         <td>
                           <Select
                             value={
-                              taxOptionsFormatted.find(
+                              TAX_OPTIONS.find(
                                 (opt) =>
                                   String(opt.value) === String(row.taxPercent)
-                              ) || taxOptionsFormatted[0]
+                              ) || TAX_OPTIONS[0]
                             }
                             onChange={(v) =>
                               onRowChange(row.id, "taxPercent", v)
                             }
-                            options={taxOptionsFormatted}
+                            options={TAX_OPTIONS}
                             isDisabled={isDisabled}
                             menuPortalTarget={document.body}
                           />
@@ -667,7 +684,7 @@ const SaleCreation = () => {
                 </Table>
               </Col>
             </Row>
-            {/* PAYMENT + TOTAL */}
+
             <Row className="additional-actions mt-3 align-items-center">
               <Col xs={3}>
                 <DropDown
@@ -676,7 +693,7 @@ const SaleCreation = () => {
                   onChange={(e) =>
                     handleInputChange("payment_type", e.target.value)
                   }
-                  options={paymentOptions}
+                  options={PAYMENT_OPTIONS}
                   disabled={isDisabled}
                 />
               </Col>
@@ -698,7 +715,7 @@ const SaleCreation = () => {
                 <TextInputform readOnly value={formData.total} />
               </Col>
             </Row>
-            {/* Footer with Save Button */}
+
             {!isViewMode && (
               <Row className="py-3">
                 <Col className="d-flex justify-content-between align-items-end">

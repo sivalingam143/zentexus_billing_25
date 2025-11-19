@@ -1,36 +1,16 @@
-// Updated Sale.js (listing component without pagination)
+// Sale.js
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Container,
-  Row,
-  Col,
-  Button,
-  Dropdown,
-  InputGroup,
-  FormControl,
-  Table,
-  Form,
-} from "react-bootstrap";
-import {
-  FaFilter,
-  FaSearch,
-  FaChartBar,
-  FaPrint,
-  FaFileExcel,
-  FaEllipsisV,
-  FaReply,
-} from "react-icons/fa";
+import { Container, Row, Col, Button, Form, Table } from "react-bootstrap";
+import { FaSearch, FaChartBar, FaFileExcel, FaPrint } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import PageTitle from "../../components/PageTitle";
-import { ActionButton, Buttons } from "../../components/Buttons";
+import { searchSales, deleteSale } from "../../slice/saleSlice";
 import { TextInputform } from "../../components/Forms";
-import { FaMagnifyingGlass } from "react-icons/fa6";
 import TableUI from "../../components/TableUI";
+import { ActionButton } from "../../components/Buttons";
 import { MdOutlineDelete } from "react-icons/md";
 import { TbCircleLetterI } from "react-icons/tb";
 import { HiOutlineDotsVertical } from "react-icons/hi";
-import { searchSales, deleteSale } from "../../slice/saleSlice";
 import NotifyData from "../../components/NotifyData";
 
 const Sale = () => {
@@ -41,29 +21,18 @@ const Sale = () => {
   const [businessName, setBusinessName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
 
+  // Fetch initial sales
   useEffect(() => {
     dispatch(searchSales(searchTerm));
-  }, [dispatch]);
-
-  // Search handler (triggers on searchTerm change)
-  useEffect(() => {
-    dispatch(searchSales(searchTerm));
-  }, [searchTerm, dispatch]);
+  }, [dispatch, searchTerm]);
 
   // Navigation handlers
-  const handleCreate = () => {
-    navigate("/sale/create");
-  };
+  const handleCreate = () => navigate("/sale/create");
 
-  const handleEdit = (sale) => {
-    navigate(`/sale/edit/${sale.sale_id}`);
-  };
+  const handleEdit = (sale) => navigate(`/sale/edit/${sale.sale_id}`);
 
-  const handleView = (sale) => {
-    navigate(`/sale/view/${sale.sale_id}`);
-  };
+  const handleView = (sale) => navigate(`/sale/view/${sale.sale_id}`);
 
-  // Delete
   const handleDelete = async (saleId) => {
     if (!window.confirm("Are you sure you want to delete this sale?")) return;
     try {
@@ -76,7 +45,7 @@ const Sale = () => {
 
   const filteredSales = sales || [];
 
-  // Table Data (adapted to match your original table structure)
+  // Table configuration
   const SaleHead = [
     "Date",
     "Invoice No",
@@ -87,8 +56,9 @@ const Sale = () => {
     "Balance",
     "Status",
   ];
+
   const SaleData =
-    filteredSales?.length > 0
+    filteredSales.length > 0
       ? filteredSales.map((item) => ({
           values: [
             item.invoice_date || "-",
@@ -98,7 +68,7 @@ const Sale = () => {
             item.payment_type || "Cash",
             `₹ ${Number(item.total || 0).toFixed(2)}`,
             "₹ 0",
-            <Form.Select size="sm" defaultValue="Paid">
+            <Form.Select size="sm" defaultValue="Paid" key="status">
               <option>Paid</option>
               <option>Unpaid</option>
             </Form.Select>,
@@ -131,8 +101,8 @@ const Sale = () => {
       <Container fluid className="py-5">
         <Row>
           <Col xl={12}>
-            {/* Business Name Row - Adapted from original */}
-            <div className=" d-flex align-items-center">
+            {/* Business Name Row */}
+            <div className="d-flex align-items-center">
               <span
                 style={{ color: "red", fontWeight: "bold", fontSize: "1.5rem" }}
               >
@@ -160,9 +130,7 @@ const Sale = () => {
                       fontSize: "1rem",
                       width: "250px",
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") setIsEditing(false);
-                    }}
+                    onKeyDown={(e) => e.key === "Enter" && setIsEditing(false)}
                   />
                   <Button
                     variant="info"
@@ -232,27 +200,25 @@ const Sale = () => {
               </div>
             </div>
 
-            {/* Sale invoices heading - Adapted */}
+            {/* Sale Invoices Header */}
             <Row className="sale-invoice-header align-items-center mb-3">
               <Col className="d-flex align-items-center gap-1">
                 <h5 className="m-0">Sale Invoices</h5>
-                {/* Dropdown for invoice types - simplified */}
               </Col>
             </Row>
 
-            {/* Filters - Adapted with search */}
+            {/* Filters */}
             <Row className="filters align-items-center mb-3">
-              <Col lg="3" className="align-self-center">
+              <Col lg={3} className="align-self-center">
                 <TextInputform
                   PlaceHolder="Search by Name"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </Col>
-              {/* Other filters from original - date, period, etc. can be added similarly */}
             </Row>
 
-            {/* Sales amount card - Static for now */}
+            {/* Total Sales Amount Card */}
             <Row className="mb-4 sale-amount-card">
               <Col>
                 <div className="amount-card">
@@ -268,7 +234,7 @@ const Sale = () => {
               </Col>
             </Row>
 
-            {/* Transactions header */}
+            {/* Transactions Header */}
             <Row className="transactions-header align-items-center mb-2">
               <Col>
                 <div className="transactions-title">Transactions</div>
@@ -290,7 +256,7 @@ const Sale = () => {
             </Row>
 
             {/* Table */}
-            <Col lg="12" xs="12">
+            <Col lg={12} xs={12}>
               <TableUI
                 headers={SaleHead}
                 body={SaleData}
