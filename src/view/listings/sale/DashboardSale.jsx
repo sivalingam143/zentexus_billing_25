@@ -28,7 +28,6 @@ import {
 // STATIC OPTIONS
 const units = ["NONE", "KG", "Litre", "Piece"];
 const priceUnitTypes = ["Without Tax", "With Tax"];
-const taxOptions = ["Select", "5%", "12%", "18%", "28%"];
 const initialRows = [
   {
     id: 1,
@@ -38,20 +37,23 @@ const initialRows = [
     priceUnitType: "Without Tax",
     price: "",
     discountPercent: "",
-    discountAmount: "",
+    discountAmount: "0.00",
     taxPercent: "",
-    taxAmount: "",
-    amount: "",
+    taxAmount: "0.00",
+    amount: "0.00",
   },
 ];
 
+const taxOptionsFormatted = [
+  { value: "", label: "Select" },
+  { value: 0, label: "0%" },
+  { value: 5, label: "5%" },
+  { value: 12, label: "12%" },
+  { value: 18, label: "18%" },
+  { value: 28, label: "28%" },
+];
 const unitsOptions = units.map((u) => ({ value: u, label: u }));
 const priceUnitTypesOptions = priceUnitTypes.map((pt) => ({ value: pt, label: pt }));
-const taxOptionsFormatted = taxOptions.map((t) => ({
-  value: t === "Select" ? "" : t,
-  label: t,
-}));
-
 const defaultCustomers = [{ value: "", label: "Select Party" }];
 const stateOfSupplyOptions = [
   { value: "", label: "Select" },
@@ -147,8 +149,8 @@ const DashboardSale = () => {
             price: String(item.price || ""),
             discountPercent: String(item.discountPercent || ""),
             discountAmount: String(item.discountAmount || ""),
-            taxPercent: item.taxPercent ? `${item.taxPercent}%` : "",
-            taxAmount: String(item.taxAmount || ""),
+            taxPercent: Number(item.taxPercent) || 0,   // ← THIS IS KEY: Store as NUMBER
+        taxAmount: String(item.taxAmount || "0.00"),
             amount: String(item.amount || ""),
           }));
           setRows(rowsWithId);
@@ -183,57 +185,79 @@ const DashboardSale = () => {
     setRows([...rows, { ...initialRows[0], id: newId }]);
   };
 
-  const onRowChange = (id, field, value) => {
+
+const onRowChange = (id, field, value) => {
   setRows((prevRows) =>
     prevRows.map((row) => {
       if (row.id !== id) return row;
 
-      // === SAFELY EXTRACT THE REAL VALUE FROM DROPDOWN ===
+      // --- START: Universal Value Extraction ---
       let actualValue = value;
-
-      // DropDown components (Tax, Unit, Price Type) send { value: "...", label: "..." }
-      if (value && typeof value === "object" && value !== null && "value" in value) {
-        actualValue = value.value ?? "";
+      
+      // 1. Handle react-select/DropDown object: Extract the numerical/string value if it's an object
+      if (value && typeof value === "object" && value.value !== undefined) {
+        actualValue = value.value;
+      } 
+      // 2. Handle standard HTML event object from TextInputform: Extract the target value
+      else if (value && typeof value === "object" && value.target?.value !== undefined) {
+        actualValue = value.target.value;
       }
-      // If user clears the dropdown, value might be null/undefined
-      if (actualValue === null || actualValue === undefined) {
-        actualValue = "";
-      }
-
+      
       const updatedRow = { ...row, [field]: actualValue };
+      // --- END: Universal Value Extraction ---
 
-      // === NOW DO CALCULATIONS ===
+      // --- START: Tax Percent Retrieval ---
+      let taxPercentValue = updatedRow.taxPercent;
+      
+      // If taxPercent is coming in as an object (e.g., from prefill/edit) and we're not editing the field
+      if (field !== "taxPercent" && typeof taxPercentValue === "object" && taxPercentValue?.value !== undefined) {
+        taxPercentValue = taxPercentValue.value;
+      }
+      
+      // Ensure taxPercent is always a number for calculation
+      const taxPercent = Number(taxPercentValue) || 0;
+      // --- END: Tax Percent Retrieval ---
+
+      // Parse other values
       const qty = Number(updatedRow.qty) || 0;
       const price = Number(updatedRow.price) || 0;
       const discountPercent = Number(updatedRow.discountPercent) || 0;
+      
+      // The priceUnitType should now be a string, not an object/event
+      const priceUnitType = String(updatedRow.priceUnitType || "Without Tax"); 
+      
+      // Step 1: Basic total
+      let basicTotal = qty * price;
 
-      // Discount Amount
-      const discountAmount = discountPercent
-        ? (qty * price * discountPercent) / 100
-        : 0;
+      // Step 2: Discount
+      const discountAmount = (basicTotal * discountPercent) / 100;
+      let taxableAmount = basicTotal - discountAmount;
 
-      // Taxable Amount (after discount)
-      const taxableAmount = qty * price - discountAmount;
+      let taxAmount = 0;
+      let finalAmount = taxableAmount; // Start with taxable amount
 
-      // === SAFELY EXTRACT TAX PERCENT ===
-      let taxPercentStr = updatedRow.taxPercent || "";
-      // In case it's still an object (edge case)
-      if (typeof taxPercentStr === "object" && taxPercentStr?.value !== undefined) {
-        taxPercentStr = taxPercentStr.value || "";
+      // Step 3: Tax Calculation
+      if (priceUnitType === "Without Tax") {
+        // Price is exclusive → Add tax on top
+        taxAmount = (taxableAmount * taxPercent) / 100;
+        finalAmount = taxableAmount + taxAmount;
+      } else {
+        // "With Tax" → Price is inclusive → Calculate tax backwards
+        const totalWithTax = taxableAmount;
+        // Formula: Tax Amount = Total With Tax * (Tax Rate / (100 + Tax Rate))
+        taxAmount = (totalWithTax * taxPercent) / (100 + taxPercent); 
+        finalAmount = totalWithTax; // Final amount is the totalWithTax (which is taxableAmount)
+        // Recalculate the true taxable amount if needed: taxableAmount = totalWithTax - taxAmount;
       }
-      // Remove % and convert to number
-      const taxPercent = Number(taxPercentStr.toString().replace("%", "")) || 0;
 
-      // Tax Amount & Final Amount
-      const taxAmount = (taxableAmount * taxPercent) / 100;
-      const amount = taxableAmount + taxAmount;
-
-      // Update row
-      updatedRow.discountAmount = discountAmount.toFixed(2);
-      updatedRow.taxAmount = taxAmount.toFixed(2);
-      updatedRow.amount = amount.toFixed(2);
-
-      return updatedRow;
+      return {
+        ...updatedRow,
+        // *** FIX 1: Save the numerical taxPercent back to the state ***
+        taxPercent: taxPercent, 
+        discountAmount: discountAmount.toFixed(2),
+        taxAmount: taxAmount.toFixed(2),
+        amount: finalAmount.toFixed(2),
+      };
     })
   );
 };
@@ -251,18 +275,22 @@ const DashboardSale = () => {
     if (!customer) return alert("Please select or add a customer.");
     if (!invoiceNumber) return alert("Please enter a unique Invoice Number.");
 
-    const productsArray = rows.map(r => ({
-      item: r.item,
-      qty: Number(r.qty),
-      unit: r.unit,
-      price: Number(r.price),
-      discountPercent: Number(r.discountPercent),
-      discountAmount: Number(r.discountAmount),
-      taxPercent: Number(r.taxPercent.replace("%", "")),
-      taxAmount: Number(r.taxAmount),
-      amount: Number(r.amount),
-    }));
-
+ // ... in handleSave
+const productsArray = rows.map((r) => ({
+    item: r.item,
+    qty: r.qty,
+    unit: r.unit,
+    price: r.price,
+    // FIX 2: priceUnitType is now guaranteed to be a string from onRowChange
+    priceUnitType: r.priceUnitType, 
+    discountPercent: r.discountPercent,
+    discountAmount: r.discountAmount,
+    // FIX 3: taxPercent is now guaranteed to be a number from onRowChange
+    taxPercent: Number(r.taxPercent || 0), 
+    taxAmount: r.taxAmount,
+    amount: r.amount,
+  }));
+// ...s
     const saleData = {
       invoice_no: invoiceNumber,
       parties_id: customer,
@@ -277,7 +305,7 @@ const DashboardSale = () => {
       total: totalAmount.toFixed(2),
       payment_type: paymentType,
     };
-
+    console.log("saledata",saleData);
     if (isEditMode) saleData.edit_sales_id = saleToEdit.sale_id;
 
     try {
@@ -355,7 +383,7 @@ const DashboardSale = () => {
               </Row>
             )}
           </Col>
-          <Col md={3}>
+          <Col md={3} style={{ zIndex: 100 }}>
             <TextInputform formLabel="Invoice Number" value={invoiceNumber} onChange={isViewMode ? undefined : (e) => setInvoiceNumber(e.target.value)} readOnly={isViewMode} />
             <Calender calenderlabel="Invoice Date" initialDate={invoiceDate} setLabel={isViewMode ? undefined : setInvoiceDate} />
             <DropDown textlabel="State of supply" value={stateOfSupply} onChange={isViewMode ? undefined : setStateOfSupply} options={stateOfSupplyOptions} disabled={isViewMode} />
@@ -364,7 +392,7 @@ const DashboardSale = () => {
 
         {/* ITEMS TABLE */}
         <Row className="item-table-row mt-4">
-          <Col>
+          <Col style={{ overflow: 'visible', zIndex: 10 }}>
             <Table bordered hover size="sm" responsive>
               <thead>
                 <tr>
@@ -393,10 +421,35 @@ const DashboardSale = () => {
                         <FormControl value={row.discountAmount} readOnly />
                       </InputGroup>
                     </td>
+                    
                     <td>
-                      <DropDown value={row.taxPercent} onChange={isViewMode ? undefined : v => onRowChange(row.id, "taxPercent", v)} options={taxOptionsFormatted} disabled={isViewMode} />
-                      <TextInputform readOnly value={row.taxAmount} />
+                      {/* FINAL FIX: Uses Select for visibility, correct value logic for enablement, and menuPortal for no clipping */}
+                      <Select
+                          // The key to enabling options: Match the state value to a full option object
+                          value={
+                            taxOptionsFormatted.find(opt => 
+                              // Convert both sides to string for a reliable match ("" to "", 0 to "0", 5 to "5")
+                              String(opt.value) === String(row.taxPercent)
+                            ) || taxOptionsFormatted[0]
+                          }
+                          onChange={(v) => onRowChange(row.id, "taxPercent", v)}
+                          options={taxOptionsFormatted}
+                          isDisabled={isViewMode}
+                          // Renders the menu outside the table to prevent clipping
+                          menuPortalTarget={document.body} 
+                          styles={{
+                              control: (provided) => ({ ...provided, minHeight: '30px' }),
+                              valueContainer: (provided) => ({ ...provided, padding: '0 8px' }),
+                              input: (provided) => ({ ...provided, margin: '0px' }),
+                              indicatorsContainer: (provided) => ({ ...provided, height: '30px' }),
+                              menuPortal: (base) => ({ ...base, zIndex: 9999 }), // Ensures it appears on top
+                          }}
+                      />
+ 
+                      <TextInputform readOnly value={row.taxAmount || "0.00"} />
                     </td>
+
+
                     <td><TextInputform readOnly value={row.amount} /></td>
                     <td>
                       {!isViewMode && <Button variant="danger" size="sm" onClick={() => deleteRow(row.id)}><FaTimes /></Button>}
@@ -464,453 +517,3 @@ const DashboardSale = () => {
 };
 
 export default DashboardSale;
-
-
-// import React, { useState, useEffect, useCallback } from "react";
-// import {
-//   Container,
-//   Row,
-//   Col,
-//   Form,
-//   Button,
-//   InputGroup,
-//   FormControl,
-//   Table,
-// } from "react-bootstrap";
-// import { FaTimes, FaPlus } from "react-icons/fa";
-// import { useNavigate, useLocation } from "react-router-dom";
-// import "bootstrap/dist/css/bootstrap.min.css";
-// import { getParties, addOrUpdateSale } from "../../../services/saleService";
-// import Select from "react-select";
-// import PartyModal from "../Parties/PartyModal";
-// import { useDispatch, useSelector } from "react-redux";
-// import { fetchParties } from "../../../slice/saleSlice";
-
-// import {
-//   TextInputform,
-//   TextArea,
-//   DropDown,
-//   Calender,
-// } from "../../../components/Forms";
-
-// // STATIC OPTIONS
-// const units = ["NONE", "KG", "Litre", "Piece"];
-// const priceUnitTypes = ["Without Tax", "With Tax"];
-// const taxOptions = ["Select", "5%", "12%", "18%", "28%"];
-
-// const initialRows = [
-//   {
-//     id: 1,
-//     item: "",
-//     qty: "",
-//     unit: "NONE",
-//     priceUnitType: "Without Tax",
-//     price: "",
-//     discountPercent: "",
-//     discountAmount: "0.00",
-//     taxPercent: "",
-//     taxAmount: "0.00",
-//     amount: "0.00",
-//   },
-// ];
-
-// const unitsOptions = units.map((u) => ({ value: u, label: u }));
-// const priceUnitTypesOptions = priceUnitTypes.map((pt) => ({ value: pt, label: pt }));
-// const taxOptionsFormatted = taxOptions.map((t) => ({
-//   value: t === "Select" ? "" : t,
-//   label: t,
-// }));
-
-// const defaultCustomers = [{ value: "", label: "Select Party" }];
-// const stateOfSupplyOptions = [
-//   { value: "", label: "Select" },
-//   { value: "AndraPradesh", label: "AndraPradesh" },
-//   { value: "Kerala", label: "Kerala" },
-//   { value: "Karnataka", label: "Karnataka" },
-//   { value: "Maharastra", label: "Maharastra" },
-//   { value: "Delhi", label: "Delhi" },
-//   { value: "Mumbai", label: "Mumbai" },
-//   { value: "punjab", label: "punjab" },
-//   { value: "bihar", label: "bihar" },
-// ];
-
-// const DashboardSale = () => {
-//   const navigate = useNavigate();
-//   const location = useLocation();
-//   const saleToEdit = location.state?.sale || location.state?.saleData || null;
-//   const isViewMode = location.state?.isViewMode || location.state?.readOnly || false;
-
-//   const [credit, setCredit] = useState(true);
-//   const [customer, setCustomer] = useState("");
-//   const [phone, setPhone] = useState("");
-//   const [billingAddress, setBillingAddress] = useState("");
-//   const [shippingAddress, setShippingAddress] = useState("");
-//   const [invoiceNumber, setInvoiceNumber] = useState("");
-//   const [invoiceDate, setInvoiceDate] = useState("");
-//   const [stateOfSupply, setStateOfSupply] = useState("");
-//   const [rows, setRows] = useState(initialRows);
-//   const [roundOff, setRoundOff] = useState(0);
-//   const [isRoundOffEnabled, setIsRoundOffEnabled] = useState(false);
-//   const [customers, setCustomers] = useState(defaultCustomers);
-//   const [allParties, setAllParties] = useState([]);
-//   const [showPartyModal, setShowPartyModal] = useState(false);
-//   const [paymentType, setPaymentType] = useState("");
-//   const [isEditMode, setIsEditMode] = useState(!!saleToEdit && !isViewMode);
-
-//   const dispatch = useDispatch();
-//   const partyStatus = useSelector((state) => state.parties?.status || "idle");
-
-//   // Set today's date by default
-//   useEffect(() => {
-//     if (!invoiceDate && !saleToEdit) {
-//       setInvoiceDate(new Date().toISOString().split("T")[0]); // Today: 2025-11-18
-//     }
-//   }, [invoiceDate, saleToEdit]);
-
-//   const fetchAndSetParties = useCallback(async () => {
-//     try {
-//       const parties = await getParties();
-//       setAllParties(parties);
-//       const customerOptions = parties.map((p) => ({
-//         value: p.id,
-//         label: p.name,
-//       }));
-//       setCustomers([
-//         { value: "", label: "Select Party" },
-//         { value: "add_party", label: "+ Add Party" },
-//         ...customerOptions,
-//       ]);
-//     } catch (err) {
-//       console.error("Failed to fetch parties:", err);
-//     }
-//   }, []);
-
-//   useEffect(() => {
-//     fetchAndSetParties();
-//   }, [fetchAndSetParties]);
-
-//   useEffect(() => {
-//     if (partyStatus === "idle") dispatch(fetchParties());
-//   }, [partyStatus, dispatch]);
-
-//   // PREFILL ON EDIT/VIEW
-//   useEffect(() => {
-//     if (!saleToEdit) return;
-
-//     setCustomer(saleToEdit.parties_id || "");
-//     setInvoiceNumber(saleToEdit.invoice_no || "");
-//     setInvoiceDate(saleToEdit.invoice_date || "");
-//     setBillingAddress(saleToEdit.billing_address || "");
-//     setShippingAddress(saleToEdit.shipping_address || "");
-//     setStateOfSupply(saleToEdit.state_of_supply || "");
-//     setPhone(saleToEdit.phone || "");
-//     setPaymentType(saleToEdit.payment_type || "");
-
-//     const roundOffVal = Number(saleToEdit.round_off || saleToEdit.rount_off || 0);
-//     setRoundOff(roundOffVal);
-//     setIsRoundOffEnabled(roundOffVal !== 0);
-
-//     if (saleToEdit.products) {
-//       try {
-//         const items = JSON.parse(saleToEdit.products);
-//         if (Array.isArray(items)) {
-//           const loaded = items.map((it, i) => ({
-//             id: i + 1,
-//             item: it.item || "",
-//             qty: String(it.qty || ""),
-//             unit: it.unit || "NONE",
-//             priceUnitType: it.priceUnitType || "Without Tax",
-//             price: String(it.price || ""),
-//             discountPercent: String(it.discountPercent || ""),
-//             discountAmount: String(it.discountAmount || "0.00"),
-//             taxPercent: it.taxPercent > 0 ? `${it.taxPercent}%` : "",
-//             taxAmount: String(it.taxAmount || "0.00"),
-//             amount: String(it.amount || "0.00"),
-//           }));
-//           setRows(loaded.length > 0 ? loaded : initialRows);
-//         }
-//       } catch (e) {
-//         console.error("Parse error:", e);
-//       }
-//     }
-//   }, [saleToEdit]);
-
-//   const handlePartySelect = (opt) => {
-//     if (!opt) return setCustomer("");
-//     if (opt.value === "add_party") return setShowPartyModal(true);
-//     const party = allParties.find((p) => p.id === opt.value);
-//     setCustomer(opt.value);
-//     setPhone(party?.phone || "");
-//     setBillingAddress(party?.billing_address || "");
-//     setShippingAddress(party?.shipping_address || "");
-//     setStateOfSupply(party?.state_of_supply || "");
-//   };
-
-//   const closePartyModel = (added = false) => {
-//     setShowPartyModal(false);
-//     if (added) fetchAndSetParties();
-//   };
-
-//   const toggleCredit = () => setCredit(!credit);
-
-//   const addRow = () => {
-//     const newId = rows.length ? Math.max(...rows.map((r) => r.id)) + 1 : 1;
-//     setRows([...rows, { ...initialRows[0], id: newId }]);
-//   };
-
-//   const deleteRow = (id) => setRows(rows.filter((r) => r.id !== id));
-
-//   // FIXED: Perfect calculation + handles DropDown objects
-//   const onRowChange = (id, field, value) => {
-//     setRows((prev) =>
-//       prev.map((row) => {
-//         if (row.id !== id) return row;
-
-//         let val = value;
-//         if (value && typeof value === "object" && value.value !== undefined) {
-//           val = value.value;
-//         }
-
-//         const r = { ...row, [field]: val };
-
-//         const qty = Number(r.qty) || 0;
-//         const price = Number(r.price) || 0;
-//         const discPct = Number(r.discountPercent) || 0;
-
-//         const discAmt = discPct ? (qty * price * discPct) / 100 : 0;
-//         r.discountAmount = discAmt.toFixed(2);
-
-//         const taxable = qty * price - discAmt;
-
-//         let taxStr = r.taxPercent || "";
-//         if (typeof taxStr === "object") taxStr = taxStr.value || "";
-//         const taxPct = Number(taxStr.toString().replace("%", "")) || 0;
-
-//         const taxAmt = (taxable * taxPct) / 100;
-//         const amt = taxable + taxAmt;
-
-//         r.taxAmount = taxAmt.toFixed(2);
-//         r.amount = amt.toFixed(2);
-
-//         return r;
-//       })
-//     );
-//   };
-
-//   // TOTALS
-//   const totalQty = rows.reduce((a, r) => a + (Number(r.qty) || 0), 0);
-//   const totalDiscount = rows.reduce((a, r) => a + Number(r.discountAmount || 0), 0);
-//   const totalTax = rows.reduce((a, r) => a + Number(r.taxAmount || 0), 0);
-//   const totalAmountRaw = rows.reduce((a, r) => a + Number(r.amount || 0), 0);
-//   const finalRound = isRoundOffEnabled ? Number(roundOff || 0) : 0;
-//   const grandTotal = totalAmountRaw + finalRound;
-
-//   // FIXED: Correct payload for secure backend
-//   const handleSave = async () => {
-//     if (!customer) return alert("Please select customer");
-//     if (!invoiceNumber) return alert("Invoice number required");
-
-//     const productsArray = rows.map((r) => ({
-//       item: r.item || "",
-//       qty: Number(r.qty) || 0,
-//       unit: r.unit || "NONE",
-//       price: Number(r.price) || 0,
-//       priceUnitType: r.priceUnitType || "Without Tax",
-//       discountPercent: Number(r.discountPercent) || 0,
-//       discountAmount: Number(r.discountAmount) || 0,
-//       taxPercent: Number((r.taxPercent || "").replace("%", "")) || 0,
-//       taxAmount: Number(r.taxAmount) || 0,
-//       amount: Number(r.amount) || 0,
-//     }));
-
-//     const payload = {
-//       invoice_no: invoiceNumber,
-//       parties_id: customer,
-//       name: allParties.find((p) => p.id === customer)?.name || "",
-//       phone: phone || "",
-//       billing_address: billingAddress || "",
-//       shipping_address: shippingAddress || "",
-//       invoice_date: invoiceDate || "",
-//       state_of_supply: stateOfSupply || "",
-//       products: JSON.stringify(productsArray),
-//       round_off: finalRound,           // Correct field name
-//       payment_type: paymentType || "",
-//     };
-
-//     if (isEditMode) {
-//       payload.edit_sales_id = saleToEdit.sale_id;
-//     }
-
-//     try {
-//       const result = await addOrUpdateSale(payload);
-//       if (result?.head?.code === 200) {
-//         alert(`Sale ${isEditMode ? "updated" : "created"} successfully!`);
-//         navigate("/sale");
-//       } else {
-//         alert(result?.head?.msg || "Failed to save sale");
-//       }
-//     } catch (err) {
-//       console.error(err);
-//       alert("Network error");
-//     }
-//   };
-
-//   return (
-//     <div id="main" style={{ backgroundColor: "#DEE2E6", minHeight: "100vh" }}>
-//       <Container fluid className="dashboard-sale-container">
-//         {/* HEADER */}
-//         <Row className="sale-header align-items-center mt-5">
-//           <Col xs="auto" className="d-flex align-items-center">
-//             <h5 className="mb-0 me-2" style={{ fontWeight: "bold" }}>
-//               {isViewMode ? "View Sale" : isEditMode ? "Edit Sale" : "Sale"}
-//             </h5>
-//             {!isViewMode && (
-//               <>
-//                 <input type="checkbox" checked={credit} onChange={toggleCredit} />
-//                 <span onClick={toggleCredit} style={{ cursor: "pointer", marginLeft: "5px" }}>Credit</span>
-//                 <span onClick={() => setCredit(false)} style={{ cursor: "pointer", marginLeft: "15px" }}>Cash</span>
-//               </>
-//             )}
-//           </Col>
-//           <Col xs="auto" className="ms-auto">
-//             <Button variant="light" onClick={() => navigate("/sale")}><FaTimes /></Button>
-//           </Col>
-//         </Row>
-
-//         {/* CUSTOMER INFO */}
-//         <Row className="mb-3">
-//           <Col md={9}>
-//             <Row className="mb-3">
-//               <Col md={6}>
-//                 <label>Customer Name</label>
-//                 <div className="d-flex gap-2">
-//                   <Select
-//                     options={customers}
-//                     value={customers.find((o) => o.value === customer) || null}
-//                     onChange={isViewMode ? undefined : handlePartySelect}
-//                     placeholder="Select Customer"
-//                     isClearable
-//                     isDisabled={isViewMode}
-//                   />
-//                   {!isViewMode && <Button onClick={() => setShowPartyModal(true)}><FaPlus /></Button>}
-//                 </div>
-//               </Col>
-//               <Col md={6}>
-//                 <TextInputform formLabel="Phone Number" formtype="tel" value={phone} onChange={isViewMode ? undefined : (e) => setPhone(e.target.value)} readOnly={isViewMode} />
-//               </Col>
-//             </Row>
-//             {credit && (
-//               <Row className="mb-3">
-//                 <Col md={6}>
-//                   <TextArea textlabel="Billing Address" value={billingAddress} onChange={isViewMode ? undefined : (e) => setBillingAddress(e.target.value)} readOnly={isViewMode} />
-//                 </Col>
-//                 <Col md={6}>
-//                   <TextArea textlabel="Shipping Address" value={shippingAddress} onChange={isViewMode ? undefined : (e) => setShippingAddress(e.target.value)} readOnly={isViewMode} />
-//                 </Col>
-//               </Row>
-//             )}
-//           </Col>
-//           <Col md={3}>
-//             <TextInputform formLabel="Invoice Number" value={invoiceNumber} onChange={isViewMode ? undefined : (e) => setInvoiceNumber(e.target.value)} readOnly={isViewMode} />
-//             <Calender calenderlabel="Invoice Date" initialDate={invoiceDate} setLabel={isViewMode ? undefined : setInvoiceDate} />
-//             <DropDown textlabel="State of supply" value={stateOfSupply} onChange={isViewMode ? undefined : setStateOfSupply} options={stateOfSupplyOptions} disabled={isViewMode} />
-//           </Col>
-//         </Row>
-
-//         {/* TABLE */}
-//         <Row className="item-table-row mt-4">
-//           <Col>
-//             <Table bordered hover size="sm" responsive>
-//               <thead>
-//                 <tr>
-//                   <th>Item</th>
-//                   <th>Qty</th>
-//                   <th>Unit</th>
-//                   <th>Price/Unit</th>
-//                   <th>Price Unit Type</th>
-//                   <th>Discount %</th>
-//                   <th>Tax</th>
-//                   <th>Amount</th>
-//                   <th>Actions</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {rows.map((row) => (
-//                   <tr key={row.id}>
-//                     <td><TextInputform value={row.item} onChange={isViewMode ? undefined : (e) => onRowChange(row.id, "item", e.target.value)} readOnly={isViewMode} /></td>
-//                     <td><TextInputform formtype="number" value={row.qty} onChange={isViewMode ? undefined : (e) => onRowChange(row.id, "qty", e.target.value)} readOnly={isViewMode} /></td>
-//                     <td><DropDown value={row.unit} onChange={isViewMode ? undefined : (v) => onRowChange(row.id, "unit", v)} options={unitsOptions} disabled={isViewMode} /></td>
-//                     <td><TextInputform formtype="number" value={row.price} onChange={isViewMode ? undefined : (e) => onRowChange(row.id, "price", e.target.value)} readOnly={isViewMode} /></td>
-//                     <td><DropDown value={row.priceUnitType} onChange={isViewMode ? undefined : (v) => onRowChange(row.id, "priceUnitType", v)} options={priceUnitTypesOptions} disabled={isViewMode} /></td>
-//                     <td>
-//                       <InputGroup size="sm">
-//                         <FormControl type="number" value={row.discountPercent} onChange={isViewMode ? undefined : (e) => onRowChange(row.id, "discountPercent", e.target.value)} readOnly={isViewMode} />
-//                         <FormControl value={row.discountAmount} readOnly />
-//                       </InputGroup>
-//                     </td>
-//                     <td>
-//                       <DropDown value={row.taxPercent} onChange={isViewMode ? undefined : (v) => onRowChange(row.id, "taxPercent", v)} options={taxOptionsFormatted} disabled={isViewMode} />
-//                       <TextInputform readOnly value={row.taxAmount} />
-//                     </td>
-//                     <td><TextInputform readOnly value={row.amount} /></td>
-//                     <td>{!isViewMode && <Button variant="danger" size="sm" onClick={() => deleteRow(row.id)}><FaTimes /></Button>}</td>
-//                   </tr>
-//                 ))}
-//                 {!isViewMode && (
-//                   <tr>
-//                     <td colSpan="9"><Button size="sm" onClick={addRow}><FaPlus /> ADD ROW</Button></td>
-//                   </tr>
-//                 )}
-//                 <tr>
-//                   <td colSpan="2"><strong>TOTAL</strong></td>
-//                   <td><strong>{totalQty}</strong></td>
-//                   <td colSpan="2"></td>
-//                   <td><strong>{totalDiscount.toFixed(2)}</strong></td>
-//                   <td><strong>{totalTax.toFixed(2)}</strong></td>
-//                   <td><strong>{totalAmountRaw.toFixed(2)}</strong></td>
-//                   <td></td>
-//                 </tr>
-//               </tbody>
-//             </Table>
-//           </Col>
-//         </Row>
-
-//         <Row className="mt-4 align-items-center">
-//           <Col md={3}>
-//             <Form.Label>Payment Type</Form.Label>
-//             <Form.Select value={paymentType} onChange={isViewMode ? undefined : (e) => setPaymentType(e.target.value)} disabled={isViewMode}>
-//               <option>Phone Pay</option>
-//               <option>Cash</option>
-//               <option>G-pay</option>
-//             </Form.Select>
-//           </Col>
-//           <Col className="d-flex justify-content-end gap-3 align-items-center">
-//             <div className="d-flex align-items-center gap-2">
-//               <input type="checkbox" checked={isRoundOffEnabled} onChange={(e) => !isViewMode && setIsRoundOffEnabled(e.target.checked)} disabled={isViewMode} />
-//               <span>Round Off</span>
-//             </div>
-//             <TextInputform formtype="number" value={roundOff} readOnly={!isRoundOffEnabled || isViewMode} onChange={(e) => setRoundOff(e.target.value)} />
-//             <strong>Total: </strong>
-//             <TextInputform readOnly value={grandTotal.toFixed(2)} style={{ width: "120px" }} />
-//           </Col>
-//         </Row>
-
-//         {!isViewMode && (
-//           <Row className="mt-4">
-//             <Col className="text-end">
-//               <Button variant="outline-primary" size="lg" onClick={handleSave}>
-//                 {isEditMode ? "Update Sale" : "Save"}
-//               </Button>
-//             </Col>
-//           </Row>
-//         )}
-//       </Container>
-
-//       <PartyModal show={showPartyModal} handleClose={closePartyModel} />
-//     </div>
-//   );
-// };
-
-// export default DashboardSale;
-
-
