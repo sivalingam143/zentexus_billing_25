@@ -6,7 +6,7 @@ import {
   Col,
   Modal,
   Form,
-  ToggleButton,
+  
 } from "react-bootstrap";
 import DatePicker from "react-datepicker";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -15,6 +15,7 @@ import "./items.css";
 
 function AdjustItem({ show, onHide, itemName = "sampleee" }) {
   const [type, setType] = useState("add");
+    const [stock, setStock] = useState("no");
   // const [qty, setQty] = useState("");
   // const [price, setPrice] = useState("");
   // const [details, setDetails] = useState("");
@@ -35,13 +36,13 @@ function AdjustItem({ show, onHide, itemName = "sampleee" }) {
           <div className="d-flex align-items-center gap-3">
             <div  className="position-absolute start-50 translate-middle-x d-flex align-items-center"
             style={{ gap: "10px" }} role="group">
-              <ToggleButton
+              {/* <ToggleButton
                 variant={type === "add" ? "primary" : "outline-primary"}
                 size="sm"
                 onClick={() => setType("add")}
               >
-                Add Stock
-              </ToggleButton>
+                Add Stock */}
+              {/* </ToggleButton>
               <div
             className="px-2"
             style={{
@@ -59,15 +60,82 @@ function AdjustItem({ show, onHide, itemName = "sampleee" }) {
                 onClick={() => setType("reduce")}
               >
                 Reduce Stock
-              </ToggleButton>
+              </ToggleButton> */}
+<div
+                  className="d-flex position-relative mt-2"
+                  style={{
+                    marginLeft:"0",
+                    width: "290px",
+                    borderRadius: "50px",
+                    padding: "2px",
+                    justifyContent: "space-between",
+                    backgroundColor: "#e9f3ff",
+                  }}
+                >
+                  <div
+                    className="position-absolute bg-primary"
+                    style={{
+                      width: "130px",
+                      height: "85%",
+                      borderRadius: "50px",
+                      transition: "transform 0.3s",
+                      transform:
+                        stock === "no"
+                          ? "translateX(0%)"
+                          : "translateX(calc(100% + 24px))",
+                    }}
+                  ></div>
+               <Button 
+                                  variant="transparent"
+                                  className={`flex-grow-1 ${
+                                    stock === "no" ? "text-white" : "text-primary"
+                                  }`}
+                                  onClick={() => setStock("no")}
+                                  style={{
+                                    zIndex: 1,
+                                    borderRadius: "50px",
+                                    width: "130px",
+                                  }}
+                                >
+                                  reduce stock
+                                </Button>
+              
+                                <div
+                                  className="px-1"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    color: "#0d6efd",
+                                    fontSize: "1.2rem",
+                                    zIndex: 1,
+                                  }}
+                                >
+                                  ⇄
+                                </div>
+              
+                                <Button
+                                  variant="transparent"
+                                  className={`flex-grow-1 ${
+                                    stock === "add" ? "text-white" : "text-primary"
+                                  }`}
+                                  onClick={() => setStock("add")}
+                                  style={{
+                                    zIndex: 1,
+                                    borderRadius: "50px",
+                                    width: "130px",
+                                  }}
+                                >
+                                  add stock
+                                </Button>
             </div>
 
-            <Button variant="light" size="sm" onClick={onHide}>
-              ×
-            </Button>
+            
           </div>
         </div>
-
+        <Button variant="light" size="sm" onClick={onHide}>
+              ×
+            </Button>
+</div>
         {/* Item & Date */}
         <div className="d-flex justify-content-between align-items-center mb-3">
           <div>
