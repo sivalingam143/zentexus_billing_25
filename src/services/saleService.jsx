@@ -2,20 +2,7 @@
 import axiosInstance from "../config/API";
 const API_ENDPOINT = "/sales.php";
 
-// Fetch all Sales
-export const fetchSalesApi = async () => {
-  const payload = {
-    list_sales: true,
-  };
-  const response = await axiosInstance.post(API_ENDPOINT, payload);
-  const data = response.data;
-  if (data.head && data.head.code !== 200) {
-    throw new Error(data.head.msg || "Failed to fetch sales");
-  }
-  return data.body.sales;
-};
-
-// Search Sales by name
+// Search Sales by name (also used for fetching all when searchText is empty)
 export const searchSalesApi = async (searchText) => {
   const payload = {
     search_text: searchText,

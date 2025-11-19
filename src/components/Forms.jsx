@@ -73,6 +73,7 @@ const DropDown = ({
   onChange,
   name,
   options = [],
+  disabled = false,
 }) => {
   const handleChange = (selectedOption) => {
     onChange({
@@ -92,11 +93,19 @@ const DropDown = ({
         placeholder={placeholder}
         value={options.find((option) => option.value === value)}
         onChange={handleChange}
+        isDisabled={disabled}
       />
     </>
   );
 };
-const CheckBox = ({ textlabel, OnChange, boxLabel, type }) => {
+const CheckBox = ({
+  textlabel,
+  OnChange,
+  boxLabel,
+  type,
+  checked,
+  disabled,
+}) => {
   return (
     <>
       <div>
@@ -106,7 +115,13 @@ const CheckBox = ({ textlabel, OnChange, boxLabel, type }) => {
       </div>
       <div className="check-box d-flex align-items-center">
         <div className="tick-box">
-          <Form.Check type={type} onChange={OnChange} isCheckbox={true} />
+          <Form.Check
+            type={type}
+            onChange={OnChange}
+            checked={checked}
+            disabled={disabled}
+            isCheckbox={true}
+          />
         </div>
         <div className="mx-3">{boxLabel}</div>
       </div>
@@ -123,7 +138,7 @@ const Calender = ({ setLabel, calenderlabel, initialDate }) => {
       <Form.Control
         type="date"
         value={initialDate}
-        onChange={(e) => setLabel(e.target.value)}
+        onChange={(e) => setLabel && setLabel(e.target.value)}
       />
     </>
   );

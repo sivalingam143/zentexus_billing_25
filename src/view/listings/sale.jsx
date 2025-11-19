@@ -30,7 +30,7 @@ import TableUI from "../../components/TableUI";
 import { MdOutlineDelete } from "react-icons/md";
 import { TbCircleLetterI } from "react-icons/tb";
 import { HiOutlineDotsVertical } from "react-icons/hi";
-import { fetchSales, searchSales, deleteSale } from "../../slice/saleSlice";
+import { searchSales, deleteSale } from "../../slice/saleSlice";
 import NotifyData from "../../components/NotifyData";
 
 const Sale = () => {
@@ -42,8 +42,13 @@ const Sale = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    if (status === "idle") dispatch(fetchSales());
-  }, [dispatch, status]);
+    dispatch(searchSales(searchTerm));
+  }, [dispatch]);
+
+  // Search handler (triggers on searchTerm change)
+  useEffect(() => {
+    dispatch(searchSales(searchTerm));
+  }, [searchTerm, dispatch]);
 
   // Navigation handlers
   const handleCreate = () => {
@@ -68,15 +73,6 @@ const Sale = () => {
       NotifyData("Sale Deletion Failed", "error");
     }
   };
-
-  // Search
-  useEffect(() => {
-    if (searchTerm) {
-      dispatch(searchSales(searchTerm));
-    } else {
-      dispatch(fetchSales());
-    }
-  }, [searchTerm, dispatch]);
 
   const filteredSales = sales || [];
 
@@ -248,9 +244,7 @@ const Sale = () => {
             <Row className="filters align-items-center mb-3">
               <Col lg="3" className="align-self-center">
                 <TextInputform
-                  prefix_icon={<FaMagnifyingGlass />}
                   PlaceHolder="Search by Name"
-                  className="form-control-padleft"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />

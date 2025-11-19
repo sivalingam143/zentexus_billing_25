@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
-  fetchSalesApi,
   searchSalesApi,
   createSaleApi,
   updateSaleApi,
@@ -8,12 +7,12 @@ import {
   fetchPartiesApi,
 } from "../services/saleService";
 
-// Fetch all sales
+// Fetch all sales (using search with empty string)
 export const fetchSales = createAsyncThunk(
   "sale/fetchSales",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetchSalesApi(); // ✅ Use exported fetchSalesApi (not getSales)
+      const response = await searchSalesApi(""); // ✅ Use search API with empty string for all
       console.log("Fetched sales from API:", response);
       return Array.isArray(response) ? response : []; // Ensure array
     } catch (error) {
