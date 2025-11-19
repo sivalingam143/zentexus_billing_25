@@ -8,15 +8,7 @@ const BASE_URL = "http://localhost/zentexus_billing_api"; // WAMP backend folder
 // ADD searchText parameter and send it in the POST request body
 export const getParties = async (searchText = "") => {
   try {
-<<<<<<< HEAD
     const response = await axios.post(`${BASE_URL}/parties.php`, {
-=======
-
-    // const response = await axios.post(`${BASE_URL}/getParties.php`, {
-
-    const response = await axios.post(`${BASE_URL}/parties.php`, {
-
->>>>>>> d81038e2d6c6c57ef20f91f2f1c2aa1d65292399
       search_text: searchText, // <-- FIX: Send the required parameter
     });
     return response.data; // should be an array of parties
