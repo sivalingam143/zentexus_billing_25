@@ -1,59 +1,62 @@
-import React, { useState } from "react"; 
+import React, { useState } from "react";
 import { Modal, Button, Form, Row, Col, Nav } from "react-bootstrap";
-import StateSelect from "../listings/States"; 
+import StateSelect from "../listings/States";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-
-function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSubmit, handleSaveAndNew, handleDelete }) {
+function PartyModal({
+  show,
+  handleClose,
+  isEdit,
+  formData,
+  setFormData,
+  handleSubmit,
+  handleSaveAndNew,
+  handleDelete,
+}) {
   const [activeTab, setActiveTab] = useState("gst");
   const gstTypes = [
-    { id: '1', name: "Regular" },
-    { id: '2', name: "Composition" },
-    { id: '3', name: "Consumer" },
-    { id: '4', name: "Unregistered" },
+    { id: "1", name: "Regular" },
+    { id: "2", name: "Composition" },
+    { id: "3", name: "Consumer" },
+    { id: "4", name: "Unregistered" },
   ];
-  
- 
-  const handleInputChange = (e) => {
-      const { name, value } = e.target;
-      setFormData(prev => ({ ...prev, [name]: value }));
-  };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleGstTypeChange = (e) => {
-      const newId = e.target.value;
-      const selectedGst = gstTypes.find(type => String(type.id) === newId);
-      
-      setFormData(prev => ({
-          ...prev, 
-          gstin_type_id: newId, // Use API key
-          gstin_type_name: selectedGst ? selectedGst.name : "" // Use API key
-      }));
+    const newId = e.target.value;
+    const selectedGst = gstTypes.find((type) => String(type.id) === newId);
+
+    setFormData((prev) => ({
+      ...prev,
+      gstin_type_id: newId, // Use API key
+      gstin_type_name: selectedGst ? selectedGst.name : "", // Use API key
+    }));
   };
-  
-  
+
   const handleAdditionalFieldChange = (id, key, value) => {
-      setFormData(prev => ({
-          ...prev,
-          additionalFields: (prev.additionalFields || []).map(field => 
-              field.id === id ? { ...field, [key]: value } : field
-          )
-      }));
+    setFormData((prev) => ({
+      ...prev,
+      additionalFields: (prev.additionalFields || []).map((field) =>
+        field.id === id ? { ...field, [key]: value } : field
+      ),
+    }));
   };
-  
-  
+
   const handleDateChange = (date) => {
-      setFormData(prev => ({ ...prev, date }));
+    setFormData((prev) => ({ ...prev, date }));
   };
-  
-  
+
   const handleLimitTypeToggle = (type) => {
-      setFormData(prev => ({ 
-          ...prev, 
-          limitType: type,
-          creditlimit: type === 'no' ? '' : prev.creditlimit 
-      }));
+    setFormData((prev) => ({
+      ...prev,
+      limitType: type,
+      creditlimit: type === "no" ? "" : prev.creditlimit,
+    }));
   };
 
   return (
@@ -65,30 +68,30 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
       <Modal.Body>
         <Row className="mb-3">
           <Col>
-            <Form.Control 
-                type="text" 
-                placeholder="Party Name *" 
-                name="name"
-                value={formData.name || ""} 
-                onChange={handleInputChange} 
+            <Form.Control
+              type="text"
+              placeholder="Party Name *"
+              name="name"
+              value={formData.name || ""}
+              onChange={handleInputChange}
             />
           </Col>
           <Col>
-            <Form.Control 
-                type="text" 
-                placeholder="GSTIN" 
-                name="gstin"
-                value={formData.gstin || ""} 
-                onChange={handleInputChange}
+            <Form.Control
+              type="text"
+              placeholder="GSTIN"
+              name="gstin"
+              value={formData.gstin || ""}
+              onChange={handleInputChange}
             />
           </Col>
           <Col>
-            <Form.Control 
-                type="text" 
-                placeholder="Phone Number" 
-                name="phone"
-                value={formData.phone || ""} 
-                onChange={handleInputChange}
+            <Form.Control
+              type="text"
+              placeholder="Phone Number"
+              name="phone"
+              value={formData.phone || ""}
+              onChange={handleInputChange}
             />
           </Col>
         </Row>
@@ -117,25 +120,25 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
             <Col md={4}>
               <Form.Group className="mb-3">
                 <Form.Label>GST Type</Form.Label>
-                <Form.Select 
-                    value={formData.gstin_type_id || ""} // Bind to formData
-                    onChange={handleGstTypeChange} 
+                <Form.Select
+                  value={formData.gstin_type_id || ""} // Bind to formData
+                  onChange={handleGstTypeChange}
                 >
-                    <option value="">Select GST Type</option>
-                    {gstTypes.map((type) => (
-                        <option key={type.id} value={type.id}>
-                            {type.name}
-                        </option>
-                    ))}
+                  <option value="">Select GST Type</option>
+                  {gstTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
                 </Form.Select>
               </Form.Group>
 
               <Form.Group className="mb-3" style={{ overflow: "visible" }}>
                 <Form.Label>Select State</Form.Label>
-                <Form.Select 
-                    name="state_of_supply" // Use name for generic handler
-                    value={formData.state_of_supply || ""} 
-                    onChange={handleInputChange}
+                <Form.Select
+                  name="state_of_supply" // Use name for generic handler
+                  value={formData.state_of_supply || ""}
+                  onChange={handleInputChange}
                 >
                   {/* Assuming StateSelect component renders <option>s */}
                   <StateSelect />
@@ -144,12 +147,12 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
 
               <Form.Group className="mb-3">
                 <Form.Label>Email ID</Form.Label>
-                <Form.Control 
-                    type="email" 
-                    placeholder="Email ID" 
-                    name="email"
-                    value={formData.email || ""} 
-                    onChange={handleInputChange} 
+                <Form.Control
+                  type="email"
+                  placeholder="Email ID"
+                  name="email"
+                  value={formData.email || ""}
+                  onChange={handleInputChange}
                 />
               </Form.Group>
             </Col>
@@ -186,7 +189,12 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                       <Button
                         variant="primary"
                         size="sm"
-                        onClick={() => setFormData(prev => ({...prev, isEditingAddress: false}))}
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            isEditingAddress: false,
+                          }))
+                        }
                         style={{ backgroundColor: "#4a93dcff", border: "none" }}
                       >
                         Save
@@ -197,9 +205,16 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                   <Button
                     variant="link"
                     className="p-0 text-primary"
-                    onClick={() => setFormData(prev => ({...prev, isEditingAddress: true}))}
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        isEditingAddress: true,
+                      }))
+                    }
                   >
-                    {formData.shipping_address ? formData.shipping_address : "+ Add Address"}
+                    {formData.shipping_address
+                      ? formData.shipping_address
+                      : "+ Add Address"}
                   </Button>
                 )}
               </div>
@@ -212,9 +227,9 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
           <Row>
             <Col md={4}>
               <Form.Group className="mb-3">
-                <Form.Control 
-                  type="number" 
-                  placeholder="Opening Balance" 
+                <Form.Control
+                  type="number"
+                  placeholder="Opening Balance"
                   name="amount"
                   value={formData.amount || ""}
                   onChange={handleInputChange}
@@ -222,16 +237,16 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                 <Form.Check
                   inline
                   type="radio"
-                  name="transactionType"              
+                  name="transactionType"
                   value="pay"
                   label="To Pay"
-                  checked={formData.transactionType === "pay"} 
-                  onChange={handleInputChange} 
+                  checked={formData.transactionType === "pay"}
+                  onChange={handleInputChange}
                 />
                 <Form.Check
                   inline
                   type="radio"
-                  name="transactionType"              
+                  name="transactionType"
                   value="receive"
                   label="To Receive"
                   checked={formData.transactionType === "receive"}
@@ -243,7 +258,9 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
             <Col md={4}>
               <Form.Group className="mb-3">
                 <DatePicker
-                  selected={formData.date instanceof Date ? formData.date : new Date()}
+                  selected={
+                    formData.date instanceof Date ? formData.date : new Date()
+                  }
                   onChange={handleDateChange}
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
@@ -251,10 +268,9 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                 />
               </Form.Group>
             </Col>
-
-            <Col md={4}> 
+            <Row>
+              <Col md={4}>
                 <Form.Group className="mb-3">
-                 
                   <div
                     className="d-flex position-relative mt-2"
                     style={{
@@ -265,7 +281,6 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                       backgroundColor: "#e9f3ff",
                     }}
                   >
-                   
                     <div
                       className="position-absolute bg-primary"
                       style={{
@@ -283,7 +298,9 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                     <Button
                       variant="transparent"
                       className={`flex-grow-1 ${
-                        formData.limitType === "no" ? "text-white" : "text-primary"
+                        formData.limitType === "no"
+                          ? "text-white"
+                          : "text-primary"
                       }`}
                       onClick={() => handleLimitTypeToggle("no")}
                       style={{
@@ -311,7 +328,9 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                     <Button
                       variant="transparent"
                       className={`flex-grow-1 ${
-                        formData.limitType === "custom" ? "text-white" : "text-primary"
+                        formData.limitType === "custom"
+                          ? "text-white"
+                          : "text-primary"
                       }`}
                       onClick={() => handleLimitTypeToggle("custom")}
                       style={{
@@ -335,57 +354,80 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
                     />
                   )}
                 </Form.Group>
-            </Col>
+              </Col>
+            </Row>
           </Row>
         )}
 
-       
         {activeTab === "additional" && (
           <Row>
             <Col md={6}>
-              {(formData.additionalFields || []).map(field => (
-                <Form.Group key={field.id} className="mb-3 d-flex align-items-center">
-                    <div className="d-flex align-items-center" style={{ width: field.isChecked ? '50%' : '100%' }}>
-                        <Form.Check 
-                            type="checkbox" 
-                            className="me-2" 
-                            checked={field.isChecked}
-                            onChange={(e) => handleAdditionalFieldChange(field.id, 'isChecked', e.target.checked)}
-                        />
-                       <Form.Control 
-                            type="text" 
-                            value={field.name} 
-                            placeholder={`Field Name (${field.id})`}
-                            
-                            onChange={(e) => handleAdditionalFieldChange(field.id, 'name', e.target.value)}
-                            className="flex-grow-1"
-                        />
+              {(formData.additionalFields || []).map((field) => (
+                <Form.Group
+                  key={field.id}
+                  className="mb-3 d-flex align-items-center"
+                >
+                  <div
+                    className="d-flex align-items-center"
+                    style={{ width: field.isChecked ? "50%" : "100%" }}
+                  >
+                    <Form.Check
+                      type="checkbox"
+                      className="me-2"
+                      checked={field.isChecked}
+                      onChange={(e) =>
+                        handleAdditionalFieldChange(
+                          field.id,
+                          "isChecked",
+                          e.target.checked
+                        )
+                      }
+                    />
+                    <Form.Control
+                      type="text"
+                      value={field.name}
+                      placeholder={`Field Name (${field.id})`}
+                      onChange={(e) =>
+                        handleAdditionalFieldChange(
+                          field.id,
+                          "name",
+                          e.target.value
+                        )
+                      }
+                      className="flex-grow-1"
+                    />
+                  </div>
+                  {field.isChecked && (
+                    <div className="ms-3" style={{ width: "50%" }}>
+                      <Form.Control
+                        type="text"
+                        placeholder={`Enter value for ${field.name}...`}
+                        value={field.value}
+                        onChange={(e) =>
+                          handleAdditionalFieldChange(
+                            field.id,
+                            "value",
+                            e.target.value
+                          )
+                        }
+                      />
                     </div>
-                    {field.isChecked && (
-                      <div className="ms-3" style={{ width: '50%' }}>
-                        <Form.Control 
-                            type="text" 
-                            placeholder={`Enter value for ${field.name}...`}
-                            value={field.value}
-                            onChange={(e) => handleAdditionalFieldChange(field.id, 'value', e.target.value)}
-                        />
-                      </div>
-                    )}
+                  )}
                 </Form.Group>
               ))}
 
               <Form.Group className="mb-3 d-flex align-items-center">
                 <Form.Check type="checkbox" className="me-2" disabled={true} />
                 <DatePicker
-                  selected={formData.date instanceof Date ? formData.date : new Date()} 
+                  selected={
+                    formData.date instanceof Date ? formData.date : new Date()
+                  }
                   className="form-control"
                   dateFormat="dd/MM/yyyy"
                   placeholderText="Select Date"
-                  disabled={true} 
+                  disabled={true}
                 />
-                <Form.Label className="ms-2 mb-0 text-muted">Date Field (Read-only)</Form.Label>
               </Form.Group>
-
             </Col>
           </Row>
         )}
@@ -394,7 +436,11 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
       <Modal.Footer>
         {isEdit ? (
           <>
-            <Button variant="danger" className="px-4 py-2" onClick={handleDelete}>
+            <Button
+              variant="danger"
+              className="px-4 py-2"
+              onClick={handleDelete}
+            >
               Delete
             </Button>
             <Button
@@ -407,8 +453,14 @@ function PartyModal({ show, handleClose, isEdit, formData, setFormData, handleSu
           </>
         ) : (
           <>
-            <Button variant="outline-primary" onClick={handleSaveAndNew}>Save & New</Button>
-            <Button variant="primary bg-primary" className="text-white px-4 py-2" onClick={handleSubmit} >
+            <Button variant="outline-primary" onClick={handleSaveAndNew}>
+              Save & New
+            </Button>
+            <Button
+              variant="primary bg-primary"
+              className="text-white px-4 py-2"
+              onClick={handleSubmit}
+            >
               Save
             </Button>
           </>

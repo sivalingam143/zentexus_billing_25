@@ -1,38 +1,40 @@
-// src/slice/partySlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as partyService from "../services/PartyService";
 
-
-
-
-// Fetch all parties
 export const fetchParties = createAsyncThunk(
   "party/fetchParties",
-  // FIX: Accept 'searchText' here
   async (searchText, { rejectWithValue }) => {
     try {
-      // 1. Await the response from the service, PASSING searchText
-      const response = await partyService.getParties(searchText); 
-      
-      // 2. Extract the actual array from the nested 'body.parties' property
-      const partiesArray = response?.body?.parties || []; 
-      
-      // 3. Return only the array to Redux
-      return partiesArray; 
+      console.log("enter try fetch");
+      const response = await partyService.getParties(searchText);
+      console.log("response", response);
+      const partiesArray = response || [];
+      console.log("partiesArray", partiesArray);
+      return partiesArray;
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-
-
 // Add new party
 export const addNewParty = createAsyncThunk(
   "party/addNewParty",
   async (party, { rejectWithValue }) => {
     try {
-      const data = await partyService.addParty(party);
+      const response = await partyService.addParty(party);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const updateExistingParty = createAsyncThunk(
+  "party/updateParty",
+  async (party, { rejectWithValue }) => {
+    try {
+      const data = await partyService.updateParty(party);
       return data;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -40,26 +42,12 @@ export const addNewParty = createAsyncThunk(
   }
 );
 
-// 🌟 NEW: Update existing party Thunk
-export const updateExistingParty = createAsyncThunk(
-  "party/updateParty",
-  async (party, { rejectWithValue }) => {
-    try {
-      const data = await partyService.updateParty(party);
-      return data; // Returns the updated party object
-    } catch (error) {
-      return rejectWithValue(error.message);
-    }
-  }
-);
-
-// 🌟 NEW: Delete party Thunk
 export const deleteExistingParty = createAsyncThunk(
   "party/deleteParty",
   async (parties_id, { rejectWithValue }) => {
     try {
       const data = await partyService.deleteParty(parties_id);
-      return data; // Returns the parties_id of the deleted party
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -67,79 +55,65 @@ export const deleteExistingParty = createAsyncThunk(
 );
 
 const partySlice = createSlice({
-  name: "party",
+  name: "parties",
   initialState: {
     parties: [],
     loading: false,
     error: null,
   },
- reducer: {  },
+  reducer: {},
 
   extraReducers: (builder) => {
     builder
-      // Fetch Parties
-      .addCase(fetchParties.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchParties.fulfilled, (state, action) => {
-        state.loading = false;
-        state.parties = action.payload;
-      })
-      .addCase(fetchParties.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      // Add New Party
+      // Add new party
       .addCase(addNewParty.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(addNewParty.fulfilled, (state, action) => {
+      .addCase(addNewParty.fulfilled, (state) => {
         state.loading = false;
-        // FIX: Add the new party (action.payload) to the beginning of the parties array
-        // We put it at the beginning so the user sees it immediately.
-        state.parties.unshift(action.payload); // Use unshift to add to the beginning
+        console.log(
+          "New party creation fulfilled. Relying on fetchParties for state update."
+        );
       })
       .addCase(addNewParty.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-        // 🌟 NEW: Update Existing Party Reducer
+      // src/slice/partySlice.js (inside extraReducers)
+
+      // ...
+      .addCase(fetchParties.fulfilled, (state, action) => {
+        state.loading = false;
+
+        state.parties = action.payload;
+        state.error = null;
+      })
+
+      //  Update existing party
       .addCase(updateExistingParty.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(updateExistingParty.fulfilled, (state, action) => {
         state.loading = false;
-        // Find the index and replace the old party object with the updated one
-        const index = state.parties.findIndex(p => p.parties_id === action.payload.parties_id);
+
+        const updatedParty = action.payload;
+
+        const index = state.parties.findIndex(
+          (party) => party.parties_id === updatedParty.parties_id
+        );
+
         if (index !== -1) {
-          state.parties[index] = action.payload;
+          state.parties[index] = updatedParty;
         }
       })
       .addCase(updateExistingParty.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
-
-      // 🌟 NEW: Delete Party Reducer
-      .addCase(deleteExistingParty.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(deleteExistingParty.fulfilled, (state, action) => {
-        state.loading = false;
-        // Filter out the party with the deleted parties_id
-        state.parties = state.parties.filter(p => p.parties_id !== action.payload);
-      })
-      .addCase(deleteExistingParty.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-        });
+      });
   },
 });
-
 
 export default partySlice.reducer;
