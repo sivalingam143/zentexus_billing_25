@@ -12,6 +12,8 @@ import { TbCircleLetterI } from "react-icons/tb";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import NotifyData from "../../components/NotifyData";
 
+
+
 const Sale = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -53,7 +55,6 @@ const Sale = () => {
     "Payment Type",
     "Amount",
     "Balance",
-    "Status",
   ];
 
   const SaleData =
@@ -67,10 +68,6 @@ const Sale = () => {
             item.payment_type || "Cash",
             `₹ ${Number(item.total || 0).toFixed(2)}`,
             "₹ 0",
-            <Form.Select size="sm" defaultValue="Paid" key="status">
-              <option>Paid</option>
-              <option>Unpaid</option>
-            </Form.Select>,
             <ActionButton
               options={[
                 {
