@@ -1,11 +1,16 @@
+// src/store.js or src/app/store.js
 import { configureStore } from "@reduxjs/toolkit";
 import partyReducer from "../slice/partySlice";
 import saleReducer from "../slice/saleSlice";
+import unitReducer from "../slice/UnitSlice";  
+import categoryReducer from "../slice/CategorySlice";
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     parties: partyReducer,
     sale: saleReducer,
+    unit: unitReducer,
+    category: categoryReducer,  // key must be "unit"
   },
 });
 
