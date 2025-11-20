@@ -1,33 +1,12 @@
-import React, { useState, useEffect } from "react";
-import {
-  Container,
-  Row,
-  Col,
-  Form,
-  Button,
-  InputGroup,
-  FormControl,
-  Table,
-} from "react-bootstrap";
+import React, { useState, useEffect,useRef } from "react";
+import {Container,Row,Col,Form,Button,InputGroup,FormControl,Table,} from "react-bootstrap";
 import { FaTimes, FaPlus } from "react-icons/fa";
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import {
-  fetchParties,
-  createSale,
-  updateSale,
-  searchSales,
-} from "../../slice/saleSlice";
-import {
-  TextInputform,
-  TextArea,
-  DropDown,
-  Calender,
-  CheckBox,
-} from "../../components/Forms";
+import {fetchParties,createSale,updateSale,searchSales,} from "../../slice/saleSlice";
+import {TextInputform,TextArea,DropDown,Calender,CheckBox,} from "../../components/Forms";
 import NotifyData from "../../components/NotifyData";
-
 // Static options
 const UNITS = ["NONE", "KG", "Litre", "Piece"];
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
@@ -72,18 +51,19 @@ const INITIAL_ROW = {
 };
 
 const SaleCreation = () => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const location = useLocation();
-  const { parties, partiesStatus, sales } = useSelector((state) => state.sale);
-
-  const isEditMode = location.pathname.startsWith("/sale/edit");
-  const isViewMode = location.pathname.startsWith("/sale/view");
-  const isCreateMode = location.pathname === "/sale/create";
-  const isDisabled = isViewMode;
-
-  const [formData, setFormData] = useState({
+const dispatch = useDispatch();
+const navigate = useNavigate();
+const { id } = useParams();
+const location = useLocation();
+const { parties, partiesStatus, sales } = useSelector((state) => state.sale);
+const isEditMode = location.pathname.startsWith("/sale/edit");
+const isViewMode = location.pathname.startsWith("/sale/view");
+const isCreateMode = location.pathname === "/sale/create";
+const isDisabled = isViewMode;
+const [imagePreview, setImagePreview] = useState("");        // To show preview
+const [imageFileName, setImageFileName] = useState("");      // To show filename
+const fileInputRef = useRef(null);
+const [formData, setFormData] = useState({
     parties_id: "",
     name: "",
     phone: "",
@@ -101,28 +81,51 @@ const SaleCreation = () => {
     total: "0.00",
   });
   const [credit, setCredit] = useState(true);
-  const [customers, setCustomers] = useState([
-    { value: "", label: "Select Party" },
-  ]);
+  const [customers, setCustomers] = useState([ { value: "", label: "Select Party" },]);
   const [isManualRoundOff, setIsManualRoundOff] = useState(false);
-
   const saleToEdit = id ? sales.find((s) => s.sale_id == id) : null;
-
-  // Fetch parties on mount
+  ///for images
+  const handleImageClick = () => {
+  if (!isDisabled) {
+    fileInputRef.current.click();
+  }
+};
+  const handleImageChange = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    // Check file size (optional - max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image size should be less than 5MB");
+      return;
+    }
+    setImageFileName(file.name);
+  const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      setImagePreview(base64String);
+      setFormData(prev => ({
+        ...prev,
+        add_image: base64String  // This is what gets saved in DB
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+// Fetch parties on mount
   useEffect(() => {
     if (partiesStatus === "idle") {
       dispatch(fetchParties());
     }
   }, [partiesStatus, dispatch]);
 
-  // Fetch sales for edit/view
+// Fetch sales for edit/view
   useEffect(() => {
     if ((isEditMode || isViewMode) && sales.length === 0) {
       dispatch(searchSales(""));
     }
   }, [isEditMode, isViewMode, sales.length, dispatch]);
 
-  // Update customers options
+// Update customers options
   useEffect(() => {
     const customerOptions = parties.map((p) => ({
       value: p.id,
@@ -135,10 +138,9 @@ const SaleCreation = () => {
     ]);
   }, [parties]);
 
-  // Prefill form for edit/view
+// Prefill form for edit/view
   useEffect(() => {
     if (!saleToEdit) return;
-
     const itemsArray = JSON.parse(saleToEdit.products || "[]");
     const rows =
       Array.isArray(itemsArray) && itemsArray.length > 0
@@ -157,21 +159,19 @@ const SaleCreation = () => {
           }))
         : [INITIAL_ROW];
 
-    const totalAmountRaw = rows.reduce((a, r) => a + Number(r.amount || 0), 0);
-    const rount_off = Number(saleToEdit.rount_off || 0) === 1 ? 1 : 0;
-    const round_off_amount = String(saleToEdit.round_off_amount || "0");
-    const finalRound = rount_off ? Number(round_off_amount) : 0;
-    const total = (totalAmountRaw + finalRound).toFixed(2);
-
-    // Determine if manual round off
+  const totalAmountRaw = rows.reduce((a, r) => a + Number(r.amount || 0), 0);
+  const rount_off = Number(saleToEdit.rount_off || 0) === 1 ? 1 : 0;
+  const round_off_amount = String(saleToEdit.round_off_amount || "0");
+  const finalRound = rount_off ? Number(round_off_amount) : 0;
+  const total = (totalAmountRaw + finalRound).toFixed(2);
+// Determine if manual round off
     let manual = false;
     if (rount_off === 1) {
       const autoRound = calculateAutoRoundOff(totalAmountRaw);
       manual = Math.abs(Number(round_off_amount) - Number(autoRound)) > 0.01;
     }
     setIsManualRoundOff(manual);
-
-    setFormData({
+  setFormData({
       parties_id: saleToEdit.parties_id || "",
       name: saleToEdit.name || "",
       phone: saleToEdit.phone || "",
@@ -179,7 +179,7 @@ const SaleCreation = () => {
       shipping_address: saleToEdit.shipping_address || "",
       invoice_no: saleToEdit.invoice_no || "",
       invoice_date:
-        saleToEdit.invoice_date || new Date().toISOString().split("T")[0],
+      saleToEdit.invoice_date || new Date().toISOString().split("T")[0],
       state_of_supply: saleToEdit.state_of_supply || "",
       payment_type: saleToEdit.payment_type || "",
       description: saleToEdit.description|| "",
@@ -189,44 +189,25 @@ const SaleCreation = () => {
       round_off_amount,
       total,
     });
+    if (saleToEdit.add_image && saleToEdit.add_image.trim() !== "") {
+    setImagePreview(saleToEdit.add_image);
+    setImageFileName("Previously uploaded image");
+  }
   }, [saleToEdit]);
-
-  // Computed totals
-  const totalQty = formData.rows.reduce((a, r) => a + (Number(r.qty) || 0), 0);
-  const totalDiscount = formData.rows.reduce(
-    (a, r) => a + (Number(r.discountAmount) || 0),
-    0
-  );
-  const totalTax = formData.rows.reduce(
-    (a, r) => a + (Number(r.taxAmount) || 0),
-    0
-  );
-  const totalAmountRaw = formData.rows.reduce(
-    (a, r) => a + (Number(r.amount) || 0),
-    0
-  );
-
-  const calculateAutoRoundOff = (amount) =>
-    (Math.round(amount) - amount).toFixed(2);
-
-  // Handlers
-  const handlePartySelect = (selectedOption) => {
+// Computed totals
+const totalQty = formData.rows.reduce((a, r) => a + (Number(r.qty) || 0), 0);
+const totalDiscount = formData.rows.reduce( (a, r) => a + (Number(r.discountAmount) || 0), 0);
+const totalTax = formData.rows.reduce( (a, r) => a + (Number(r.taxAmount) || 0),0);
+const totalAmountRaw = formData.rows.reduce((a, r) => a + (Number(r.amount) || 0),0 );
+const calculateAutoRoundOff = (amount) =>(Math.round(amount) - amount).toFixed(2);
+// Handlers
+const handlePartySelect = (selectedOption) => {
     if (!selectedOption) {
-      setFormData((prev) => ({
-        ...prev,
-        parties_id: "",
-        name: "",
-        phone: "",
-        billing_address: "",
-        shipping_address: "",
-        state_of_supply: "",
-      }));
-      return;
-    }
-
+      setFormData((prev) => ({...prev,parties_id: "",name: "",phone: "",billing_address: "",shipping_address: "",state_of_supply: "",}));
+    return;   
+    }     
     if (selectedOption.value === "add_party") return;
-
-    const selectedParty = parties.find((p) => p.id === selectedOption.value);
+const selectedParty = parties.find((p) => p.id === selectedOption.value);
     setFormData((prev) => ({
       ...prev,
       parties_id: selectedOption.value,
@@ -234,77 +215,54 @@ const SaleCreation = () => {
       phone: selectedParty?.phone || "",
       billing_address: selectedParty?.billing_address || "",
       shipping_address: selectedParty?.shipping_address || "",
-      state_of_supply: selectedParty?.state_of_supply || "",
-    }));
-  };
-
-  const toggleCredit = () => setCredit(!credit);
-
-  const deleteRow = (id) => {
-    const newRows = formData.rows.filter((r) => r.id !== id);
-    const newTotalAmountRaw = newRows.reduce(
-      (a, r) => a + Number(r.amount || 0),
-      0
-    );
-    let finalRound =
-      formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
-
+      state_of_supply: selectedParty?.state_of_supply || "", })); 
+    };
+const toggleCredit = () => setCredit(!credit);
+const deleteRow = (id) => {
+const newRows = formData.rows.filter((r) => r.id !== id);
+const newTotalAmountRaw = newRows.reduce( (a, r) => a + Number(r.amount || 0),0);
+let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
     if (formData.rount_off === 1 && !isManualRoundOff) {
       const autoRound = calculateAutoRoundOff(newTotalAmountRaw);
       finalRound = Number(autoRound);
       setFormData((prev) => ({ ...prev, round_off_amount: autoRound }));
     }
-
-    const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
+const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
-
-  const addRow = () => {
-    const newId = formData.rows.length
-      ? Math.max(...formData.rows.map((r) => r.id)) + 1
-      : 1;
-    const newRows = [...formData.rows, { ...INITIAL_ROW, id: newId }];
-    const newTotalAmountRaw = newRows.reduce(
-      (a, r) => a + Number(r.amount || 0),
-      0
-    );
-    let finalRound =
-      formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
-
+const addRow = () => {const newId = formData.rows.length ? Math.max(...formData.rows.map((r) => r.id)) + 1: 1;
+const newRows = [...formData.rows, { ...INITIAL_ROW, id: newId }];
+const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0),0 );
+let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
     if (formData.rount_off === 1 && !isManualRoundOff) {
       const autoRound = calculateAutoRoundOff(newTotalAmountRaw);
       finalRound = Number(autoRound);
       setFormData((prev) => ({ ...prev, round_off_amount: autoRound }));
     }
-
-    const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
+const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
 
-  const onRowChange = (id, field, value) => {
+const onRowChange = (id, field, value) => {
     let actualValue = value;
     if (value?.value !== undefined) {
       actualValue = value.value;
     } else if (value?.target?.value !== undefined) {
       actualValue = value.target.value;
     }
-
-    const newRows = formData.rows.map((row) => {
+const newRows = formData.rows.map((row) => {
       if (row.id !== id) return row;
-
       const updatedRow = { ...row, [field]: actualValue };
       const taxPercent = Number(updatedRow.taxPercent || 0);
       const qty = Number(updatedRow.qty) || 0;
       const price = Number(updatedRow.price) || 0;
       const discountPercent = Number(updatedRow.discountPercent) || 0;
       const priceUnitType = String(updatedRow.priceUnitType || "Without Tax");
-
       let basicTotal = qty * price;
       const discountAmount = (basicTotal * discountPercent) / 100;
       let taxableAmount = basicTotal - discountAmount;
       let taxAmount = 0;
       let finalAmount = taxableAmount;
-
       if (priceUnitType === "Without Tax") {
         taxAmount = (taxableAmount * taxPercent) / 100;
         finalAmount = taxableAmount + taxAmount;
@@ -313,7 +271,6 @@ const SaleCreation = () => {
         taxAmount = (totalWithTax * taxPercent) / (100 + taxPercent);
         finalAmount = totalWithTax;
       }
-
       return {
         ...updatedRow,
         taxPercent,
@@ -323,21 +280,16 @@ const SaleCreation = () => {
       };
     });
 
-    const newTotalAmountRaw = newRows.reduce(
-      (a, r) => a + Number(r.amount || 0),
-      0
-    );
-    let finalRound = 0;
-    let newRoundOffAmount = formData.round_off_amount;
-
-    if (formData.rount_off === 1) {
+const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0),0);
+let finalRound = 0;
+let newRoundOffAmount = formData.round_off_amount;
+  if (formData.rount_off === 1) {
       if (!isManualRoundOff) {
         newRoundOffAmount = calculateAutoRoundOff(newTotalAmountRaw);
       }
       finalRound = Number(newRoundOffAmount);
     }
-
-    const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
+const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({
       ...prev,
       rows: newRows,
@@ -345,33 +297,24 @@ const SaleCreation = () => {
       total: newTotal,
     }));
   };
-
-  const handleRoundOffChange = (e) => {
-    const val = e.target.value || "0";
+const handleRoundOffChange = (e) => {
+const val = e.target.value || "0";
     setIsManualRoundOff(true);
-    const newTotalAmountRaw = formData.rows.reduce(
-      (a, r) => a + Number(r.amount || 0),
-      0
-    );
-    const finalRound = formData.rount_off === 1 ? Number(val) : 0;
-    const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
+const newTotalAmountRaw = formData.rows.reduce((a, r) => a + Number(r.amount || 0),0);
+const finalRound = formData.rount_off === 1 ? Number(val) : 0;
+const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({
       ...prev,
       round_off_amount: val,
       total: newTotal,
     }));
   };
-
-  const handleRoundOffToggle = (e) => {
-    const checked = e.target.checked ? 1 : 0;
-    const newTotalAmountRaw = formData.rows.reduce(
-      (a, r) => a + Number(r.amount || 0),
-      0
-    );
-    let roundOffAmt = "0";
-    let finalRound = 0;
-
-    if (checked === 1) {
+const handleRoundOffToggle = (e) => {
+const checked = e.target.checked ? 1 : 0;
+const newTotalAmountRaw = formData.rows.reduce((a, r) => a + Number(r.amount || 0),0);
+let roundOffAmt = "0";
+let finalRound = 0;
+  if (checked === 1) {
       setIsManualRoundOff(false);
       roundOffAmt = calculateAutoRoundOff(newTotalAmountRaw);
       finalRound = Number(roundOffAmt);
@@ -379,7 +322,7 @@ const SaleCreation = () => {
       setIsManualRoundOff(false);
     }
 
-    const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
+const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({
       ...prev,
       rount_off: checked,
@@ -388,11 +331,11 @@ const SaleCreation = () => {
     }));
   };
 
-  const handleInputChange = (field, value) => {
+const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = async () => {
+const handleSave = async () => {
     if (!formData.parties_id) {
       alert("Please select or add a customer.");
       return;
@@ -401,7 +344,6 @@ const SaleCreation = () => {
       alert("Please enter a unique Invoice Number.");
       return;
     }
-
     try {
       const submitData = {
         ...formData,
@@ -409,7 +351,6 @@ const SaleCreation = () => {
         rount_off: formData.rount_off,
         round_off_amount: formData.round_off_amount || "0",
       };
-
       if (isEditMode) {
         submitData.edit_sales_id = id;
         await dispatch(updateSale(submitData)).unwrap();
@@ -418,31 +359,20 @@ const SaleCreation = () => {
         await dispatch(createSale(submitData)).unwrap();
         NotifyData("Sale Created Successfully", "success");
       }
-
-      navigate("/Sale");
-    } catch (error) {
+      navigate("/Sale");} 
+      catch (error) {
       console.error("Save error:", error);
       NotifyData(
         isEditMode ? "Sale Update Failed" : "Sale Creation Failed",
         "error"
       );
-    }
+      }
   };
-
-  const handleBack = () => navigate("/Sale");
-
-  const title = isViewMode
-    ? "View Sale"
-    : isEditMode
-    ? "Edit Sale"
-    : "Create Sale";
-  const unitOptions = UNITS.map((u) => ({ value: u, label: u }));
-  const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({
-    value: pt,
-    label: pt,
-  }));
-
-  return (
+const handleBack = () => navigate("/Sale");
+const title = isViewMode? "View Sale": isEditMode  ? "Edit Sale" : "Create Sale";
+const unitOptions = UNITS.map((u) => ({ value: u, label: u }));
+const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt,}));
+ return (
     <div id="main">
       <Container fluid className="py-5">
         <Row className="py-3">
@@ -451,112 +381,41 @@ const SaleCreation = () => {
               <Col md={9}>
                 <Row className="mb-3">
                   {!isViewMode && (
-              <div className="mb-3">
-                <label className="me-2">Credit</label>
-                <input
-                  type="checkbox"
-                  checked={credit}
-                  onChange={toggleCredit}
-                />
-                <label className="me-2">Cash</label>
-              </div>
-            )}
+                  <div className="mb-3">
+                  <label className="me-2">Credit</label>
+                  <input type="checkbox" checked={credit} onChange={toggleCredit}/>
+                  <label className="me-2">Cash</label>
+                  </div>)}
                   <Col md={6}>
-                    <label>Customer Name</label>
-                    <div className="d-flex gap-2">
-                      <Select
-                        options={customers}
-                        value={
-                          customers.find(
-                            (o) => o.value === formData.parties_id
-                          ) || null
-                        }
-                        onChange={isDisabled ? undefined : handlePartySelect}
-                        placeholder="Select Customer"
-                        isClearable
-                        isDisabled={isDisabled}
-                      />
-                    </div>
+                  <label>Customer Name</label>
+                  <div className="d-flex gap-2">
+                  <Select options={customers} value={ customers.find((o) => o.value === formData.parties_id  ) || null}
+                      onChange={isDisabled ? undefined : handlePartySelect}
+                      placeholder="Select Customer" isClearable isDisabled={isDisabled}/>
+                  </div>
                   </Col>
                   <Col md={6}>
-                    <TextInputform
-                      formLabel="Phone Number"
-                      formtype="tel"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        handleInputChange("phone", e.target.value)
-                      }
-                      readOnly={isDisabled}
-                    />
+                    <TextInputform  formLabel="Phone Number" formtype="tel"value={formData.phone}  onChange={(e) =>handleInputChange("phone", e.target.value) }readOnly={isDisabled}/>
                   </Col>
                 </Row>
                 {credit && (
                   <Row className="mb-3">
                     <Col md={6}>
-                      <TextArea
-                        textlabel="Billing Address"
-                        value={formData.billing_address}
-                        onChange={(e) =>
-                          handleInputChange("billing_address", e.target.value)
-                        }
-                        readOnly={isDisabled}
-                      />
+                      <TextArea textlabel="Billing Address" value={formData.billing_address} onChange={(e) => handleInputChange("billing_address", e.target.value)}readOnly={isDisabled}/>
                     </Col>
                     <Col md={6}>
-                      <TextArea
-                        textlabel="Shipping Address"
-                        value={formData.shipping_address}
-                        onChange={(e) =>
-                          handleInputChange("shipping_address", e.target.value)
-                        }
-                        readOnly={isDisabled}
-                      />
+                      <TextArea textlabel="Shipping Address"  value={formData.shipping_address}  onChange={(e) => handleInputChange("shipping_address", e.target.value)} readOnly={isDisabled}/>
                     </Col>
                   </Row>
                 )}
-              </Col>
-              <Col md={3} style={{ zIndex: 100 }}>
-                <TextInputform
-                  formLabel="Invoice Number"
-                  value={formData.invoice_no}
-                  onChange={(e) =>
-                    handleInputChange("invoice_no", e.target.value)
-                  }
-                  readOnly={isDisabled}
-                />
-                <Calender
-                  calenderlabel="Invoice Date"
-                  initialDate={formData.invoice_date}
-                  setLabel={
-                    isDisabled
-                      ? undefined
-                      : (date) => handleInputChange("invoice_date", date)
-                  }
-                />
-                <DropDown
-                  textlabel="State of supply"
-                  value={formData.state_of_supply}
-                  onChange={(e) =>
-                    handleInputChange("state_of_supply", e.target.value)
-                  }
-                  options={STATE_OF_SUPPLY_OPTIONS}
-                  disabled={isDisabled}
-                />
-              </Col>
-            </Row>
-
-            {/* {!isViewMode && (
-              <div className="mb-3">
-                <label className="me-2">Credit</label>
-                <input
-                  type="checkbox"
-                  checked={credit}
-                  onChange={toggleCredit}
-                />
-              </div>
-            )} */}
-
-            <Row className="item-table-row mt-4">
+                </Col>
+                <Col md={3} style={{ zIndex: 100 }}>
+                <TextInputform formLabel="Invoice Number" value={formData.invoice_no}  onChange={(e) =>  handleInputChange("invoice_no", e.target.value)} readOnly={isDisabled}/>
+                <Calender calenderlabel="Invoice Date" initialDate={formData.invoice_date}/>
+                <DropDown textlabel="State of supply" value={formData.state_of_supply} onChange={(e) =>  handleInputChange("state_of_supply", e.target.value)} options={STATE_OF_SUPPLY_OPTIONS} disabled={isDisabled}/>
+                </Col>
+              </Row>
+              <Row className="item-table-row mt-4">
               <Col>
                 <Table bordered>
                   <thead>
@@ -564,8 +423,8 @@ const SaleCreation = () => {
                       <th>Item</th>
                       <th>Qty</th>
                       <th>Unit</th>
-                      <th>Price/Unit</th>
-                      <th>Price Unit Type</th>
+                      <th>Price</th>
+                      <th>Price/unit</th>
                       <th>Discount</th>
                       <th>Tax</th>
                       <th>Amount</th>
@@ -576,102 +435,38 @@ const SaleCreation = () => {
                     {formData.rows.map((row) => (
                       <tr key={row.id}>
                         <td>
-                          <TextInputform
-                            value={row.item}
-                            onChange={(e) =>
-                              onRowChange(row.id, "item", e.target.value)
-                            }
-                            readOnly={isDisabled}
-                          />
+                          <TextInputform value={row.item}  onChange={(e) =>onRowChange(row.id, "item", e.target.value)} readOnly={isDisabled}/>
                         </td>
                         <td>
-                          <TextInputform
-                            formtype="number"
-                            value={row.qty}
-                            onChange={(e) =>
-                              onRowChange(row.id, "qty", e.target.value)
-                            }
-                            readOnly={isDisabled}
-                          />
+                          <TextInputform formtype="number"  value={row.qty} onChange={(e) => onRowChange(row.id, "qty", e.target.value)}readOnly={isDisabled}/>
+                          
                         </td>
                         <td>
-                          <DropDown
-                            value={row.unit}
-                            onChange={(v) => onRowChange(row.id, "unit", v)}
-                            options={unitOptions}
-                            disabled={isDisabled}
-                          />
+                          <DropDown value={row.unit}  onChange={(v) => onRowChange(row.id, "unit", v)} options={unitOptions} disabled={isDisabled}/>
                         </td>
                         <td>
-                          <TextInputform
-                            formtype="number"
-                            value={row.price}
-                            onChange={(e) =>
-                              onRowChange(row.id, "price", e.target.value)
-                            }
-                            readOnly={isDisabled}
-                          />
+                          <TextInputform formtype="number" value={row.price} onChange={(e) => onRowChange(row.id, "price", e.target.value)}readOnly={isDisabled}/>
                         </td>
                         <td>
-                          <DropDown
-                            value={row.priceUnitType}
-                            onChange={(v) =>
-                              onRowChange(row.id, "priceUnitType", v)
-                            }
-                            options={priceUnitTypeOptions}
-                            disabled={isDisabled}
-                          />
+                          <DropDown value={row.priceUnitType} onChange={(v) => onRowChange(row.id, "priceUnitType", v)}options={priceUnitTypeOptions}disabled={isDisabled}/>
                         </td>
                         <td>
                           <InputGroup size="sm">
-                            <FormControl
-                              type="number"
-                              placeholder="%"
-                              value={row.discountPercent}
-                              onChange={(e) =>
-                                onRowChange(
-                                  row.id,
-                                  "discountPercent",
-                                  e.target.value
-                                )
-                              }
-                              readOnly={isDisabled}
-                            />
+                            <FormControl type="number"  placeholder="%"  value={row.discountPercent} onChange={(e) => onRowChange(row.id, "discountPercent",e.target.value)}readOnly={isDisabled}/>
                             <FormControl value={row.discountAmount} readOnly />
                           </InputGroup>
                         </td>
                         <td>
-                          <Select
-                            value={
-                              TAX_OPTIONS.find(
-                                (opt) =>
-                                  String(opt.value) === String(row.taxPercent)
-                              ) || TAX_OPTIONS[0]
-                            }
-                            onChange={(v) =>
-                              onRowChange(row.id, "taxPercent", v)
-                            }
-                            options={TAX_OPTIONS}
-                            isDisabled={isDisabled}
-                            menuPortalTarget={document.body}
-                          />
-                          <TextInputform
-                            readOnly
-                            value={row.taxAmount || "0.00"}
-                          />
+                          <Select  value={TAX_OPTIONS.find((opt) => String(opt.value) === String(row.taxPercent)) || TAX_OPTIONS[0]}
+                           onChange={(v) => onRowChange(row.id, "taxPercent", v)}options={TAX_OPTIONS} isDisabled={isDisabled} menuPortalTarget={document.body}/>
+                          <TextInputform readOnly value={row.taxAmount || "0.00"}/>
                         </td>
                         <td>
                           <TextInputform readOnly value={row.amount} />
                         </td>
                         <td>
                           {!isViewMode && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => deleteRow(row.id)}
-                            >
-                              <FaTimes />
-                            </Button>
+                            <Button variant="danger"  size="sm"  onClick={() => deleteRow(row.id)}> <FaTimes /> </Button>
                           )}
                         </td>
                       </tr>
@@ -679,9 +474,7 @@ const SaleCreation = () => {
                     {!isViewMode && (
                       <tr>
                         <td colSpan="9">
-                          <Button size="sm" onClick={addRow}>
-                            <FaPlus /> ADD ROW
-                          </Button>
+                          <Button size="sm" onClick={addRow}> <FaPlus/>ADD ROW </Button>
                         </td>
                       </tr>
                     )}
@@ -701,70 +494,76 @@ const SaleCreation = () => {
 
             <Row className="additional-actions mt-3 align-items-center">
               <Col xs={3}>
-                <DropDown
-                  textlabel="Payment Type"
-                  value={formData.payment_type}
-                  onChange={(e) =>
-                    handleInputChange("payment_type", e.target.value)
-                  }
-                  options={PAYMENT_OPTIONS}
-                  disabled={isDisabled}
-                />
+                <DropDown textlabel="Payment Type" value={formData.payment_type} onChange={(e) =>handleInputChange("payment_type", e.target.value)}options={PAYMENT_OPTIONS} disabled={isDisabled} />
               </Col>
               <Row className="additional-actions mt-3 align-items-center">
               <Col xs={3}>
-                  <TextInputform
-                   formLabel="Description"       
-                   value={formData.description || ""}   
-                   onChange={(e) => handleInputChange("description", e.target.value)}
-                   readOnly={isDisabled}          
-                    placeholder="Enter description (optional)" /></Col>
- 
-              </Row>
-              <Row className="additional-actions mt-3 align-items-center">
-              <Col xs={3}>
-                  <TextInputform
-                  formLabel="Add Image" 
-                  value={formData.add_image}
-                  onChange={(e) =>
-                    handleInputChange("add_image", e.target.value)
-                  }
-                  
-                  disabled={isDisabled} /></Col>
-               </Row>
-              <Col className="d-flex justify-content-end align-items-center gap-2">
-                <CheckBox
-                  OnChange={handleRoundOffToggle}
-                  boxLabel="Round Off"
-                  type="checkbox"
-                  checked={formData.rount_off === 1}
-                  disabled={isDisabled}
-                />
-                <TextInputform
-                  formtype="number"
-                  value={formData.round_off_amount}
-                  onChange={handleRoundOffChange}
-                  readOnly={formData.rount_off !== 1 || isDisabled}
-                />
-                <strong>Total</strong>
-                <TextInputform readOnly value={formData.total} />
+                <TextInputform formLabel="Description" value={formData.description || ""}onChange={(e) => handleInputChange("description", e.target.value)}readOnly={isDisabled}placeholder="Enter description (optional)" />
               </Col>
             </Row>
+            <Row className="mt-3">
+             <Col xs={3}>
+               <label className="form-label">Add Image</label>
+              {/* Clickable Upload Box */}
+              <div onClick={handleImageClick}
+                  style={{ border: '3px dashed #007bff', borderRadius: '12px',padding: '10px',textAlign: 'center',  backgroundColor: '#f8fbff',  cursor: isDisabled ? 'not-allowed' : 'pointer',opacity: isDisabled ? 0.5 : 1,transition: 'all 0.3s'
+                        }}
+                        onMouseEnter={(e) => !isDisabled && (e.currentTarget.style.backgroundColor = '#e3f2fd')}
+                        onMouseLeave={(e) => !isDisabled && (e.currentTarget.style.backgroundColor = '#f8fbff')} >
+   
+                  {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px' }} />
+                  ) : (
+                  <>
+                  <i className="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                  <p className="mb-1"><strong>Click to Upload Image</strong></p>
+                  {/* <small className="text-muted">JPG, PNG only • Max 5MB</small> */}
+                  {imageFileName && <p className="mt-2 text-success"><strong>{imageFileName}</strong></p>}
+                </>
+                )}
+              </div>
 
-            
-            {/* Show Back button in View mode too, but hide Save/Update button */}
+            {/* Hidden File Input */}
+            <input type="file"ref={fileInputRef}onChange={handleImageChange}accept="image/*"
+            style={{ display: 'none' }} disabled={isDisabled}/>
+            {/* Show selected file name below */}
+            {imageFileName && !imagePreview && (
+            <div className="mt-2 text-info">Selected: <strong>{imageFileName}</strong></div>
+            )}
+           {/* Clear button */}
+           {imagePreview && !isDisabled && (
+           <Button  variant="outline-danger"size="sm"className="mt-2"
+             onClick={() => {setImagePreview("");setImageFileName("");setFormData(prev => ({ ...prev, add_image: "" }));
+               if (fileInputRef.current) fileInputRef.current.value = "";}}>Remove Image</Button>
+            )}
+          </Col>
+          {/* If in Edit/View mode and image exists, show preview */}
+          {formData.add_image && !imagePreview && (
+          <Col md={4}>
+          <label className="form-label">Current Image</label>
+          <img src={formData.add_image} alt="Attached"
+             style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '10px', border: '2px solid #ddd' }}
+          />
+        </Col>
+         )}
+        </Row>
+        <Col className="d-flex justify-content-end align-items-center gap-2">
+            <CheckBox OnChange={handleRoundOffToggle} boxLabel="Round Off" type="checkbox" checked={formData.rount_off === 1} disabled={isDisabled}/>
+              <TextInputform formtype="number" value={formData.round_off_amount} onChange={handleRoundOffChange} readOnly={formData.rount_off !== 1 || isDisabled}/>
+                <strong>Total</strong>
+              <TextInputform readOnly value={formData.total} />
+        </Col>
+        </Row>
+           {/* Show Back button in View mode too, but hide Save/Update button */}
               <Row className="py-3">
                <Col className="d-flex justify-content-between align-items-end">
                   <Button variant="secondary" onClick={handleBack} size="lg">Back </Button>
-            {/* Only show Save/Update button when not in View mode */}
+               {/* Only show Save/Update button when not in View mode */}
               {!isViewMode && (
-              <Button
-                variant="outline-primary"
-                onClick={handleSave}
-                size="lg">
-      {isEditMode ? "Update Sale" : "Save Sale"} </Button>)}
-     </Col>
-     </Row>
+              <Button variant="outline-primary"onClick={handleSave} size="lg">
+              {isEditMode ? "Update Sale" : "Save Sale"} </Button>)}
+              </Col>
+              </Row>
           </Col>
         </Row>
       </Container>

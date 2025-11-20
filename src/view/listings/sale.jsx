@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Container, Row, Col, Button, Form, Table } from "react-bootstrap";
-import { FaSearch, FaChartBar, FaFileExcel, FaPrint } from "react-icons/fa";
+import { FaSearch, FaChartBar, FaFileExcel,FaPrint} from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { searchSales, deleteSale } from "../../slice/saleSlice";
 import { TextInputform } from "../../components/Forms";
@@ -12,8 +12,6 @@ import { TbCircleLetterI } from "react-icons/tb";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import NotifyData from "../../components/NotifyData";
 
-
-
 const Sale = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -21,6 +19,8 @@ const Sale = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [openShareId, setOpenShareId] = useState(null);
+
 
   // Fetch initial sales
   useEffect(() => {
@@ -60,6 +60,8 @@ const Sale = () => {
   const SaleData =
     filteredSales.length > 0
       ? filteredSales.map((item) => ({
+           icon: <TbCircleLetterI />,
+         
           values: [
             item.invoice_date || "-",
             item.invoice_no || "-",
@@ -68,6 +70,10 @@ const Sale = () => {
             item.payment_type || "Cash",
             `₹ ${Number(item.total || 0).toFixed(2)}`,
             "₹ 0",
+            <Form.Select size="sm" defaultValue="Paid" key="status">
+              <option>Paid</option>
+              <option>Unpaid</option>
+            </Form.Select>,
             <ActionButton
               options={[
                 {
@@ -90,8 +96,10 @@ const Sale = () => {
             />,
           ],
         }))
-      : [];
-
+      : 
+      [];
+      
+      
   return (
     <div id="main">
       <Container fluid className="py-5">
