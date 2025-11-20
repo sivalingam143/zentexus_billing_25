@@ -5,7 +5,7 @@ export const fetchParties = createAsyncThunk(
   "party/fetchParties",
   async (searchText, { rejectWithValue }) => {
     try {
-      console.log("enter try fetch");
+      
       const response = await partyService.getParties(searchText);
       console.log("response", response);
       const partiesArray = response || [];

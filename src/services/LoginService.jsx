@@ -3,7 +3,6 @@ import axiosInstance from "../config/API";
 
 const USERS_ENDPOINT = "/users.php";
 
-// Login thunk to validate login
 const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials, thunkAPI) => {
