@@ -64,6 +64,7 @@ const isCreateMode = location.pathname === "/sale/create";
 const isDisabled = isViewMode;
 const [imagePreview, setImagePreview] = useState("");        // To show preview
 const [imageFileName, setImageFileName] = useState("");      // To show filename
+const [attachedDocs, setAttachedDocs] = useState([]); // [{name, data, previewUrl}]
 
 // const fileInputRef = useRef(null);
 const [hasUserUploadedImage, setHasUserUploadedImage] = useState(false);//for edit image
@@ -90,13 +91,6 @@ const [formData, setFormData] = useState({
   const [customers, setCustomers] = useState([ { value: "", label: "Select Party" },]);
   const [isManualRoundOff, setIsManualRoundOff] = useState(false);
   const saleToEdit = id ? sales.find((s) => s.sale_id == id) : null;
-
-  ///for images
-//   const handleImageClick = () => {
-//   if (!isDisabled) {
-//     fileInputRef.current.click();
-//   }
-// };
   const handleImageChange = (e) => {
   const file = e.target.files[0];
   if (file) {
@@ -206,8 +200,50 @@ const [formData, setFormData] = useState({
     if (saleToEdit.add_image && saleToEdit.add_image.trim() !== "") {
     setImagePreview(saleToEdit.add_image);
     // setImageFileName("Previously uploaded image");
+    try {
+    const docs = saleToEdit.documents ? JSON.parse(saleToEdit.documents) : [];
+    setAttachedDocs(docs.map(d => ({
+      name: d.name,
+      data: d.data
+    })));
+  } catch (e) {
+    console.error("Failed to parse documents", e);
+  }
   }
   },[saleToEdit, hasUserUploadedImage]);
+
+  const handleDocumentUpload = (e) => {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      alert(`File ${file.name} is too large (max 10MB)`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachedDocs(prev => [...prev, {
+        name: file.name,
+        data: reader.result, // base64 with mime
+      }]);
+    };
+    reader.readAsDataURL(file);
+  });
+};
+const documentsJson = JSON.stringify(attachedDocs.map(doc => ({
+  name: doc.name,
+  data: doc.data
+})));
+
+const payload = {
+  ...formData,
+  documents: documentsJson,
+  // keep add_image as before
+};
+
+const removeDocument = (index) => {
+  setAttachedDocs(prev => prev.filter((_, i) => i !== index));
+};
 // Computed totals
 const totalQty = formData.rows.reduce((a, r) => a + (Number(r.qty) || 0), 0);
 const totalDiscount = formData.rows.reduce( (a, r) => a + (Number(r.discountAmount) || 0), 0);
@@ -350,38 +386,53 @@ const handleInputChange = (field, value) => {
   };
 
 const handleSave = async () => {
-    if (!formData.parties_id) {
-      alert("Please select or add a customer.");
-      return;
+  try {
+    // 1. Prepare documents JSON
+    const documentsJson = JSON.stringify(
+      attachedDocs.map(doc => ({
+        name: doc.name,
+        data: doc.data
+      }))
+    );
+
+    // 2. Final payload
+    const payload = {
+      ...formData,
+      products: JSON.stringify(formData.rows),
+      add_image: formData.add_image || "",
+      documents: documentsJson,
+      invoice_no: formData.invoice_no,
+      total: formData.total,
+      rount_off: formData.rount_off ? 1 : 0,
+      round_off_amount: formData.round_off_amount,
+    };
+
+    // VERY IMPORTANT: Only add edit_sales_id in EDIT mode
+    if (isEditMode) {
+      payload.edit_sales_id = id;
     }
-    if (!formData.invoice_no) {
-      alert("Please enter a unique Invoice Number.");
-      return;
+    // In create mode → DO NOT send edit_sales_id
+
+    delete payload.rows;
+
+    console.log("Sending payload:", payload);
+
+    if (isEditMode) {
+      await dispatch(updateSale(payload)).unwrap();
+      NotifyData("Sale Updated Successfully!", "success");
+    } else {
+      await dispatch(createSale(payload)).unwrap();
+      NotifyData("Sale Created Successfully!", "success");
     }
-    try {
-      const submitData = {
-        ...formData,
-        products: JSON.stringify(formData.rows.map(({ id, ...rest }) => rest)),
-        rount_off: formData.rount_off,
-        round_off_amount: formData.round_off_amount || "0",
-      };
-      if (isEditMode) {
-        submitData.edit_sales_id = id;
-        await dispatch(updateSale(submitData)).unwrap();
-        NotifyData("Sale Updated Successfully", "success");
-      } else {
-        await dispatch(createSale(submitData)).unwrap();
-        NotifyData("Sale Created Successfully", "success");
-      }
-      navigate("/Sale");} 
-      catch (error) {
-      console.error("Save error:", error);
-      NotifyData(
-        isEditMode ? "Sale Update Failed" : "Sale Creation Failed",
-        "error"
-      );
-      }
-  };
+
+    dispatch(searchSales(""));
+    navigate("/sale");
+
+  } catch (err) {
+    console.error("Save error:", err);
+    NotifyData(err || "Failed to save sale", "error");
+  }
+};
 const handleBack = () => navigate("/Sale");
 const title = isViewMode? "View Sale": isEditMode  ? "Edit Sale" : "Create Sale";
 const unitOptions = UNITS.map((u) => ({ value: u, label: u }));
@@ -516,7 +567,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
               </Col>
             </Row>
             <Row className="mt-3">
-                           <Col xs={3}>
+  <Col xs={3}>
   <label className="form-label">Add Image</label>
 
   {/* Clickable upload area */}
@@ -607,6 +658,62 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
         </Col>
          )}
         </Row>
+        <Col xs={3}  className="mt-4">
+  <label className="form-label">Attach Documents (PDF/Excel)</label>
+  
+  <label
+    htmlFor="doc-upload"
+    style={{
+      border: '3px dashed #007bff',
+      borderRadius: '12px',
+      padding: '20px',
+      textAlign: 'center',
+      backgroundColor: '#f8fff9',
+      cursor: isDisabled ? 'not-allowed' : 'pointer',
+      display: 'block'
+    }}
+  >
+    <i className="fas fa-file-upload fa-3x text-success mb-3"></i>
+    <p><strong>Click to upload PDF or Excel files</strong><br/>
+    <small>Multiple files allowed</small></p>
+  </label>
+
+  <input
+    id="doc-upload"
+    type="file"
+    accept=".pdf, .xlsx, .xls, " //application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel
+    multiple
+    onChange={handleDocumentUpload}
+    style={{ display: 'none' }}
+    disabled={isDisabled}
+  />
+
+  {/* Show attached files */}
+  {attachedDocs.length > 0 && (
+    <div className="mt-3">
+      <h6>Attached Files:</h6>
+      {attachedDocs.map((doc, idx) => (
+        <div key={idx} className="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+          {doc.name.endsWith('.pdf') ? 
+            <i className="fas fa-file-pdf text-danger fa-2x"></i> :
+            <i className="fas fa-file-excel text-success fa-2x"></i>
+          }
+          <div className="flex-grow-1">
+            <small className="d-block text-truncate" style={{maxWidth: '300px'}}>{doc.name}</small>
+            <a href={doc.data} download={doc.name} className="text-primary small">Download</a>
+          </div>
+          {!isDisabled && (
+            <Button 
+              size="sm" 
+              variant="outline-danger"
+              onClick={() => removeDocument(idx)}
+            >×</Button>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</Col>
         <Col className="d-flex justify-content-end align-items-center gap-2">
             <CheckBox OnChange={handleRoundOffToggle} boxLabel="Round Off" type="checkbox" checked={formData.rount_off === 1} disabled={isDisabled}/>
               <TextInputform formtype="number" value={formData.round_off_amount} onChange={handleRoundOffChange} readOnly={formData.rount_off !== 1 || isDisabled}/>
@@ -694,6 +801,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     </Button>
   </Modal.Body>
 </Modal>
+
       </Container>
     </div>
   );
