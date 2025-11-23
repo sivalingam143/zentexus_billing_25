@@ -11,6 +11,11 @@ import { MdOutlineDelete } from "react-icons/md";
 import { TbCircleLetterI } from "react-icons/tb";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import NotifyData from "../../components/NotifyData";
+import { FiPrinter,FiShare2 } from "react-icons/fi"; 
+import { FaWhatsapp } from "react-icons/fa";
+import { SiGmail } from "react-icons/si";
+import { MdSms } from "react-icons/md";
+
 
 const Sale = () => {
   const dispatch = useDispatch();
@@ -62,38 +67,94 @@ const Sale = () => {
            icon: <TbCircleLetterI />,
          
           values: [
-            item.invoice_date || "-",
-            item.invoice_no || "-",
-            item.name || "-",
-            "Sale Invoice",
-            item.payment_type || "Cash",
-            `₹ ${Number(item.total || 0).toFixed(2)}`,
-            "₹ 0",
-            <Form.Select size="sm" defaultValue="Paid" key="status">
-              <option>Paid</option>
-              <option>Unpaid</option>
-            </Form.Select>,
-            <ActionButton
-              options={[
-                {
-                  label: "View",
-                  icon: <TbCircleLetterI />,
-                  onClick: () => handleView(item),
-                },
-                {
-                  label: "Edit",
-                  icon: <TbCircleLetterI />,
-                  onClick: () => handleEdit(item),
-                },
-                {
-                  label: "Delete",
-                  icon: <MdOutlineDelete />,
-                  onClick: () => handleDelete(item.sale_id),
-                },
-              ]}
-              label={<HiOutlineDotsVertical />}
-            />,
-          ],
+          item.invoice_date || "-",
+          item.invoice_no || "-",
+           item.name || "-",
+          "Sale Invoice",
+           item.payment_type || "Cash",
+          `₹ ${Number(item.total || 0).toFixed(2)}`,
+          "₹ 0",      
+  <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px" }}>
+
+  {/* Print */}
+  <FiPrinter
+    size={20}
+    style={{ cursor: "pointer" }}
+    onClick={() => window.print()}
+  />
+
+  {/* Share Button */}
+  <FiShare2
+    size={20}
+    style={{ cursor: "pointer" }}
+    onClick={() =>
+      setOpenShareId(openShareId === item.sale_id ? null : item.sale_id)
+    }
+  />
+
+  {/* ▼ ▼ SHARE POPUP BOX ▼ ▼ */}
+  {openShareId === item.sale_id && (
+    <div
+      style={{
+        position: "absolute",
+        top: "30px",
+        left: "0",
+        display: "flex",
+        gap: "12px",
+        padding: "10px",
+        background: "white",
+        borderRadius: "10px",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        zIndex: 999,
+      }}
+    >
+      {/* WhatsApp */}
+      <FaWhatsapp
+        size={24}
+        color="green"
+        style={{ cursor: "pointer" }}
+        onClick={() =>
+          window.open(
+            `https://wa.me/?text=Invoice No: ${item.invoice_no}`,
+            "_blank"
+          )
+        }
+      />
+
+      {/* Gmail */}
+      <SiGmail
+        size={24}
+        color="#D44638"
+        style={{ cursor: "pointer" }}
+        onClick={() =>
+          (window.location.href = `mailto:?subject=Invoice Details&body=Invoice No: ${item.invoice_no}`)
+        }
+      />
+
+      {/* SMS */}
+      <MdSms
+        size={26}
+        color="#1E90FF"
+        style={{ cursor: "pointer" }}
+        onClick={() =>
+          (window.location.href = `sms:?body=Invoice No: ${item.invoice_no}`)
+        }
+      />
+    </div>
+  )}
+
+  {/* Existing Action Dropdown */}
+  <ActionButton
+    options={[
+      { label: "View", icon: <TbCircleLetterI />, onClick: () => handleView(item) },
+      { label: "Edit", icon: <TbCircleLetterI />, onClick: () => handleEdit(item) },
+      { label: "Delete", icon: <MdOutlineDelete />, onClick: () => handleDelete(item.sale_id) },
+    ]}
+    label={<HiOutlineDotsVertical />}
+  />
+</div>
+
+],     
         }))
       : 
       [];

@@ -7,6 +7,8 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {fetchParties,createSale,updateSale,searchSales,} from "../../slice/saleSlice";
 import {TextInputform,TextArea,DropDown,Calender,CheckBox,} from "../../components/Forms";
 import NotifyData from "../../components/NotifyData";
+import Modal from "react-bootstrap/Modal";
+import { Color } from "antd/es/color-picker";
 // Static options
 const UNITS = ["NONE", "KG", "Litre", "Piece"];
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
@@ -62,7 +64,11 @@ const isCreateMode = location.pathname === "/sale/create";
 const isDisabled = isViewMode;
 const [imagePreview, setImagePreview] = useState("");        // To show preview
 const [imageFileName, setImageFileName] = useState("");      // To show filename
-const fileInputRef = useRef(null);
+const [attachedDocs, setAttachedDocs] = useState([]); // [{name, data, previewUrl}]
+
+// const fileInputRef = useRef(null);
+const [hasUserUploadedImage, setHasUserUploadedImage] = useState(false);//for edit image
+const [showImageModal, setShowImageModal] = useState(false);
 const [formData, setFormData] = useState({
     parties_id: "",
     name: "",
@@ -80,16 +86,11 @@ const [formData, setFormData] = useState({
     round_off_amount: "0",
     total: "0.00",
   });
+  console.log(formData)
   const [credit, setCredit] = useState(true);
   const [customers, setCustomers] = useState([ { value: "", label: "Select Party" },]);
   const [isManualRoundOff, setIsManualRoundOff] = useState(false);
   const saleToEdit = id ? sales.find((s) => s.sale_id == id) : null;
-  ///for images
-  const handleImageClick = () => {
-  if (!isDisabled) {
-    fileInputRef.current.click();
-  }
-};
   const handleImageChange = (e) => {
   const file = e.target.files[0];
   if (file) {
@@ -99,6 +100,7 @@ const [formData, setFormData] = useState({
       return;
     }
     setImageFileName(file.name);
+    setHasUserUploadedImage(true); // ← Mark that user uploaded new image
   const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result;
@@ -137,6 +139,11 @@ const [formData, setFormData] = useState({
       ...customerOptions,
     ]);
   }, [parties]);
+  useEffect(() => {
+  setHasUserUploadedImage(false);
+  setImagePreview("");
+  setImageFileName("");
+}, [id, isCreateMode]); // Reset when sale ID or mode changes
 
 // Prefill form for edit/view
   useEffect(() => {
@@ -183,7 +190,8 @@ const [formData, setFormData] = useState({
       state_of_supply: saleToEdit.state_of_supply || "",
       payment_type: saleToEdit.payment_type || "",
       description: saleToEdit.description|| "",
-      add_image: saleToEdit.add_image ||"",
+      // add_image: saleToEdit.add_image ||"",
+      add_image: hasUserUploadedImage ? formData.add_image : (saleToEdit.add_image || ""),
       rows,
       rount_off,
       round_off_amount,
@@ -191,9 +199,51 @@ const [formData, setFormData] = useState({
     });
     if (saleToEdit.add_image && saleToEdit.add_image.trim() !== "") {
     setImagePreview(saleToEdit.add_image);
-    setImageFileName("Previously uploaded image");
+    // setImageFileName("Previously uploaded image");
+    try {
+    const docs = saleToEdit.documents ? JSON.parse(saleToEdit.documents) : [];
+    setAttachedDocs(docs.map(d => ({
+      name: d.name,
+      data: d.data
+    })));
+  } catch (e) {
+    console.error("Failed to parse documents", e);
   }
-  }, [saleToEdit]);
+  }
+  },[saleToEdit, hasUserUploadedImage]);
+
+  const handleDocumentUpload = (e) => {
+  const files = Array.from(e.target.files);
+  files.forEach(file => {
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      alert(`File ${file.name} is too large (max 10MB)`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAttachedDocs(prev => [...prev, {
+        name: file.name,
+        data: reader.result, // base64 with mime
+      }]);
+    };
+    reader.readAsDataURL(file);
+  });
+};
+const documentsJson = JSON.stringify(attachedDocs.map(doc => ({
+  name: doc.name,
+  data: doc.data
+})));
+
+const payload = {
+  ...formData,
+  documents: documentsJson,
+  // keep add_image as before
+};
+
+const removeDocument = (index) => {
+  setAttachedDocs(prev => prev.filter((_, i) => i !== index));
+};
 // Computed totals
 const totalQty = formData.rows.reduce((a, r) => a + (Number(r.qty) || 0), 0);
 const totalDiscount = formData.rows.reduce( (a, r) => a + (Number(r.discountAmount) || 0), 0);
@@ -336,38 +386,53 @@ const handleInputChange = (field, value) => {
   };
 
 const handleSave = async () => {
-    if (!formData.parties_id) {
-      alert("Please select or add a customer.");
-      return;
+  try {
+    // 1. Prepare documents JSON
+    const documentsJson = JSON.stringify(
+      attachedDocs.map(doc => ({
+        name: doc.name,
+        data: doc.data
+      }))
+    );
+
+    // 2. Final payload
+    const payload = {
+      ...formData,
+      products: JSON.stringify(formData.rows),
+      add_image: formData.add_image || "",
+      documents: documentsJson,
+      invoice_no: formData.invoice_no,
+      total: formData.total,
+      rount_off: formData.rount_off ? 1 : 0,
+      round_off_amount: formData.round_off_amount,
+    };
+
+    // VERY IMPORTANT: Only add edit_sales_id in EDIT mode
+    if (isEditMode) {
+      payload.edit_sales_id = id;
     }
-    if (!formData.invoice_no) {
-      alert("Please enter a unique Invoice Number.");
-      return;
+    // In create mode → DO NOT send edit_sales_id
+
+    delete payload.rows;
+
+    console.log("Sending payload:", payload);
+
+    if (isEditMode) {
+      await dispatch(updateSale(payload)).unwrap();
+      NotifyData("Sale Updated Successfully!", "success");
+    } else {
+      await dispatch(createSale(payload)).unwrap();
+      NotifyData("Sale Created Successfully!", "success");
     }
-    try {
-      const submitData = {
-        ...formData,
-        products: JSON.stringify(formData.rows.map(({ id, ...rest }) => rest)),
-        rount_off: formData.rount_off,
-        round_off_amount: formData.round_off_amount || "0",
-      };
-      if (isEditMode) {
-        submitData.edit_sales_id = id;
-        await dispatch(updateSale(submitData)).unwrap();
-        NotifyData("Sale Updated Successfully", "success");
-      } else {
-        await dispatch(createSale(submitData)).unwrap();
-        NotifyData("Sale Created Successfully", "success");
-      }
-      navigate("/Sale");} 
-      catch (error) {
-      console.error("Save error:", error);
-      NotifyData(
-        isEditMode ? "Sale Update Failed" : "Sale Creation Failed",
-        "error"
-      );
-      }
-  };
+
+    dispatch(searchSales(""));
+    navigate("/sale");
+
+  } catch (err) {
+    console.error("Save error:", err);
+    NotifyData(err || "Failed to save sale", "error");
+  }
+};
 const handleBack = () => navigate("/Sale");
 const title = isViewMode? "View Sale": isEditMode  ? "Edit Sale" : "Create Sale";
 const unitOptions = UNITS.map((u) => ({ value: u, label: u }));
@@ -502,51 +567,153 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
               </Col>
             </Row>
             <Row className="mt-3">
-             <Col xs={3}>
-               <label className="form-label">Add Image</label>
-              {/* Clickable Upload Box */}
-              <div onClick={handleImageClick}
-                  style={{ border: '3px dashed #007bff', borderRadius: '12px',padding: '10px',textAlign: 'center',  backgroundColor: '#f8fbff',  cursor: isDisabled ? 'not-allowed' : 'pointer',opacity: isDisabled ? 0.5 : 1,transition: 'all 0.3s'
-                        }}
-                        onMouseEnter={(e) => !isDisabled && (e.currentTarget.style.backgroundColor = '#e3f2fd')}
-                        onMouseLeave={(e) => !isDisabled && (e.currentTarget.style.backgroundColor = '#f8fbff')} >
-   
-                  {imagePreview ? (
-                  <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px' }} />
-                  ) : (
-                  <>
-                  <i className="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
-                  <p className="mb-1"><strong>Click to Upload Image</strong></p>
-                  {/* <small className="text-muted">JPG, PNG only • Max 5MB</small> */}
-                  {imageFileName && <p className="mt-2 text-success"><strong>{imageFileName}</strong></p>}
-                </>
-                )}
-              </div>
+  <Col xs={3}>
+  <label className="form-label">Add Image</label>
 
-            {/* Hidden File Input */}
-            <input type="file"ref={fileInputRef}onChange={handleImageChange}accept="image/*"
-            style={{ display: 'none' }} disabled={isDisabled}/>
-            {/* Show selected file name below */}
-            {imageFileName && !imagePreview && (
-            <div className="mt-2 text-info">Selected: <strong>{imageFileName}</strong></div>
-            )}
-           {/* Clear button */}
-           {imagePreview && !isDisabled && (
-           <Button  variant="outline-danger"size="sm"className="mt-2"
-             onClick={() => {setImagePreview("");setImageFileName("");setFormData(prev => ({ ...prev, add_image: "" }));
-               if (fileInputRef.current) fileInputRef.current.value = "";}}>Remove Image</Button>
-            )}
-          </Col>
+  {/* Clickable upload area */}
+  <label
+    htmlFor="sale-image-upload"
+    style={{
+      border: '3px dashed #007bff',
+      borderRadius: '12px',
+      padding: '20px',
+      textAlign: 'center',
+      backgroundColor: '#f8fbff',
+      cursor: isDisabled ? 'not-allowed' : 'pointer',
+      opacity: isDisabled ? 0.5 : 1,
+      display: 'block'
+    }}
+  >
+    {imagePreview ? (
+      <>
+        <div 
+      onClick={(e) => {
+        e.stopPropagation();     // ← Stops click from reaching the <label>
+        e.preventDefault();      // ← Extra safety
+        setShowImageModal(true);
+      }}
+      style={{ display: 'inline-block', cursor: 'zoom-in' }}
+    >
+      <img
+        src={imagePreview}
+        alt="Preview"
+        style={{
+          maxWidth: '100%',
+          maxHeight: '200px',
+          borderRadius: '8px',
+          transition: '0.3s',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+          pointerEvents: 'none'  // ← IMPORTANT: Image itself won't trigger events
+        }}
+        onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+        onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+      />
+    </div>
+      
+        {imageFileName && <p className="text-success"><strong>{imageFileName}</strong></p>}
+      </>
+    ) : (
+      <>
+        <i className="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+        <p><strong>Click to Upload Image</strong></p>
+      </>
+    )}
+  </label>
+
+  {/* Hidden file input */}
+  <input
+    id="sale-image-upload"
+    type="file"
+    accept="image/*"
+    onChange={handleImageChange}
+    style={{ display: 'none' }}
+    disabled={isDisabled}
+  />
+
+  {/* Remove Image Button */}
+  {imagePreview && !isDisabled && (
+    <Button
+      variant="outline-danger"
+      size="sm"
+      className="mt-2"
+      onClick={() => {
+        setImagePreview("");
+        setImageFileName("");
+        setHasUserUploadedImage(true);
+        setFormData(prev => ({ ...prev, add_image: "" }));
+        document.getElementById('sale-image-upload').value = "";
+      }}
+    >
+      X
+    </Button>
+  )}
+</Col>
           {/* If in Edit/View mode and image exists, show preview */}
           {formData.add_image && !imagePreview && (
           <Col md={4}>
           <label className="form-label">Current Image</label>
           <img src={formData.add_image} alt="Attached"
-             style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '10px', border: '2px solid #ddd' }}
+            //  style={{ width: '100%', maxHeight: '500px', objectFit: 'cover', borderRadius: '10px', border: '2px solid #ddd' }}
           />
         </Col>
          )}
         </Row>
+        <Col xs={3}  className="mt-4">
+  <label className="form-label">Attach Documents (PDF/Excel)</label>
+  
+  <label
+    htmlFor="doc-upload"
+    style={{
+      border: '3px dashed #007bff',
+      borderRadius: '12px',
+      padding: '20px',
+      textAlign: 'center',
+      backgroundColor: '#f8fff9',
+      cursor: isDisabled ? 'not-allowed' : 'pointer',
+      display: 'block'
+    }}
+  >
+    <i className="fas fa-file-upload fa-3x text-success mb-3"></i>
+    <p><strong>Click to upload PDF or Excel files</strong><br/>
+    <small>Multiple files allowed</small></p>
+  </label>
+
+  <input
+    id="doc-upload"
+    type="file"
+    accept=".pdf, .xlsx, .xls, " //application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel
+    multiple
+    onChange={handleDocumentUpload}
+    style={{ display: 'none' }}
+    disabled={isDisabled}
+  />
+
+  {/* Show attached files */}
+  {attachedDocs.length > 0 && (
+    <div className="mt-3">
+      <h6>Attached Files:</h6>
+      {attachedDocs.map((doc, idx) => (
+        <div key={idx} className="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+          {doc.name.endsWith('.pdf') ? 
+            <i className="fas fa-file-pdf text-danger fa-2x"></i> :
+            <i className="fas fa-file-excel text-success fa-2x"></i>
+          }
+          <div className="flex-grow-1">
+            <small className="d-block text-truncate" style={{maxWidth: '300px'}}>{doc.name}</small>
+            <a href={doc.data} download={doc.name} className="text-primary small">Download</a>
+          </div>
+          {!isDisabled && (
+            <Button 
+              size="sm" 
+              variant="outline-danger"
+              onClick={() => removeDocument(idx)}
+            >×</Button>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
+</Col>
         <Col className="d-flex justify-content-end align-items-center gap-2">
             <CheckBox OnChange={handleRoundOffToggle} boxLabel="Round Off" type="checkbox" checked={formData.rount_off === 1} disabled={isDisabled}/>
               <TextInputform formtype="number" value={formData.round_off_amount} onChange={handleRoundOffChange} readOnly={formData.rount_off !== 1 || isDisabled}/>
@@ -566,9 +733,80 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
               </Row>
           </Col>
         </Row>
+        {/* Full-Screen Image Popup Modal */}
+{/* Beautiful Transparent Popup - Closes ONLY on X button */}
+{/* PERFECT Image Popup - Closes ONLY when tapping X */}
+<Modal 
+  show={showImageModal} 
+  onHide={() => {}}  // ← EMPTY: disables automatic close
+  size="xl" 
+  centered
+  keyboard={false} 
+  dialogClassName="transparent-modal"    // Disables ESC key
+>
+  <Modal.Body 
+    className="p-0 d-flex align-items-center justify-content-center position-relative"
+    style={{ 
+      
+      minHeight: '100vh',
+      margin: 0
+    }}
+    // This stops ALL clicks on background/image from closing
+    onClick={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    }}
+  >
+    <img
+      src={imagePreview}
+      alt="Full size"
+      style={{
+        maxWidth: '95vw',
+        maxHeight: '95vh',
+        objectFit: 'contain',
+        borderRadius: '16px',
+      }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+    />
+
+    {/* ONLY THIS X BUTTON CLOSES THE POPUP */}
+    <Button
+      variant="outline-light"
+      size="lg"
+      style={{
+        position: 'absolute',
+        top: '20px',
+        right: '20px',
+        zIndex: 1051,
+        borderRadius: '50%',
+        width: '50px',
+        height: '50px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'red',
+        backdropFilter: 'blur(10px)',
+        border: '2px solid rgba(255,255,255,0.3)'
+      }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowImageModal(false);  // ← ONLY this closes
+      }}
+    >
+      <FaTimes size={26} />
+    </Button>
+  </Modal.Body>
+</Modal>
+
       </Container>
     </div>
   );
 };
 
 export default SaleCreation;
+
+
