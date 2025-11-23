@@ -44,8 +44,7 @@ const Sale = () => {
     }
   };
 
-  const filteredSales = sales || [];
-
+  const filteredSales = sales || []
   // Table configuration
   const SaleHead = [
     "Date",
