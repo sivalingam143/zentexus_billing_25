@@ -11,11 +11,11 @@ import PartyModal from "../creation/PartyModalCreation";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
-  fetchParties,
+  searchPartiesAndSales,
   addNewParty,
   updateExistingParty,
   deleteExistingParty,
-} from "../../slice/partySlice";
+} from "../../slice/partySlice"
 
 
 
@@ -45,7 +45,8 @@ const Initialstate = {
 
 function Parties() {
   const dispatch = useDispatch();
-  const parties = useSelector((state) => state.parties.parties);
+const partyState = useSelector((state) => state.party || {});
+const { parties = [], sales = [] } = partyState;
   const [searchText, setSearchText] = useState(""); 
   const [selectedParty, setSelectedParty] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -53,8 +54,8 @@ function Parties() {
   const [formData, setFormData] = useState(Initialstate);
 
   useEffect(() => {
-    dispatch(fetchParties(searchText));
-  }, [dispatch, searchText]);
+  dispatch(searchPartiesAndSales(searchText));
+}, [dispatch, searchText]);
 
   useEffect(() => {
     if (parties?.length > 0 && !selectedParty) {
@@ -175,29 +176,29 @@ function Parties() {
     }
 
     if (success) {
-      dispatch(fetchParties());
+      dispatch(searchPartiesAndSales(""));;
       setShowModal(false);
       // setShowModal(isSaveAndNew);
       setFormData(Initialstate);
     }
   };
 
-  const handleSaveAndNew = async () => {
-    const dataToSend = createPayload();
-    let success = false;
+const handleSaveAndNew = async () => {
+  const dataToSend = createPayload();
+  let success = false;
 
-    try {
-      await dispatch(addNewParty(dataToSend)).unwrap();
-      success = true;
-    } catch (error) {
-      console.error("Save & New failed:", error);
-    }
+  try {
+    await dispatch(addNewParty(dataToSend)).unwrap();
+    success = true;
+  } catch (error) {
+    console.error("Save & New failed:", error);
+  }
 
-    if (success) {
-      dispatch(fetchParties());
-      setFormData(Initialstate);
-    }
-  };
+  if (success) {
+    dispatch(searchPartiesAndSales("")); // ← FIXED
+    setFormData(Initialstate);
+  }
+};
 
   const handleDelete = async () => {
     const idToDelete = formData.id;
@@ -209,7 +210,7 @@ function Parties() {
 
     try {
       await dispatch(deleteExistingParty(idToDelete)).unwrap();
-      dispatch(fetchParties());
+     dispatch(searchPartiesAndSales(""));
       setShowModal(false);
       setSelectedParty(null);
     } catch (error) {
@@ -303,12 +304,12 @@ function Parties() {
                 <tbody>
                   {(parties || []).map((p) => (
                     <tr
-                      key={p.id}
+                      key={p.parties_id}
                       onClick={() => setSelectedParty(p)}
                       style={{
                         cursor: "pointer",
                         backgroundColor:
-                          selectedParty?.id === p.id ? "#e7f3ff" : "",
+                          selectedParty?.parties_id === p.parties_id? "#e7f3ff" : "",
                       }}
                     >
                       <td>{p.name}</td>
@@ -398,27 +399,87 @@ function Parties() {
                           <td className="text-secondary">Balance</td>
                         </tr>
                       </thead>
-  <tbody>
-  {/* Show all matched transactions */}
-  {selectedParty?.transactions && selectedParty.transactions.length > 0 ? (
-    selectedParty.transactions.map((t, i) => (
-      <tr key={`trans-${i}`}>
-        {/* Shows balance_label (Payable/Receivable) in Type column */}
-        <td>{t.balance_label || t.type}</td> 
-        <td>{t.number}</td>
-        <td>{t.date}</td>
-        {/* Total is correctly displaying the amount from the transaction table */}
-        <td>₹{t.total.toFixed(2)}</td>
-        {/* Balance is correctly displaying the amount from the transaction table, color-coded */}
-        <td style={{ color: t.color }}>
-            ₹{t.balance.toFixed(2)}
-        </td>
-      </tr>
-    ))
+
+
+
+
+<tbody>
+  {selectedParty ? (
+    (() => {
+      // 1. CREATE OPENING BALANCE TRANSACTION
+      const initialTransactions = [];
+      const obAmount = parseFloat(selectedParty.amount || 0);
+
+      if (obAmount > 0) {
+        // Determine the type (Payable/Receivable) and color based on balance_type 
+        const isPayable = selectedParty.balance_type === 'to pay';
+        
+        initialTransactions.push({
+          // type: "Opening Balance", 
+          balance_label: isPayable ? "Payable" : "Receivable", 
+          color: isPayable ? "red" : "green", // Red/Green is correctly applied here
+          number: null, 
+          date: selectedParty.create_at || selectedParty.date || new Date().toISOString(), 
+          total: obAmount, 
+          balance: obAmount, 
+        });
+      }
+
+      // 2. GET SALES TRANSACTIONS
+      const partySales = sales.filter(
+        (s) => s.parties_id === selectedParty.parties_id && s.delete_at == 0
+      );
+
+      // Map sales to transaction format
+      const salesTransactions = partySales.map((s) => ({
+        type: "Sale",
+        balance_label: "Receivable", // Adding balance_label for completeness
+        color: "", // FIX: Removed hardcoded "green" to default to black/inherit
+        number: s.invoice_no || s.id, 
+        date: s.invoice_date || s.date,
+        total: parseFloat(s.total || 0),
+        balance: parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0),
+      }));
+      
+      // 3. COMBINE TRANSACTIONS
+      const transactions = [...initialTransactions, ...salesTransactions]; 
+      
+      // The optional sort step (recommended for a full ledger view)
+      // transactions.sort((a, b) => new Date(a.date) - new Date(b.date)); 
+
+
+      // 4. RENDER
+      return transactions.length > 0 ? (
+        transactions.map((t, i) => (
+          <tr key={i}>
+            {/* Type Column: Uses t.type for "Sale" or "Opening Balance" */}
+            <td style={{ color: t.color, fontWeight: "bold" }}>
+              {t.type || t.balance_label} 
+            </td>
+            {/* Number Column (Display '-' for null/empty number) */}
+            <td>{t.number || '-'}</td> 
+            {/* Date Column */}
+            <td>{new Date(t.date).toLocaleDateString("en-IN")}</td>
+            {/* Total Column */}
+            <td>₹{t.total.toFixed(2)}</td>
+            {/* Balance Column */}
+            <td style={{ color: t.color, fontWeight: "bold" }}>
+              ₹{t.balance.toFixed(2)}
+            </td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan="5" className="text-center text-muted py-4">
+            No transactions yet
+          </td>
+        </tr>
+      );
+    })()
   ) : (
     <tr>
       <td colSpan="5" className="text-center text-muted py-4">
-        No transactions yet
+        Select a party to view transactions
       </td>
     </tr>
   )}

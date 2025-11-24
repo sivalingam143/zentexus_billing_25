@@ -7,7 +7,7 @@ import categoryReducer from "../slice/CategorySlice";
 
 export const store = configureStore({
   reducer: {
-    parties: partyReducer,
+    party: partyReducer,
     sale: saleReducer,
     unit: unitReducer,
     category: categoryReducer,  // key must be "unit"

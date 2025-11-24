@@ -1,72 +1,59 @@
 // services/PartyService.js
-
 import axiosInstance from "../config/API";
 
 const PARTIES_ENDPOINT = "/parties.php";
-const SALES_ENDPOINT = "/sales.php";
 
-const checkApiResponse = (data, defaultMsg) => {
-  if (data.head && data.head.code !== 200) {
-    throw new Error(data.head.msg || defaultMsg);
+const checkResponse = (data, defaultMsg = "Operation failed") => {
+  if (!data?.head || data.head.code !== 200) {
+    throw new Error(data?.head?.msg || defaultMsg);
   }
 };
 
-export const hitSalesApi = async (searchText) => {
-  const payload = {
-    search_text: searchText || "",
-  };
+// Search Parties + Sales together
+export const searchAll = async (searchText = "") => {
+  const payload = { search_text: searchText.trim() };
 
-  try {
-    // This is the direct hit to sales.php the user requested.
-    await axiosInstance.post(SALES_ENDPOINT, payload);
-  } catch (error) {
-    // Ignore errors for this non-critical side effect request
-    console.warn("Sales hit failed (network trace):", error);
-  }
+  const { data } = await axiosInstance.post(PARTIES_ENDPOINT, payload);
+  checkResponse(data, "Search failed");
+
+  // PHP returns: { body: { parties: [...], sales: [...] } }
+  return {
+    parties: data.body?.parties || [],
+    sales: data.body?.sales || [],
+  };
 };
 
-export const getParties = async (searchText = "") => {
-  const payload = {
-    search_text: searchText || "",
-    t: Date.now()
-  };
-
-  const response = await axiosInstance.post(PARTIES_ENDPOINT, payload);
-  const data = response.data;
-
-  checkApiResponse(data, "Failed to fetch parties");
-
-  // THIS IS THE KEY: parties.php ALREADY ADDED transactions via cURL
-  // SO JUST RETURN IT — DO NOT TOUCH OR MAP AGAIN!
-  return data.body?.parties || [];
-};
-
-
-// Remove hitSalesApi if not needed — it's useless now
-
+// Create new party
 export const addParty = async (partyData) => {
-  const payload = { ...partyData };
-  const response = await axiosInstance.post(PARTIES_ENDPOINT, payload);
-  const data = response.data;
-  checkApiResponse(data, "Failed to add party");
-  return data;
+  const payload = {
+    ...partyData,
+    transactionType: partyData.transactionType || "receive", // default
+  };
+
+  const { data } = await axiosInstance.post(PARTIES_ENDPOINT, payload);
+  checkResponse(data, "Failed to create party");
+  return data; // success message in head.msg
 };
 
+// Update party
 export const updateParty = async (partyData) => {
   const payload = {
     ...partyData,
-    edit_parties_id: partyData.id || partyData.parties_id,
+    edit_parties_id: partyData.parties_id, // Required by PHP
   };
-  const response = await axiosInstance.post(PARTIES_ENDPOINT, payload);
-  const data = response.data;
-  checkApiResponse(data, "Failed to update party");
-  return partyData;
+
+  const { data } = await axiosInstance.post(PARTIES_ENDPOINT, payload);
+  checkResponse(data, "Failed to update party");
+
+  return partyData; // return updated object for UI
 };
 
+// Delete party (soft delete)
 export const deleteParty = async (parties_id) => {
   const payload = { delete_parties_id: parties_id };
-  const response = await axiosInstance.post(PARTIES_ENDPOINT, payload);
-  const data = response.data;
-  checkApiResponse(data, "Failed to delete party");
+
+  const { data } = await axiosInstance.post(PARTIES_ENDPOINT, payload);
+  checkResponse(data, "Failed to delete party");
+
   return parties_id;
 };
