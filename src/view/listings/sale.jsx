@@ -1,7 +1,7 @@
-import React, { useEffect, useState,useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Container, Row, Col, Button, Form, Table } from "react-bootstrap";
-import { FaSearch, FaChartBar, FaFileExcel,FaPrint} from "react-icons/fa";
+import { Container, Row, Col, Button } from "react-bootstrap";
+import { FaSearch, FaChartBar, FaFileExcel, FaPrint } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { searchSales, deleteSale } from "../../slice/saleSlice";
 import { TextInputform } from "../../components/Forms";
@@ -11,53 +11,42 @@ import { MdOutlineDelete } from "react-icons/md";
 import { TbCircleLetterI } from "react-icons/tb";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import NotifyData from "../../components/NotifyData";
-import { FiPrinter,FiShare2 } from "react-icons/fi"; 
+import { FiPrinter, FiShare2 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
 import { MdSms } from "react-icons/md";
-
 
 const Sale = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { sales = [] } = useSelector((state) => state.sale);
-  // const { sales, status } = useSelector((state) => state.sale);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [openShareId, setOpenShareId] = useState(null);
 
-
-  // Fetch initial sales
+  // Fetch sales on search change
   useEffect(() => {
     dispatch(searchSales(searchTerm));
   }, [dispatch, searchTerm]);
 
+  // Calculate totals using real DB values
   const totals = useMemo(() => {
-    const totalSales   = sales.reduce((sum, s) => sum + Number(s.total || 0), 0);
-    // If you store received amount separately, use it; otherwise assume cash = fully received
-    const totalReceived = sales.reduce((sum, s) => {
-      // Option A: if you have a "received" field in DB
-      // return sum + Number(s.received || 0);
-
-      // Option B: for cash sales → full amount received, credit → 0 received
-      return s.payment_type === "Cash" ? sum + Number(s.total || 0) : sum;
-    }, 0);
-
-    const totalBalance = totalSales - totalReceived;
+    const totalSales = sales.reduce((sum, s) => sum + Number(s.total || 0), 0);
+    const totalReceived = sales.reduce((sum, s) => sum + Number(s.received_amount || 0), 0);
+    const totalBalance = sales.reduce((sum, s) => sum + Number(s.balance_due || 0), 0);
 
     return {
-      totalSales:   totalSales.toFixed(2),
+      totalSales: totalSales.toFixed(2),
       totalReceived: totalReceived.toFixed(2),
-      totalBalance:  totalBalance.toFixed(2),
+      totalBalance: totalBalance.toFixed(2),
     };
   }, [sales]);
 
-  // Navigation handlers
+  // Navigation
   const handleCreate = () => navigate("/sale/create");
-
   const handleEdit = (sale) => navigate(`/sale/edit/${sale.sale_id}`);
-
   const handleView = (sale) => navigate(`/sale/view/${sale.sale_id}`);
 
   const handleDelete = async (saleId) => {
@@ -70,8 +59,7 @@ const Sale = () => {
     }
   };
 
-  const filteredSales = sales || []
-  // Table configuration
+  // Table headers
   const SaleHead = [
     "Date",
     "Invoice No",
@@ -80,221 +68,154 @@ const Sale = () => {
     "Payment Type",
     "Amount",
     "Balance",
+    // "Actions",
   ];
+  
 
-  const SaleData =
-    filteredSales.length > 0
-      ? filteredSales.map((item) => ({
-           icon: <TbCircleLetterI />,
-         
+  // THIS IS THE FIXED SaleData – NO ERRORS!
+  const SaleData = sales.length > 0
+    ? sales.map((item) => {
+        const total = Number(item.total || 0).toFixed(2);
+        const balance = Number(item.balance_due || 0).toFixed(2); // From DB!
+
+        const balanceDisplay = balance > 0 ? (
+          <span style={{ color: "#d63031", fontWeight: "bold" }}>₹ {balance}</span>
+        ) : (
+          <span style={{ color: "#27ae60" }}>₹ 0.00</span>
+        );
+
+        return {
+          icon: <TbCircleLetterI />,
           values: [
-          item.invoice_date || "-",
-          item.invoice_no || "-",
-           item.name || "-",
-          "Sale Invoice",
-           item.payment_type || "Cash",
-          `₹ ${Number(item.total || 0).toFixed(2)}`,
-          "₹ 0",      
-  <div style={{ position: "relative", display: "flex", alignItems: "center", gap: "12px" }}>
+            item.invoice_date || "-",
+            item.invoice_no || "-",
+            item.name || "-",
+            "Sale Invoice",
+            item.payment_type || "Cash",
+            `₹ ${total}`,
+            balanceDisplay,
 
-  {/* Print */}
-  <FiPrinter
-    size={20}
-    style={{ cursor: "pointer" }}
-    onClick={() => window.print()}
-  />
+            // Actions Column
+            <div
+              key={item.sale_id}
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+              }}
+            >
+              <FiPrinter size={20} style={{ cursor: "pointer" }} onClick={() => window.print()} />
 
-  {/* Share Button */}
-  <FiShare2
-    size={20}
-    style={{ cursor: "pointer" }}
-    onClick={() =>
-      setOpenShareId(openShareId === item.sale_id ? null : item.sale_id)
-    }
-  />
+              <FiShare2
+                size={20}
+                style={{ cursor: "pointer" }}
+                onClick={() => setOpenShareId(openShareId === item.sale_id ? null : item.sale_id)}
+              />
 
-  {/* ▼ ▼ SHARE POPUP BOX ▼ ▼ */}
-  {openShareId === item.sale_id && (
-    <div
-      style={{
-        position: "absolute",
-        top: "30px",
-        left: "0",
-        display: "flex",
-        gap: "12px",
-        padding: "10px",
-        background: "white",
-        borderRadius: "10px",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-        zIndex: 999,
-      }}
-    >
-      {/* WhatsApp */}
-      <FaWhatsapp
-        size={24}
-        color="green"
-        style={{ cursor: "pointer" }}
-        onClick={() =>
-          window.open(
-            `https://wa.me/?text=Invoice No: ${item.invoice_no}`,
-            "_blank"
-          )
-        }
-      />
+              {openShareId === item.sale_id && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "30px",
+                    left: "0",
+                    display: "flex",
+                    gap: "12px",
+                    padding: "10px",
+                    background: "white",
+                    borderRadius: "10px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    zIndex: 999,
+                  }}
+                >
+                  <FaWhatsapp
+                    size={24}
+                    color="green"
+                    style={{ cursor: "pointer" }}
+                    onClick={() =>
+                      window.open(
+                        `https://wa.me/?text=Invoice ${item.invoice_no}%0ATotal: ₹${total}%0ABalance Due: ₹${balance}`,
+                        "_blank"
+                      )
+                    }
+                  />
+                  <SiGmail
+                    size={24}
+                    color="#D44638"
+                    style={{ cursor: "pointer" }}
+                    onClick={() =>
+                      (window.location.href = `mailto:?subject=Invoice ${item.invoice_no}&body=Total: ₹${total}%0ABalance Due: ₹${balance}`)
+                    }
+                  />
+                  <MdSms
+                    size={26}
+                    color="#1E90FF"
+                    style={{ cursor: "pointer" }}
+                    onClick={() =>
+                      (window.location.href = `sms:?body=Invoice ${item.invoice_no}%0ATotal: ₹${total}, Balance: ₹${balance}`)
+                    }
+                  />
+                </div>
+              )}
 
-      {/* Gmail */}
-      <SiGmail
-        size={24}
-        color="#D44638"
-        style={{ cursor: "pointer" }}
-        onClick={() =>
-          (window.location.href = `mailto:?subject=Invoice Details&body=Invoice No: ${item.invoice_no}`)
-        }
-      />
+              <ActionButton
+                options={[
+                  { label: "View", icon: <TbCircleLetterI />, onClick: () => handleView(item) },
+                  { label: "Edit", icon: <TbCircleLetterI />, onClick: () => handleEdit(item) },
+                  { label: "Delete", icon: <MdOutlineDelete />, onClick: () => handleDelete(item.sale_id) },
+                ]}
+                label={<HiOutlineDotsVertical />}
+              />
+            </div>,
+          ],
+        };
+      })
+    : [];
 
-      {/* SMS */}
-      <MdSms
-        size={26}
-        color="#1E90FF"
-        style={{ cursor: "pointer" }}
-        onClick={() =>
-          (window.location.href = `sms:?body=Invoice No: ${item.invoice_no}`)
-        }
-      />
-    </div>
-  )}
-
-  {/* Existing Action Dropdown */}
-  <ActionButton
-    options={[
-      { label: "View", icon: <TbCircleLetterI />, onClick: () => handleView(item) },
-      { label: "Edit", icon: <TbCircleLetterI />, onClick: () => handleEdit(item) },
-      { label: "Delete", icon: <MdOutlineDelete />, onClick: () => handleDelete(item.sale_id) },
-    ]}
-    label={<HiOutlineDotsVertical />}
-  />
-</div>
-
-],     
-        }))
-      : 
-      [];
-      
-      
   return (
     <div id="main">
       <Container fluid className="py-5">
         <Row>
           <Col xl={12}>
-            {/* Business Name Row */}
+            {/* Business Name */}
             <div className="d-flex align-items-center">
-              <span
-                style={{ color: "red", fontWeight: "bold", fontSize: "1.5rem" }}
-              >
-                •
-              </span>
+              <span style={{ color: "red", fontWeight: "bold", fontSize: "1.5rem" }}>•</span>
               {isEditing ? (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginLeft: "8px",
-                  }}
-                >
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "8px" }}>
                   <input
                     type="text"
                     value={businessName}
                     onChange={(e) => setBusinessName(e.target.value)}
                     placeholder="Enter Business Name"
                     autoFocus
-                    style={{
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                      padding: "5px 10px",
-                      fontSize: "1rem",
-                      width: "250px",
-                    }}
+                    style={{ border: "1px solid #ccc", borderRadius: "6px", padding: "5px 10px", fontSize: "1rem", width: "250px" }}
                     onKeyDown={(e) => e.key === "Enter" && setIsEditing(false)}
                   />
-                  <Button
-                    variant="info"
-                    onClick={() => setIsEditing(false)}
-                    style={{
-                      borderRadius: "6px",
-                      fontWeight: 600,
-                      color: "white",
-                    }}
-                  >
+                  <Button variant="info" onClick={() => setIsEditing(false)}>
                     Save
                   </Button>
                 </div>
               ) : (
-                <span
-                  className="ms-2 text-muted"
-                  style={{ cursor: "pointer" }}
-                  onClick={() => setIsEditing(true)}
-                >
+                <span className="ms-2 text-muted" style={{ cursor: "pointer" }} onClick={() => setIsEditing(true)}>
                   {businessName || "Enter Business Name"}
                 </span>
               )}
               <div className="ms-auto d-flex align-items-center gap-2">
-                <Button
-                  variant="danger"
-                  style={{
-                    fontWeight: 600,
-                    borderRadius: "20px",
-                    minWidth: "110px",
-                  }}
-                  onClick={handleCreate}
-                >
-                  +Add Sale
-                </Button>
-                <Button
-                  variant="success"
-                  style={{
-                    fontWeight: 600,
-                    borderRadius: "20px",
-                    minWidth: "110px",
-                  }}
-                  onClick={() => navigate("/dashboardpurchase")}
-                >
-                  +Add Purchase
-                </Button>
-                <Button
-                  variant="info"
-                  style={{
-                    fontWeight: 600,
-                    borderRadius: "20px",
-                    minWidth: "110px",
-                    color: "white",
-                  }}
-                >
-                  +Add More
-                </Button>
-                <Button
-                  variant="light"
-                  style={{
-                    borderRadius: "50%",
-                    padding: "0 10px",
-                    minWidth: "20px",
-                  }}
-                >
-                  :
-                </Button>
+                <Button variant="danger" onClick={handleCreate}>+Add Sale</Button>
+                <Button variant="success" onClick={() => navigate("/dashboardpurchase")}>+Add Purchase</Button>
+                <Button variant="info">+Add More</Button>
+                <Button variant="light">:</Button>
               </div>
             </div>
 
-            {/* Sale Invoices Header */}
+            {/* Header */}
             <Row className="sale-invoice-header align-items-center mb-3">
-              <Col className="d-flex align-items-center gap-1">
-                <h5 className="m-0">Sale Invoices</h5>
-              </Col>
+              <Col><h5 className="m-0">Sale Invoices</h5></Col>
             </Row>
 
-            {/* Filters */}
-            <Row className="filters align-items-center mb-3">
-              <Col lg={3} className="align-self-center">
+            {/* Search */}
+            <Row className="mb-3">
+              <Col lg={3}>
                 <TextInputform
                   PlaceHolder="Search by Name"
                   value={searchTerm}
@@ -303,80 +224,27 @@ const Sale = () => {
               </Col>
             </Row>
 
-            {/* Total Sales Amount Card */}
-            {/* <Row className="mb-4 sale-amount-card">
+            {/* Totals Card */}
+            <Row className="mb-4">
               <Col>
-                <div className="amount-card">
-                  <div className="card-title">Total Sales Amount</div>
-                  <div className="total-amount">₹ 1,000</div>
-                  <div className="growth-label">
-                    100% ↑ <div className="growth-subtext">vs last month</div>
-                  </div>
-                  <div className="received-balance">
-                    Received: <b>₹ 1,000 </b> | Balance: <b>₹ 0</b>
+                <div className="p-4 rounded-4 text-gray shadow-sm">
+                  <div className="d-flex justify-content-between align-items-start">
+                    <div>
+                      <h6 className="mb-2 opacity-80">Total Sales Amount</h6>
+                      <h2 className="mb-1 fw-bold">₹ {totals.totalSales}</h2>
+                      <small className="opacity-75"><span style={{ color: "#45eb45ff" }}>100% up</span> vs last month</small>
+                      <div className="mt-3 opacity-90">
+                        Received: <strong>₹ {totals.totalReceived}</strong> | Balance: <strong>₹ {totals.totalBalance}</strong>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </Col>
-            </Row> */}
-            {/* Total Sales Amount Card – NOW DYNAMIC */}
-<Row className="mb-4">
-  <Col>
-    <div 
-      className="p-4 rounded-4 text-gray shadow-sm"
-      style={{ 
-        
-      }}
-    >
-      <div className="d-flex justify-content-between align-items-start">
-        <div>
-          <h6 className="mb-2 opacity-80">Total Sales Amount</h6>
-          <h2 className="mb-1 fw-bold">₹ {totals.totalSales}</h2>
-          <small className="opacity-75">
-            <span style={{ color: "#45eb45ff" }}>100% up</span> vs last month
-          </small>
-
-          <div className="mt-3 opacity-90">
-            Received: <strong>₹ {totals.totalReceived}</strong> | 
-            Balance: <strong>₹ {totals.totalBalance}</strong>
-          </div>
-        </div>
-
-        <div className="bg-white bg-opacity-20 rounded-circle p-3">
-          {/* <FaChartBar size={36} /> */}
-        </div>
-      </div>
-    </div>
-  </Col>
-</Row>
-
-            {/* Transactions Header */}
-            <Row className="transactions-header align-items-center mb-2">
-              <Col>
-                <div className="transactions-title">Transactions</div>
-              </Col>
-              <Col className="d-flex justify-content-end gap-2">
-                <Button size="sm" className="icon-btn">
-                  <FaSearch />
-                </Button>
-                <Button size="sm" className="icon-btn">
-                  <FaChartBar />
-                </Button>
-                <Button size="sm" className="icon-btn">
-                  <FaFileExcel />
-                </Button>
-                <Button size="sm" className="icon-btn">
-                  <FaPrint />
-                </Button>
               </Col>
             </Row>
 
             {/* Table */}
             <Col lg={12} xs={12}>
-              <TableUI
-                headers={SaleHead}
-                body={SaleData}
-                className="table-end"
-              />
+              <TableUI headers={SaleHead} body={SaleData} className="table-end" />
             </Col>
           </Col>
         </Row>
@@ -386,4 +254,3 @@ const Sale = () => {
 };
 
 export default Sale;
-
