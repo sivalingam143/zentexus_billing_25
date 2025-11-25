@@ -9,6 +9,8 @@ import {TextInputform,TextArea,DropDown,Calender,CheckBox,} from "../../componen
 import NotifyData from "../../components/NotifyData";
 import Modal from "react-bootstrap/Modal";
 import { Color } from "antd/es/color-picker";
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownButton from 'react-bootstrap/DropdownButton';
 // Static options
 const UNITS = ["NONE", "KG", "Litre", "Piece"];
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
@@ -33,9 +35,9 @@ const STATE_OF_SUPPLY_OPTIONS = [
 ];
 const PAYMENT_OPTIONS = [
   { value: "", label: "Select Payment Type" },
-  { value: "Phone Pay", label: "Phone Pay" },
-  { value: "Cash", label: "Cash" },
-  { value: "G-pay", label: "G-pay" },
+  { value: "check", label: "Check" },
+  { value: "Cash", label: "Cash" }
+  
 ];
 
 const INITIAL_ROW = {
@@ -85,7 +87,15 @@ const [formData, setFormData] = useState({
     rount_off: 0,
     round_off_amount: "0",
     total: "0.00",
+    received_amount: " ",
   });
+  const handleReceivedAmountChange = (e) => {
+  const value = e.target.value;
+  setFormData(prev => ({
+    ...prev,
+    received_amount: value || " "
+  }));
+};
   console.log(formData)
   const [credit, setCredit] = useState(true);
   const [customers, setCustomers] = useState([ { value: "", label: "Select Party" },]);
@@ -196,6 +206,7 @@ const [formData, setFormData] = useState({
       rount_off,
       round_off_amount,
       total,
+      received_amount: saleToEdit.received_amount || " ",
     });
     if (saleToEdit.add_image && saleToEdit.add_image.trim() !== "") {
     setImagePreview(saleToEdit.add_image);
@@ -492,7 +503,81 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                       <th>Price/unit</th>
                       <th>Discount</th>
                       <th>Tax</th>
-                      <th>Amount</th>
+                      {/* <th>Amount</th> */}
+                      {/* <th style={{ position: 'relative' }}>
+  <DropdownButton
+    id="amount-column-dropdown"
+    title="Amount +"
+    // variant="link"
+    size="sm"
+    align="end"
+    className="p-0 border-0 text-dark fw-bold"
+    style={{ 
+      background: 'transparent', 
+      boxShadow: 'none',
+      fontWeight: 'bold'
+    }}
+  >
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      Item Category
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      Item Code
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      HSN/SAC Code
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      Description
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      Discount
+    </Dropdown.Item>
+    <Dropdown.Divider />
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()} className="text-primary">
+      More Settings
+    </Dropdown.Item>
+  </DropdownButton>
+</th> */}
+<th>
+  <DropdownButton
+    id="amount-column-dropdown"
+    title={
+      <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>
+       Amount <FaPlus />
+      </span>
+    }
+    
+    size="sm"
+    align="end"
+    className="p-0 border-0 text-success shadow-none"
+    style={{
+      background: 'transparent',
+      boxShadow: 'none',
+    }}
+    menuVariant="light" // optional: makes menu look modern
+  >
+    <Dropdown.Item href="#/ " onClick={(e) => e.preventDefault()}>
+      Item Category
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      Item Code
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      HSN/SAC Code
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      Description
+    </Dropdown.Item>
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()}>
+      Discount
+    </Dropdown.Item>
+    <Dropdown.Divider />
+    <Dropdown.Item href="#/" onClick={(e) => e.preventDefault()} className="text-primary">
+      More Settings
+    </Dropdown.Item>
+  </DropdownButton>
+</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -554,6 +639,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                     </tr>
                   </tbody>
                 </Table>
+                
               </Col>
             </Row>
 
@@ -574,7 +660,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
   <label
     htmlFor="sale-image-upload"
     style={{
-      border: '3px dashed #007bff',
+      border: '2px solid #ced4da',
       borderRadius: '12px',
       padding: '20px',
       textAlign: 'center',
@@ -664,7 +750,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
   <label
     htmlFor="doc-upload"
     style={{
-      border: '3px dashed #007bff',
+      border: '2px solid #ced4da',
       borderRadius: '12px',
       padding: '20px',
       textAlign: 'center',
@@ -719,6 +805,36 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
               <TextInputform formtype="number" value={formData.round_off_amount} onChange={handleRoundOffChange} readOnly={formData.rount_off !== 1 || isDisabled}/>
                 <strong>Total</strong>
               <TextInputform readOnly value={formData.total} />
+              {/* Received Amount Row */}
+              
+    <div className="d-flex align-items-center gap-3 mb-2">
+      <strong style={{ width: "140px" }}>Received Amount</strong>
+      <TextInputform
+        formtype="number"
+        step="0.01"
+        value={formData.received_amount || ""}
+        onChange={(e) => handleInputChange("received_amount", e.target.value)}
+        readOnly={isDisabled}
+        style={{ width: "160px" }}
+      />
+    </div>
+
+    {/* Balance Due Row */}
+    <div className="d-flex align-items-center gap-3">
+      <strong style={{ width: "140px", color: "#d63031" }}>Balance Due</strong>
+      <TextInputform
+        readOnly
+        value={(Number(formData.total || 0) - Number(formData.received_amount || 0)).toFixed(2)}
+        style={{ 
+          width: "160px", 
+          fontWeight: "bold",
+          backgroundColor: "#fff4f4",
+          border: "1px solid #fab1b1"
+        }}
+      />
+    </div>
+    
+              
         </Col>
         </Row>
            {/* Show Back button in View mode too, but hide Save/Update button */}
@@ -732,6 +848,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
               </Col>
               </Row>
           </Col>
+          
         </Row>
         {/* Full-Screen Image Popup Modal */}
 {/* Beautiful Transparent Popup - Closes ONLY on X button */}

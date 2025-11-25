@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Container, Row, Col, Button, Form, Table } from "react-bootstrap";
 import { FaSearch, FaChartBar, FaFileExcel,FaPrint} from "react-icons/fa";
@@ -20,7 +20,8 @@ import { MdSms } from "react-icons/md";
 const Sale = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { sales, status } = useSelector((state) => state.sale);
+  const { sales = [] } = useSelector((state) => state.sale);
+  // const { sales, status } = useSelector((state) => state.sale);
   const [searchTerm, setSearchTerm] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -31,6 +32,26 @@ const Sale = () => {
   useEffect(() => {
     dispatch(searchSales(searchTerm));
   }, [dispatch, searchTerm]);
+
+  const totals = useMemo(() => {
+    const totalSales   = sales.reduce((sum, s) => sum + Number(s.total || 0), 0);
+    // If you store received amount separately, use it; otherwise assume cash = fully received
+    const totalReceived = sales.reduce((sum, s) => {
+      // Option A: if you have a "received" field in DB
+      // return sum + Number(s.received || 0);
+
+      // Option B: for cash sales → full amount received, credit → 0 received
+      return s.payment_type === "Cash" ? sum + Number(s.total || 0) : sum;
+    }, 0);
+
+    const totalBalance = totalSales - totalReceived;
+
+    return {
+      totalSales:   totalSales.toFixed(2),
+      totalReceived: totalReceived.toFixed(2),
+      totalBalance:  totalBalance.toFixed(2),
+    };
+  }, [sales]);
 
   // Navigation handlers
   const handleCreate = () => navigate("/sale/create");
@@ -283,7 +304,7 @@ const Sale = () => {
             </Row>
 
             {/* Total Sales Amount Card */}
-            <Row className="mb-4 sale-amount-card">
+            {/* <Row className="mb-4 sale-amount-card">
               <Col>
                 <div className="amount-card">
                   <div className="card-title">Total Sales Amount</div>
@@ -296,7 +317,37 @@ const Sale = () => {
                   </div>
                 </div>
               </Col>
-            </Row>
+            </Row> */}
+            {/* Total Sales Amount Card – NOW DYNAMIC */}
+<Row className="mb-4">
+  <Col>
+    <div 
+      className="p-4 rounded-4 text-gray shadow-sm"
+      style={{ 
+        
+      }}
+    >
+      <div className="d-flex justify-content-between align-items-start">
+        <div>
+          <h6 className="mb-2 opacity-80">Total Sales Amount</h6>
+          <h2 className="mb-1 fw-bold">₹ {totals.totalSales}</h2>
+          <small className="opacity-75">
+            <span style={{ color: "#45eb45ff" }}>100% up</span> vs last month
+          </small>
+
+          <div className="mt-3 opacity-90">
+            Received: <strong>₹ {totals.totalReceived}</strong> | 
+            Balance: <strong>₹ {totals.totalBalance}</strong>
+          </div>
+        </div>
+
+        <div className="bg-white bg-opacity-20 rounded-circle p-3">
+          {/* <FaChartBar size={36} /> */}
+        </div>
+      </div>
+    </div>
+  </Col>
+</Row>
 
             {/* Transactions Header */}
             <Row className="transactions-header align-items-center mb-2">
@@ -335,3 +386,4 @@ const Sale = () => {
 };
 
 export default Sale;
+
