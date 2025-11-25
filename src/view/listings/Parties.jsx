@@ -15,9 +15,7 @@ import {
   addNewParty,
   updateExistingParty,
   deleteExistingParty,
-} from "../../slice/partySlice"
-
-
+} from "../../slice/partySlice";
 
 const Initialstate = {
   id: null,
@@ -35,7 +33,7 @@ const Initialstate = {
   limitType: "no",
   creditlimit: "",
   date: new Date(),
-  transactionType: "pay",
+  transactionType: "to pay",
   additionalFields: [
     { id: 1, name: "Additional Field 1", isChecked: false, value: "" },
     { id: 2, name: "Additional Field 2", isChecked: false, value: "" },
@@ -45,24 +43,23 @@ const Initialstate = {
 
 function Parties() {
   const dispatch = useDispatch();
-const partyState = useSelector((state) => state.party || {});
-const { parties = [], sales = [] } = partyState;
-  const [searchText, setSearchText] = useState(""); 
+  const partyState = useSelector((state) => state.party || {});
+  const { parties = [], sales = [] } = partyState;
+  const [searchText, setSearchText] = useState("");
   const [selectedParty, setSelectedParty] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [formData, setFormData] = useState(Initialstate);
 
   useEffect(() => {
-  dispatch(searchPartiesAndSales(searchText));
-}, [dispatch, searchText]);
+    dispatch(searchPartiesAndSales(searchText));
+  }, [dispatch, searchText]);
 
   useEffect(() => {
     if (parties?.length > 0 && !selectedParty) {
       setSelectedParty(parties[0]);
     }
-  }, [parties, selectedParty, setSelectedParty]);
-
+  }, [parties]);
 
   const handleOpenModal = (party = null) => {
     if (party) {
@@ -87,7 +84,7 @@ const { parties = [], sales = [] } = partyState;
         creditlimit: String(party.creditlimit || ""),
         limitType: parseFloat(party.creditlimit) > 0 ? "custom" : "no",
         date: party.date ? new Date(party.date) : new Date(),
-        transactionType: party.transactionType || "pay",
+        transactionType: party.transaction_type === 'to receive' ? 'to receive' : 'to pay',
         additionalFields: Initialstate.additionalFields,
       };
 
@@ -95,21 +92,12 @@ const { parties = [], sales = [] } = partyState;
         try {
           const parsedFields = JSON.parse(party.additional_field);
           if (Array.isArray(parsedFields)) {
-            newState.additionalFields = Initialstate.additionalFields.map(
-              (defaultField) => {
-                const pField = parsedFields.find(
-                  (f) => f.id === defaultField.id
-                );
-                return pField
-                  ? {
-                      ...defaultField,
-                      name: pField.name,
-                      value: pField.value,
-                      isChecked: true,
-                    }
-                  : defaultField;
-              }
-            );
+            newState.additionalFields = Initialstate.additionalFields.map((defaultField) => {
+              const pField = parsedFields.find((f) => f.id === defaultField.id);
+              return pField
+                ? { ...defaultField, name: pField.name, value: pField.value, isChecked: true }
+                : defaultField;
+            });
           }
         } catch (e) {
           console.error("Error parsing additional fields on edit:", e);
@@ -159,16 +147,13 @@ const { parties = [], sales = [] } = partyState;
 
   const handleSubmit = async () => {
     const dataToSend = createPayload();
-    console.log("sent", dataToSend);
     let success = false;
 
     try {
       if (isEdit) {
         await dispatch(updateExistingParty(dataToSend)).unwrap();
-        console.log("Updating Party:", dataToSend);
       } else {
         await dispatch(addNewParty(dataToSend)).unwrap();
-        console.log("Creating Party:", dataToSend);
       }
       success = true;
     } catch (error) {
@@ -176,29 +161,28 @@ const { parties = [], sales = [] } = partyState;
     }
 
     if (success) {
-      dispatch(searchPartiesAndSales(""));;
+      dispatch(searchPartiesAndSales(""));
       setShowModal(false);
-      // setShowModal(isSaveAndNew);
       setFormData(Initialstate);
     }
   };
 
-const handleSaveAndNew = async () => {
-  const dataToSend = createPayload();
-  let success = false;
+  const handleSaveAndNew = async () => {
+    const dataToSend = createPayload();
+    let success = false;
 
-  try {
-    await dispatch(addNewParty(dataToSend)).unwrap();
-    success = true;
-  } catch (error) {
-    console.error("Save & New failed:", error);
-  }
+    try {
+      await dispatch(addNewParty(dataToSend)).unwrap();
+      success = true;
+    } catch (error) {
+      console.error("Save & New failed:", error);
+    }
 
-  if (success) {
-    dispatch(searchPartiesAndSales("")); // ← FIXED
-    setFormData(Initialstate);
-  }
-};
+    if (success) {
+      dispatch(searchPartiesAndSales(""));
+      setFormData(Initialstate);
+    }
+  };
 
   const handleDelete = async () => {
     const idToDelete = formData.id;
@@ -210,7 +194,7 @@ const handleSaveAndNew = async () => {
 
     try {
       await dispatch(deleteExistingParty(idToDelete)).unwrap();
-     dispatch(searchPartiesAndSales(""));
+      dispatch(searchPartiesAndSales(""));
       setShowModal(false);
       setSelectedParty(null);
     } catch (error) {
@@ -218,18 +202,41 @@ const handleSaveAndNew = async () => {
     }
   };
 
+  const partiesWithBalance = parties.map(p => {
+  
+    const partySales = sales.filter(s => s.parties_id === p.parties_id && s.delete_at == 0);
+    const unpaidSales = partySales.reduce((sum, s) => {
+      return sum + (parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0));
+    }, 0);
+
+    const openingBalance = parseFloat(p.amount || 0);
+
+
+    const totalAmount = openingBalance + unpaidSales;
+
+    const isToPay = p.transaction_type === "to pay";
+    const running_transaction_type = totalAmount > 0.01 
+      ? (isToPay ? "To Pay" : "To Receive")
+      : "Nil";
+
+    const running_balance_amount = totalAmount > 0.01 ? totalAmount : 0;
+
+    return {
+      ...p,
+      running_transaction_type,
+      running_balance_amount: Number(running_balance_amount.toFixed(2)),
+    };
+  });
+
   return (
     <div id="main">
       <div
         style={{
           backgroundColor: "#f0f2f5",
           minHeight: "100vh",
-
           padding: "20px",
         }}
       >
-        {/* Header Section */}
-
         <Card
           className="bg-white rounded shadow-sm"
           style={{
@@ -302,40 +309,38 @@ const handleSaveAndNew = async () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {(parties || []).map((p) => (
+                  {partiesWithBalance.map((p) => (
                     <tr
                       key={p.parties_id}
                       onClick={() => setSelectedParty(p)}
                       style={{
                         cursor: "pointer",
                         backgroundColor:
-                          selectedParty?.parties_id === p.parties_id? "#e7f3ff" : "",
+                          selectedParty?.parties_id === p.parties_id ? "#e7f3ff" : "",
                       }}
                     >
                       <td>{p.name}</td>
-                      {/* MODIFICATION: Removed the balance type label */}
                       <td
                         style={{
                           color:
-                            p.balance_type === "To Pay"
+                            p.running_transaction_type === "To Pay"
                               ? "red"
-                              : p.balance_type === "To Receive"
+                              : p.running_transaction_type === "To Receive"
                               ? "green"
                               : "inherit",
+                          fontWeight: "bold"
                         }}
                       >
-                        {p.balance_type !== "Nil"
-                          ? `₹${p.display_amount?.toFixed(2) || "0.00"}` // Changed this line
+                        {p.running_transaction_type !== "Nil"
+                          ? `₹${p.running_balance_amount.toFixed(2)}`
                           : "Nil"}
                       </td>
-                      {/* END MODIFICATION */}
                     </tr>
                   ))}
                 </tbody>
               </Table>
             </Card>
 
-            {/* Right Panel */}
             <div
               className="flex-grow-1 d-flex flex-column gap-3"
               style={{
@@ -380,15 +385,15 @@ const handleSaveAndNew = async () => {
                       </div>
                     </Card.Body>
                   </Card>
-                  {/* Transactions Card */}
-                  <div className="bg-white shadow-sm rounded p-4 vh-100">
+                  
+                  <div className="bg-white shadow-sm rounded p-4" style={{ height: "50vh", overflowY: "auto" }}>
                     <h6 className="mb-3">Transactions</h6>
                     <Table
                       responsive
                       bordered
                       hover
                       size="sm"
-                      className=" table align-middle text-center"
+                      className="table align-middle text-center"
                     >
                       <thead>
                         <tr>
@@ -400,90 +405,56 @@ const handleSaveAndNew = async () => {
                         </tr>
                       </thead>
 
+                      <tbody> 
+                        {selectedParty ? (
+                          (() => {
+                            const rows = [];
+                            const obAmount = parseFloat(selectedParty.amount || 0);
 
+                            if (obAmount > 0) {
+                              const isPayable = selectedParty.transaction_type === 'to pay';
+                              rows.push({
+                                type: isPayable ? "Payable" : "Receivable",
+                                color: isPayable ? "red" : "green",
+                                number: "-",
+                                date: selectedParty.create_at || new Date(),
+                                total: obAmount,
+                                balance: obAmount,
+                              });
+                            }
 
+                            sales
+                              .filter(s => s.parties_id === selectedParty.parties_id && s.delete_at == 0)
+                              .forEach(s => {
+                                const unpaid = parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0);
+                                if (unpaid > 0) {
+                                  rows.push({
+                                    type: "Sale",
+                                    color: "green",
+                                    number: s.invoice_no || s.id,
+                                    date: s.invoice_date || s.date,
+                                    total: parseFloat(s.total || 0),
+                                    balance: unpaid,
+                                  });
+                                }
+                              });
 
-<tbody>
-  {selectedParty ? (
-    (() => {
-      // 1. CREATE OPENING BALANCE TRANSACTION
-      const initialTransactions = [];
-      const obAmount = parseFloat(selectedParty.amount || 0);
-
-      if (obAmount > 0) {
-        // Determine the type (Payable/Receivable) and color based on balance_type 
-        const isPayable = selectedParty.balance_type === 'to pay';
-        
-        initialTransactions.push({
-          // type: "Opening Balance", 
-          balance_label: isPayable ? "Payable" : "Receivable", 
-          color: isPayable ? "red" : "green", // Red/Green is correctly applied here
-          number: null, 
-          date: selectedParty.create_at || selectedParty.date || new Date().toISOString(), 
-          total: obAmount, 
-          balance: obAmount, 
-        });
-      }
-
-      // 2. GET SALES TRANSACTIONS
-      const partySales = sales.filter(
-        (s) => s.parties_id === selectedParty.parties_id && s.delete_at == 0
-      );
-
-      // Map sales to transaction format
-      const salesTransactions = partySales.map((s) => ({
-        type: "Sale",
-        balance_label: "Receivable", // Adding balance_label for completeness
-        color: "", // FIX: Removed hardcoded "green" to default to black/inherit
-        number: s.invoice_no || s.id, 
-        date: s.invoice_date || s.date,
-        total: parseFloat(s.total || 0),
-        balance: parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0),
-      }));
-      
-      // 3. COMBINE TRANSACTIONS
-      const transactions = [...initialTransactions, ...salesTransactions]; 
-      
-      // The optional sort step (recommended for a full ledger view)
-      // transactions.sort((a, b) => new Date(a.date) - new Date(b.date)); 
-
-
-      // 4. RENDER
-      return transactions.length > 0 ? (
-        transactions.map((t, i) => (
-          <tr key={i}>
-            {/* Type Column: Uses t.type for "Sale" or "Opening Balance" */}
-            <td style={{ color: t.color, fontWeight: "bold" }}>
-              {t.type || t.balance_label} 
-            </td>
-            {/* Number Column (Display '-' for null/empty number) */}
-            <td>{t.number || '-'}</td> 
-            {/* Date Column */}
-            <td>{new Date(t.date).toLocaleDateString("en-IN")}</td>
-            {/* Total Column */}
-            <td>₹{t.total.toFixed(2)}</td>
-            {/* Balance Column */}
-            <td style={{ color: t.color, fontWeight: "bold" }}>
-              ₹{t.balance.toFixed(2)}
-            </td>
-          </tr>
-        ))
-      ) : (
-        <tr>
-          <td colSpan="5" className="text-center text-muted py-4">
-            No transactions yet
-          </td>
-        </tr>
-      );
-    })()
-  ) : (
-    <tr>
-      <td colSpan="5" className="text-center text-muted py-4">
-        Select a party to view transactions
-      </td>
-    </tr>
-  )}
-</tbody>
+                            return rows.length > 0 ? rows.map((t, i) => (
+                              <tr key={i}>
+                                <td style={{ color: t.color }}>{t.type}</td>
+                                <td>{t.number}</td>
+                                <td>{new Date(t.date).toLocaleDateString("en-IN")}</td>
+                                <td>₹{t.total.toFixed(2)}</td>
+                                <td style={{ color: t.color, fontWeight: "bold" }}>₹{t.balance.toFixed(2)}</td>
+                              </tr>
+                            )) : (
+                              <tr><td colSpan={5} className="text-center text-muted py-4">No transactions yet</td></tr>
+                            );
+                          })()
+                        ) : (
+                          <tr><td colSpan={5} className="text-center text-muted py-4">Select a party</td></tr>
+                        )}
+                      </tbody>
                     </Table>
                   </div>
                 </>
@@ -493,7 +464,6 @@ const handleSaveAndNew = async () => {
         </div>
       </div>
 
-      {/* Party Modal */}
       <PartyModal
         show={showModal}
         handleClose={() => {
