@@ -19,8 +19,7 @@ export default function ProductTab() {
   dispatch(fetchProducts());
 }, [dispatch]);
 
-  if (status === "loading") return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+const { units = [] } = useSelector((state) => state.unit);
 
   return (
     <>
