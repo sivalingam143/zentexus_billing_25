@@ -5,10 +5,12 @@ import {
   FaPen,
   FaCommentDots,
   FaSearch,
+  FaEllipsisV,
 } from "react-icons/fa";
-import { Button, Table, Card } from "react-bootstrap";
+import { Button, Table, Card, Dropdown,Modal } from "react-bootstrap";
 import PartyModal from "../creation/PartyModalCreation";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom"; // Added
 
 import {
   searchPartiesAndSales,
@@ -16,6 +18,7 @@ import {
   updateExistingParty,
   deleteExistingParty,
 } from "../../slice/partySlice";
+import { deleteSale } from "../../slice/saleSlice"; // Added for delete sale
 
 const Initialstate = {
   id: null,
@@ -43,6 +46,7 @@ const Initialstate = {
 
 function Parties() {
   const dispatch = useDispatch();
+  const navigate = useNavigate(); // Added
   const partyState = useSelector((state) => state.party || {});
   const { parties = [], sales = [] } = partyState;
   const [searchText, setSearchText] = useState("");
@@ -184,6 +188,10 @@ function Parties() {
     }
   };
 
+  // Removed the unused handleEdit function
+  // const handleEdit = (sale) => navigate(`/sale/edit/${sale.sale_id}`);
+
+
   const handleDelete = async () => {
     const idToDelete = formData.id;
     if (!idToDelete) return;
@@ -202,8 +210,39 @@ function Parties() {
     }
   };
 
+  // NEW: Handler for deleting opening balance (set amount to 0)
+  const handleDeleteOpening = async () => {
+    if (!window.confirm("Are you sure you want to delete the opening balance?")) {
+      return;
+    }
+
+    const payload = {
+      id: selectedParty.parties_id,
+      name: selectedParty.name,
+      gstin: selectedParty.gstin || "",
+      phone: selectedParty.phone || "",
+      email: selectedParty.email || "",
+      gstin_type_id: selectedParty.gstin_type_id || "",
+      gstin_type_name: selectedParty.gstin_type_name || "",
+      state_of_supply: selectedParty.state_of_supply || "",
+      billing_address: selectedParty.billing_address || "",
+      shipping_address: selectedParty.shipping_address || "",
+      amount: 0,
+      creditlimit: selectedParty.creditlimit || 0,
+      transactionType: selectedParty.transaction_type,
+      additional_field: selectedParty.additional_field || "[]",
+    };
+
+    try {
+      await dispatch(updateExistingParty(payload)).unwrap();
+      dispatch(searchPartiesAndSales(""));
+    } catch (error) {
+      console.error("Failed to delete opening balance:", error);
+    }
+  };
+
   const partiesWithBalance = parties.map(p => {
-  
+
     const partySales = sales.filter(s => s.parties_id === p.parties_id && s.delete_at == 0);
     const unpaidSales = partySales.reduce((sum, s) => {
       return sum + (parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0));
@@ -215,7 +254,7 @@ function Parties() {
     const totalAmount = openingBalance + unpaidSales;
 
     const isToPay = p.transaction_type === "to pay";
-    const running_transaction_type = totalAmount > 0.01 
+    const running_transaction_type = totalAmount > 0.01
       ? (isToPay ? "To Pay" : "To Receive")
       : "Nil";
 
@@ -227,6 +266,156 @@ function Parties() {
       running_balance_amount: Number(running_balance_amount.toFixed(2)),
     };
   });
+
+ 
+const TransactionMenu = ({ transaction, isOpening = false }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Modal states (one per dropdown)
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const handleViewEdit = () => {
+    if (isOpening) {
+      handleOpenModal(selectedParty);
+    } else {
+      const saleId = transaction.sale_id || transaction.id;
+      navigate(`/sale/edit/${saleId}`);
+    }
+  };
+
+  const handleCancelInvoice = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleDeleteInvoice = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmCancel = () => {
+    alert(`Invoice ${transaction.invoice_no || transaction.number} has been CANCELLED!`);
+    setShowCancelModal(false);
+    // Later: dispatch(cancelSale(transaction.sale_id))
+  };
+
+  const confirmDelete = () => {
+    if (isOpening) {
+      handleDeleteOpening();
+    } else {
+      const saleId = transaction.sale_id || transaction.id;
+      dispatch(deleteSale(saleId))
+        .unwrap()
+        .then(() => {
+          dispatch(searchPartiesAndSales(""));
+          alert("Invoice deleted permanently!");
+        })
+        .catch(() => alert("Delete failed"));
+    }
+    setShowDeleteModal(false);
+  };
+
+  return (
+    <>
+      {/* Dropdown Menu */}
+      <Dropdown drop="up" align="end">
+        <Dropdown.Toggle variant="link" bsPrefix="p-0" className="text-muted shadow-none">
+          <FaEllipsisV />
+        </Dropdown.Toggle>
+
+        <Dropdown.Menu
+          style={{ zIndex: 9999, minWidth: "220px", fontSize: "13.5px" }}
+          popperConfig={{ strategy: "fixed" }}
+        >
+          {isOpening ? (
+            <>
+              <Dropdown.Item onClick={() => handleOpenModal(selectedParty)} className="text-primary fw-bold">
+                View / Edit
+              </Dropdown.Item>
+              <Dropdown.Item onClick={handleDeleteInvoice} className="text-danger">
+                Delete Opening Balance
+              </Dropdown.Item>
+            </>
+          ) : (
+            <>
+              <Dropdown.Item onClick={handleViewEdit} className="fw-bold">
+                View/Edit
+              </Dropdown.Item>
+              <Dropdown.Item onClick={handleCancelInvoice} className="text-warning">
+                Cancel Invoice
+              </Dropdown.Item>
+              <Dropdown.Item onClick={handleDeleteInvoice} className="text-danger fw-bold">
+                Delete
+              </Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item>Duplicate</Dropdown.Item>
+              <Dropdown.Item>Open PDF</Dropdown.Item>
+              <Dropdown.Item>Preview</Dropdown.Item>
+              <Dropdown.Item>Print</Dropdown.Item>
+              <Dropdown.Divider />
+              <Dropdown.Item className="text-success fw-bold">Receive Payment</Dropdown.Item>
+              <Dropdown.Item>View History</Dropdown.Item>
+            </>
+          )}
+        </Dropdown.Menu>
+      </Dropdown>
+
+      {/* CANCEL INVOICE MODAL */}
+      <Modal show={showCancelModal} onHide={() => setShowCancelModal(false)} centered size="sm">
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title className="text-danger fs-5">Cancel Invoice</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center pt-2">
+          <p className="mb-2">
+            Are you sure you want to <strong>cancel</strong> the invoice?
+          </p>
+          <p className="text-muted small">This action cannot be undone.</p>
+        </Modal.Body>
+        <Modal.Footer className="border-0 justify-content-center gap-3">
+          <Button variant="outline-secondary" onClick={() => setShowCancelModal(false)}>
+            Close
+          </Button>
+          <Button variant="danger" onClick={confirmCancel}>
+            Cancel Invoice
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* DELETE INVOICE MODAL */}
+      <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+        <Modal.Header closeButton className="border-0">
+          <Modal.Title className="text-center w-100">
+            <div className="text-danger mb-3">
+              <div style={{ fontSize: "60px" }}></div>
+            </div>
+            Deleting the invoice will delete all records of this invoice.
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          <p className="text-muted">
+            You can also <strong>CANCEL</strong> the invoice, which will preserve the cancelled copy and serial number of the invoice.
+          </p>
+          <div className="form-check mt-3">
+            <input className="form-check-input" type="checkbox" id="dontShow" />
+            <label className="form-check-label small" htmlFor="dontShow">
+              Don't show this message again!
+            </label>
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="justify-content-center gap-3 border-0">
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Continue Deleting
+          </Button>
+          <Button variant="danger" onClick={confirmDelete}>
+            Cancel Invoice
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
+  );
+};
+
+
 
   return (
     <div id="main">
@@ -385,9 +574,10 @@ function Parties() {
                       </div>
                     </Card.Body>
                   </Card>
-                  
-                  <div className="bg-white shadow-sm rounded p-4" style={{ height: "50vh", overflowY: "auto" }}>
-                    <h6 className="mb-3">Transactions</h6>
+
+                  <div className="bg-white shadow-sm rounded p-4" style={{ height: "50vh" }}>
+  <div style={{ maxHeight: "50vh", overflowY: "auto", overflowX: "visible" }}>
+    <h6 className="mb-3">Transactions</h6>
                     <Table
                       responsive
                       bordered
@@ -402,10 +592,11 @@ function Parties() {
                           <td className="text-secondary">Date</td>
                           <td className="text-secondary">Total</td>
                           <td className="text-secondary">Balance</td>
+                          <td className="text-secondary"></td> {/* Added column for dropdown */}
                         </tr>
                       </thead>
 
-                      <tbody> 
+                      <tbody>
                         {selectedParty ? (
                           (() => {
                             const rows = [];
@@ -414,6 +605,7 @@ function Parties() {
                             if (obAmount > 0) {
                               const isPayable = selectedParty.transaction_type === 'to pay';
                               rows.push({
+                                id: "opening",
                                 type: isPayable ? "Payable" : "Receivable",
                                 color: isPayable ? "red" : "green",
                                 number: "-",
@@ -429,6 +621,10 @@ function Parties() {
                                 const unpaid = parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0);
                                 if (unpaid > 0) {
                                   rows.push({
+                                    // FIX: Using s.sale_id for the ID to ensure correct routing/deletion ID is passed
+                                    id: s.sale_id || s.id,
+                                    // Including all sale properties for robustness in TransactionMenu
+                                    ...s,
                                     type: "Sale",
                                     color: "green",
                                     number: s.invoice_no || s.id,
@@ -446,20 +642,23 @@ function Parties() {
                                 <td>{new Date(t.date).toLocaleDateString("en-IN")}</td>
                                 <td>₹{t.total.toFixed(2)}</td>
                                 <td style={{ color: t.color, fontWeight: "bold" }}>₹{t.balance.toFixed(2)}</td>
+                                <td><TransactionMenu transaction={t} isOpening={t.id === "opening"} /></td>
                               </tr>
                             )) : (
-                              <tr><td colSpan={5} className="text-center text-muted py-4">No transactions yet</td></tr>
+                              <tr><td colSpan={6} className="text-center text-muted py-4">No transactions yet</td></tr>
                             );
                           })()
                         ) : (
-                          <tr><td colSpan={5} className="text-center text-muted py-4">Select a party</td></tr>
+                          <tr><td colSpan={6} className="text-center text-muted py-4">Select a party</td></tr>
                         )}
                       </tbody>
                     </Table>
+                    </div>
                   </div>
                 </>
               )}
             </div>
+            
           </div>
         </div>
       </div>
