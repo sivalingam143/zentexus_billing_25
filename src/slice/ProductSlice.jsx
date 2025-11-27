@@ -13,6 +13,7 @@ export const fetchProducts = createAsyncThunk(
   async (searchText = "", { rejectWithValue }) => {
     try {
       const response = await fetchProductsApi(searchText);
+      console.log("response",response)
       // Return ALL items (Goods + Services) — no filtering!
       return response;
     } catch (error) {

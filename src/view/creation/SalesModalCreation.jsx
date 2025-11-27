@@ -12,6 +12,7 @@ import { Color } from "antd/es/color-picker";
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import { fetchCategories } from "../../slice/CategorySlice"; // correct path
+import { fetchProducts } from "../../slice/ProductSlice";
 // Static options
 const UNITS = ["NONE", "KG", "Litre", "Piece"];
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
@@ -46,7 +47,7 @@ const INITIAL_ROW = {
   id: 1,
   item: "",
   category: "",
-  item_code: "",
+  Description: "",
   qty: "",
   unit: "NONE",
   priceUnitType: "Without Tax",
@@ -74,6 +75,8 @@ const [imagePreview, setImagePreview] = useState("");        // To show preview
 const [imageFileName, setImageFileName] = useState("");      // To show filename
 const [attachedDocs, setAttachedDocs] = useState([]); // [{name, data, previewUrl}]
 const { categories = [], status: categoryStatus = "idle" } = useSelector((state) => state.category);
+const { products, status: productStatus } = useSelector(state => state.product);
+console.log("products value",products);
 console.log("categories",categories)
 // const fileInputRef = useRef(null);
 const [hasUserUploadedImage, setHasUserUploadedImage] = useState(false);//for edit image
@@ -97,7 +100,7 @@ const [formData, setFormData] = useState({
     received_amount: " ",
     visibleColumns: {
     category: false,
-    item_code: false,
+    description: false,
     
   },
   });
@@ -186,27 +189,70 @@ const categoryOptions = [
     label: cat.category_name || cat.name
   }))
 ];
+// Fetch products when component mounts
+useEffect(() => {
+  if (productStatus === "idle") {
+    dispatch(fetchProducts(""));
+  }
+}, [productStatus, dispatch]);
+const productOptions = products.map(p => ({
+  value: p.item_name,
+  label: `${p.item_name} (${p.sale_price} ₹)`,
+  price: p.sale_price,
+  unit: p.unit_value || "Piece",
+  tax: p.tax || 18, // if you have tax, else set default
+}));
+// useEffect(() => {
+//   if (!saleToEdit) return;
+
+//   const itemsArray = JSON.parse(saleToEdit.products || "[]");
+//   const rows = Array.isArray(itemsArray) && itemsArray.length > 0
+//     ? itemsArray.map((item, index) => ({
+//         id: index + 1,
+//         item: String(item.item || ""),
+//         category: String(item.category || ""),
+//         Description: String(item.Description || ""),
+//         qty: String(item.qty || ""),
+//         unit: String(item.unit || "NONE"),
+//         priceUnitType: String(item.priceUnitType || "Without Tax"),
+//         price: String(item.price || ""),
+//         discountPercent: String(item.discountPercent || ""),
+//         discountAmount: String(item.discountAmount || "0.00"),
+//         taxPercent: Number(item.taxPercent || 0),
+//         taxAmount: String(item.taxAmount || "0.00"),
+//         amount: String(item.amount || "0.00"),
+//       }))
+//     : [INITIAL_ROW];
 useEffect(() => {
   if (!saleToEdit) return;
 
-  const itemsArray = JSON.parse(saleToEdit.products || "[]");
+  let itemsArray = [];
+  try {
+    itemsArray = JSON.parse(saleToEdit.products || "[]");
+  } catch (e) {
+    console.error("Failed to parse products JSON", e);
+    itemsArray = [];
+  }
+
   const rows = Array.isArray(itemsArray) && itemsArray.length > 0
-    ? itemsArray.map((item, index) => ({
+    ? itemsArray.map((product, index) => ({  // ← renamed to 'product' to avoid confusion
         id: index + 1,
-        item: String(item.item || ""),
-        category: String(item.category || ""),
-        item_code: String(item.item_code || ""),
-        qty: String(item.qty || ""),
-        unit: String(item.unit || "NONE"),
-        priceUnitType: String(item.priceUnitType || "Without Tax"),
-        price: String(item.price || ""),
-        discountPercent: String(item.discountPercent || ""),
-        discountAmount: String(item.discountAmount || "0.00"),
-        taxPercent: Number(item.taxPercent || 0),
-        taxAmount: String(item.taxAmount || "0.00"),
-        amount: String(item.amount || "0.00"),
+        item: String(product.item || ""),
+        category: String(product.category || ""),
+        Description: String(product.Description || ""),  // ← capital D!
+        qty: String(product.qty || ""),
+        unit: String(product.unit || "NONE"),
+        priceUnitType: String(product.priceUnitType || "Without Tax"),
+        price: String(product.price || ""),
+        discountPercent: String(product.discountPercent || ""),
+        discountAmount: String(product.discountAmount || "0.00"),
+        taxPercent: Number(product.taxPercent || 0),
+        taxAmount: String(product.taxAmount || "0.00"),
+        amount: String(product.amount || "0.00"),
       }))
     : [INITIAL_ROW];
+
+  // ... rest of your code (party selection, totals, etc.)
     if (saleToEdit.parties_id) {
     const partyFromList = parties.find(p => p.id == saleToEdit.parties_id || p.parties_id == saleToEdit.parties_id);
     if (partyFromList) {
@@ -266,8 +312,8 @@ useEffect(() => {
     received_amount: saleToEdit.received_amount || " ",
     visibleColumns: {
       category: false,
-      item_code:false,
-      // discount: false, // etc.
+      description:false,
+      
     },
   });
 }, [saleToEdit,parties]); // ← Only depend on saleToEdit
@@ -464,6 +510,7 @@ const handleInputChange = (field, value) => {
   };
 
 const handleSave = async () => {
+  console.log("444")
   try {
     // 1. Prepare documents JSON
     const documentsJson = JSON.stringify(
@@ -472,6 +519,7 @@ const handleSave = async () => {
         data: doc.data
       }))
     );
+    console.log("documentsJson",documentsJson)
 
     // 2. Final payload
     const payload = {
@@ -484,7 +532,7 @@ const handleSave = async () => {
       rount_off: formData.rount_off ? 1 : 0,
       round_off_amount: formData.round_off_amount,
     };
-
+     console.log("payload",payload);
     // VERY IMPORTANT: Only add edit_sales_id in EDIT mode
     if (isEditMode) {
       payload.edit_sales_id = id;
@@ -571,13 +619,14 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                  <th>#</th>
                  <th>Item</th>
                  {formData.visibleColumns.category && <th>Category</th>}
-                 {formData.visibleColumns.item_code && <th>item_code</th>}
+                 {formData.visibleColumns.description && <th>Description</th>}
+                 
                  <th>Qty</th>
                  <th>Unit</th>
                  <th>Price</th>
                  <th>Price/unit</th>
-                 {formData.visibleColumns.discount && <th>Discount</th>}
-                 <th>Tax</th>
+                {formData.visibleColumns.discount && <th>Discount</th>}
+                <th>Tax</th>
                 <th>
         <DropdownButton
           id="amount-column-dropdown"
@@ -589,7 +638,10 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
         >
           {[
             { key: "category", label: "Category" },
-            { key: "item_code", label: "Item-Code" },
+            { key: "hsn_code", label: "HSN-Code" },
+            { key: "description", label: "Description" },
+            { key: "discount", label: "Discount" },
+            
             
           ].map(col => (
             <Dropdown.Item key={col.key} as="div" className="d-flex align-items-center px-3 py-2">
@@ -623,11 +675,54 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
       {/* <td>
         <TextInputform value={row.item} onChange={(e) => onRowChange(row.id, "item", e.target.value)} readOnly={isDisabled} />
       </td> */}
-        <td>
-  <TextInputform 
-    value={row.item} 
-    onChange={e => onRowChange(row.id, "item", e.target.value)}
-    placeholder="e.g., Apple, iPhone 15"
+       {/* <td>
+  <Select
+    options={products.map(p => ({
+      value: p.item_name,
+      label: `${p.item_name} - ₹${p.sale_price} (${p.unit_value})`,
+      price: p.sale_price,
+      unit: p.unit_value || "Piece"
+    }))}
+    value={row.item ? { label: row.item, value: row.item } : null}
+    onChange={(option) => {
+      if (option) {
+        onRowChange(row.id, "item", option.value);
+        onRowChange(row.id, "price", option.price);
+        onRowChange(row.id, "unit", option.unit);
+      }
+    }}
+    placeholder="Search item..."
+    isSearchable={true}
+    isClearable={true}
+    isDisabled={isDisabled}
+    menuPortalTarget={document.body}
+    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+  />
+</td> */}
+<td style={{ minWidth: "280px" }}>
+  <Select
+    options={products.map(p => ({
+      value: p.item_name,
+      label: p.item_name,               // ← Only shows Banana - Robusta, etc.
+      
+    }))}
+    value={row.item ? { label: row.item, value: row.item } : null}
+    onChange={(selected) => {
+      if (selected) {
+        onRowChange(row.id, "item", selected.value);     // Save item name
+        
+      }
+    }}
+    placeholder="Search item..."
+    isSearchable={true}
+    isClearable={true}
+    isDisabled={isDisabled}
+    noOptionsMessage={() => "No items found"}
+    styles={{
+      menuPortal: base => ({ ...base, zIndex: 9999 }),
+      control: base => ({ ...base, minHeight: 38 })
+    }}
+    menuPortalTarget={document.body}
   />
 </td>
 
@@ -641,16 +736,27 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     />
   </td>
 )}
-{formData.visibleColumns.item_code && (
+{formData.visibleColumns.description && (
+  <td>
+    <TextArea
+      value={row.Description || ""}
+      onChange={(e) => onRowChange(row.id, "Description", e.target.value)}
+      readOnly={isDisabled}
+      placeholder="Enter item description"
+      rows={2}
+    />
+  </td>
+)}
+{/* {formData.visibleColumns.hsn_code && (
   <td>
     <DropDown
-      value={row.item_code}
-      onChange={(e) => onRowChange(row.id, "item_code", e.target.value)}
+      value={row.hsn_code_code}
+      onChange={(e) => onRowChange(row.id, "hsn_code", e.target.value)}
       options={categoryOptions}
       disabled={isDisabled}
     />
   </td>
-)}
+)} */}
 
         <td><TextInputform expanse="number" value={row.qty} onChange={(e) => onRowChange(row.id, "qty", e.target.value)} readOnly={isDisabled} /></td>
         <td><DropDown value={row.unit} onChange={(v) => onRowChange(row.id, "unit", v)} options={unitOptions} disabled={isDisabled} /></td>
