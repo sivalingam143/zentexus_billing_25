@@ -12,6 +12,7 @@ import { Color } from "antd/es/color-picker";
 import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import { fetchCategories } from "../../slice/CategorySlice"; // correct path
+import { fetchProducts } from "../../slice/ProductSlice";
 // Static options
 const UNITS = ["NONE", "KG", "Litre", "Piece"];
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
@@ -40,13 +41,14 @@ const PAYMENT_OPTIONS = [
   { value: "Cash", label: "Cash" }
   
 ];
-
+const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 const INITIAL_ROW = {
-  id: 1,
+   id: generateUniqueId(),
   item: "",
   category: "",
-  item_code: "",
+  Description: "",
+  hsn_code:" ",
   qty: "",
   unit: "NONE",
   priceUnitType: "Without Tax",
@@ -58,6 +60,7 @@ const INITIAL_ROW = {
   amount: "0.00"
   
 };
+console.log("INITIAL_ROW",INITIAL_ROW)
 
 const SaleCreation = () => {
 const dispatch = useDispatch();
@@ -74,6 +77,8 @@ const [imagePreview, setImagePreview] = useState("");        // To show preview
 const [imageFileName, setImageFileName] = useState("");      // To show filename
 const [attachedDocs, setAttachedDocs] = useState([]); // [{name, data, previewUrl}]
 const { categories = [], status: categoryStatus = "idle" } = useSelector((state) => state.category);
+const { products, status: productStatus } = useSelector(state => state.product);
+console.log("products value",products);
 console.log("categories",categories)
 // const fileInputRef = useRef(null);
 const [hasUserUploadedImage, setHasUserUploadedImage] = useState(false);//for edit image
@@ -97,7 +102,8 @@ const [formData, setFormData] = useState({
     received_amount: " ",
     visibleColumns: {
     category: false,
-    item_code: false,
+    description: false,
+    hsn_code: false,
     
   },
   });
@@ -186,27 +192,69 @@ const categoryOptions = [
     label: cat.category_name || cat.name
   }))
 ];
+// Fetch products when component mounts
+useEffect(() => {
+  if (productStatus === "idle") {
+    dispatch(fetchProducts(""));
+  }
+}, [productStatus, dispatch]);
+
+const productOptions = React.useMemo(() => {
+  return products.map(p => ({
+    value: p.item_name,
+    label: p.item_name,
+    hsn_code: p.hsn_code.toString()  ,// important: convert to string
+    item:p.item_name,
+  }));
+}, [products]);
+console.log("productOptions",productOptions)
+
+// Auto-show HSN column when any row has HSN filled
+useEffect(() => {
+  const hasHsn = formData.rows.some(row => row.hsn_code);
+  if (hasHsn) {
+    setFormData(prev => ({
+      ...prev,
+      visibleColumns: {
+        ...prev.visibleColumns,
+        hsn_code: true
+      }
+    }));
+  }
+}, [formData.rows]);
+
 useEffect(() => {
   if (!saleToEdit) return;
 
-  const itemsArray = JSON.parse(saleToEdit.products || "[]");
+  let itemsArray = [];
+  try {
+    itemsArray = JSON.parse(saleToEdit.products || "[]");
+  } catch (e) {
+    console.error("Failed to parse products JSON", e);
+    itemsArray = [];
+  }
+
+
   const rows = Array.isArray(itemsArray) && itemsArray.length > 0
-    ? itemsArray.map((item, index) => ({
-        id: index + 1,
-        item: String(item.item || ""),
-        category: String(item.category || ""),
-        item_code: String(item.item_code || ""),
-        qty: String(item.qty || ""),
-        unit: String(item.unit || "NONE"),
-        priceUnitType: String(item.priceUnitType || "Without Tax"),
-        price: String(item.price || ""),
-        discountPercent: String(item.discountPercent || ""),
-        discountAmount: String(item.discountAmount || "0.00"),
-        taxPercent: Number(item.taxPercent || 0),
-        taxAmount: String(item.taxAmount || "0.00"),
-        amount: String(item.amount || "0.00"),
+    ? itemsArray.map((product, index) => ({  // ← renamed to 'product' to avoid confusion
+        id: generateUniqueId(),
+        item: String(product.item || ""),
+        category: String(product.category || ""),
+        hsn_code: String(product.category ||" "),
+        Description: String(product.Description || ""),  // ← capital D!
+        qty: String(product.qty || ""),
+        unit: String(product.unit || "NONE"),
+        priceUnitType: String(product.priceUnitType || "Without Tax"),
+        price: String(product.price || ""),
+        discountPercent: String(product.discountPercent || ""),
+        discountAmount: String(product.discountAmount || "0.00"),
+        taxPercent: Number(product.taxPercent || 0),
+        taxAmount: String(product.taxAmount || "0.00"),
+        amount: String(product.amount || "0.00"),
       }))
     : [INITIAL_ROW];
+
+  // ... rest of your code (party selection, totals, etc.)
     if (saleToEdit.parties_id) {
     const partyFromList = parties.find(p => p.id == saleToEdit.parties_id || p.parties_id == saleToEdit.parties_id);
     if (partyFromList) {
@@ -266,8 +314,9 @@ useEffect(() => {
     received_amount: saleToEdit.received_amount || " ",
     visibleColumns: {
       category: false,
-      item_code:false,
-      // discount: false, // etc.
+      description:false,
+      hsn_code:false,
+      
     },
   });
 }, [saleToEdit,parties]); // ← Only depend on saleToEdit
@@ -358,19 +407,30 @@ let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 
 const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
-const addRow = () => {const newId = formData.rows.length ? Math.max(...formData.rows.map((r) => r.id)) + 1: 1;
-const newRows = [...formData.rows, { ...INITIAL_ROW, id: newId }];
-const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0),0 );
-let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
+// const addRow = () => {const newId = formData.rows.length ? Math.max(...formData.rows.map((r) => r.id)) + 1: 1;
+// const newRows = [...formData.rows, { ...INITIAL_ROW, id: newId }];
+// const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0),0 );
+// let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
+//     if (formData.rount_off === 1 && !isManualRoundOff) {
+//       const autoRound = calculateAutoRoundOff(newTotalAmountRaw);
+//       finalRound = Number(autoRound);
+//       setFormData((prev) => ({ ...prev, round_off_amount: autoRound }));
+//     }
+// const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
+//     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
+//   };
+const addRow = () => {
+    const newRows = [...formData.rows, { ...INITIAL_ROW, id: generateUniqueId() }];  // Use unique ID for new row
+    const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0), 0);
+    let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
     if (formData.rount_off === 1 && !isManualRoundOff) {
       const autoRound = calculateAutoRoundOff(newTotalAmountRaw);
       finalRound = Number(autoRound);
       setFormData((prev) => ({ ...prev, round_off_amount: autoRound }));
     }
-const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
+    const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
-
 const onRowChange = (id, field, value) => {
     let actualValue = value;
     if (value?.value !== undefined) {
@@ -464,6 +524,7 @@ const handleInputChange = (field, value) => {
   };
 
 const handleSave = async () => {
+  console.log("444")
   try {
     // 1. Prepare documents JSON
     const documentsJson = JSON.stringify(
@@ -472,6 +533,7 @@ const handleSave = async () => {
         data: doc.data
       }))
     );
+    console.log("documentsJson",documentsJson)
 
     // 2. Final payload
     const payload = {
@@ -484,7 +546,7 @@ const handleSave = async () => {
       rount_off: formData.rount_off ? 1 : 0,
       round_off_amount: formData.round_off_amount,
     };
-
+     console.log("payload",payload);
     // VERY IMPORTANT: Only add edit_sales_id in EDIT mode
     if (isEditMode) {
       payload.edit_sales_id = id;
@@ -571,13 +633,14 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                  <th>#</th>
                  <th>Item</th>
                  {formData.visibleColumns.category && <th>Category</th>}
-                 {formData.visibleColumns.item_code && <th>item_code</th>}
+                 {formData.visibleColumns.description && <th>Description</th>}
+                 {formData.visibleColumns.hsn_code && <th>HSN_code</th>}
                  <th>Qty</th>
                  <th>Unit</th>
                  <th>Price</th>
                  <th>Price/unit</th>
-                 {formData.visibleColumns.discount && <th>Discount</th>}
-                 <th>Tax</th>
+                {formData.visibleColumns.discount && <th>Discount</th>}
+                <th>Tax</th>
                 <th>
         <DropdownButton
           id="amount-column-dropdown"
@@ -589,7 +652,10 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
         >
           {[
             { key: "category", label: "Category" },
-            { key: "item_code", label: "Item-Code" },
+            { key: "hsn_code", label: "HSN-Code" },
+            { key: "description", label: "Description" },
+            { key: "discount", label: "Discount" },
+            
             
           ].map(col => (
             <Dropdown.Item key={col.key} as="div" className="d-flex align-items-center px-3 py-2">
@@ -612,22 +678,57 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
       <th>Actions</th>
     </tr>
   </thead>
-  {/* <tbody>
-    {formData.rows.map(row => (
-      <tr key={row.id}>
-      <td>{index + 1}</td> */}
+ 
       <tbody>
   {formData.rows.map((row, index) => (
     <tr key={row.id}>
       <td>{index + 1}</td>        {/* ← ADD THIS LINE */}
-      {/* <td>
-        <TextInputform value={row.item} onChange={(e) => onRowChange(row.id, "item", e.target.value)} readOnly={isDisabled} />
-      </td> */}
-        <td>
-  <TextInputform 
-    value={row.item} 
-    onChange={e => onRowChange(row.id, "item", e.target.value)}
-    placeholder="e.g., Apple, iPhone 15"
+      
+{/* <td>
+  <Select
+    options={productOptions}
+    // value={productOptions.find(opt => opt.value === row.item) || null}
+    value={productOptions.find(option => option.value === row.item) || null}
+    onChange={(selectedOption) => {
+      if (selectedOption) {
+        // Only set item name
+        onRowChange(row.id, "item", selectedOption.value);
+        // AUTO-FILL HSN CODE ONLY
+        onRowChange(row.id, "hsn_code", selectedOption.hsn_code || "");
+      } else {
+        onRowChange(row.id, "item", "");
+        onRowChange(row.id, "hsn_code", "");
+      }
+    }}
+    isClearable
+    placeholder="Select item..."
+    isDisabled={isDisabled}
+    menuPortalTarget={document.body}
+  />
+</td> */}
+<td style={{ minWidth: "320px" }}>
+  <Select
+    options={productOptions}
+
+    value={productOptions.find(opt => opt.value === row.item_name) || null}
+    onChange={(selected) => {
+      if (selected) {
+        onRowChange(row.id, "item", selected.value);           // THIS WAS MISSING!
+        onRowChange(row.id, "hsn_code", selected.hsn_code || "");
+      } else {
+        onRowChange(row.id, "item", "");
+        onRowChange(row.id, "hsn_code", "");
+      }
+    }}
+    placeholder="Select item..."
+    isClearable
+    isSearchable
+    menuPortalTarget={document.body}
+    key={`item-${row.id}`}
+    isDisabled={isDisabled}
+    styles={{
+      control: (base) => ({ ...base, minHeight: 38 })
+    }}
   />
 </td>
 
@@ -641,13 +742,25 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     />
   </td>
 )}
-{formData.visibleColumns.item_code && (
+{formData.visibleColumns.description && (
   <td>
-    <DropDown
-      value={row.item_code}
-      onChange={(e) => onRowChange(row.id, "item_code", e.target.value)}
-      options={categoryOptions}
-      disabled={isDisabled}
+    <TextArea
+      value={row.Description || ""}
+      onChange={(e) => onRowChange(row.id, "Description", e.target.value)}
+      readOnly={isDisabled}
+      placeholder="Enter item description"
+      rows={2}
+    />
+  </td>
+)}
+{formData.visibleColumns.hsn_code && (
+  <td>
+    <TextArea
+      value={row.hsn_code || ""}
+      onChange={(e) => onRowChange(row.id, "HSN_code", e.target.value)}
+      readOnly={isDisabled}
+      
+      
     />
   </td>
 )}
