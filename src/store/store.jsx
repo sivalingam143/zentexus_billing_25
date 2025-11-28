@@ -15,7 +15,7 @@ export const store = configureStore({
     unit: unitReducer,
     category: categoryReducer,
     product : productReducer,
-    service:serviceReducer,  
+    service : serviceReducer,  
   },
 });
 
