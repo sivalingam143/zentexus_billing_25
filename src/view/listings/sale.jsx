@@ -20,7 +20,7 @@ const Sale = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { sales = [] } = useSelector((state) => state.sale);
-
+  const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -33,34 +33,46 @@ const Sale = () => {
     dispatch(searchSales(searchTerm));
   }, [dispatch, searchTerm]);
 
-  // Perfect filter logic
-    const filteredSales = useMemo(() => {
-      return sales.filter((item) => {
-        const balance = Number(item.balance_due || 0);
-        const received = Number(item.received_amount || 0);
-        const isCancelled = !!item.is_cancelled;
-  
-        if (statusFilter === "All") return true;
-        if (statusFilter === "Paid") return balance === 0 && !isCancelled;
-        if (statusFilter === "Unpaid") return balance > 0 && received === 0;
-        if (statusFilter === "Partially Paid") return balance > 0 && received > 0;
-        if (statusFilter === "Cancelled") return isCancelled;
-        return true;
-      });
-    }, [sales, statusFilter]);
+  // Add this function inside your Sale component, before statusDisplay
+const getStatusFromData = (item) => {
+  const balance = Number(item.balance_due || 0);
+  const received = Number(item.received_amount || 0);
+  const isCancelled = !!item.is_cancelled;
+
+  if (isCancelled) return "Cancelled";
+  if (balance === 0) return "Paid";
+  if (received === 0 && balance > 0) return "Unpaid";
+  if (received > 0 && balance > 0) return "Partially Paid";
+  return "Unpaid";
+};
+
+const filteredSales = useMemo(() => {
+  if (statusFilter === "All") return sales;
+  return sales.filter(item => item.status === statusFilter);
+}, [sales, statusFilter]);
 
   // Calculate totals using real DB values
   const totals = useMemo(() => {
-    const totalSales = sales.reduce((sum, s) => sum + Number(s.total || 0), 0);
-    const totalReceived = sales.reduce((sum, s) => sum + Number(s.received_amount || 0), 0);
-    const totalBalance = sales.reduce((sum, s) => sum + Number(s.balance_due || 0), 0);
+  const totalSales = sales.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  const totalReceived = sales.reduce((sum, s) => sum + parseFloat(s.received_amount || 0), 0);
+  const totalBalance = sales.reduce((sum, s) => sum + parseFloat(s.balance_due || 0), 0);
 
-    return {
-      totalSales: totalSales.toFixed(2),
-      totalReceived: totalReceived.toFixed(2),
-      totalBalance: totalBalance.toFixed(2),
-    };
-  }, [sales]);
+  return {
+    totalSales: totalSales.toFixed(2),
+    totalReceived: totalReceived.toFixed(2),
+    totalBalance: totalBalance.toFixed(2),
+  };
+}, [sales]);
+const statusDisplay = (item) => {
+  const status = item.status || "Unpaid";
+  const colorMap = {
+    Paid: "#27ae60",
+    Unpaid: "#e74c3c",
+    "Partially Paid": "#f39c12",
+    Cancelled: "#95a5a6"
+  };
+  return <span style={{ color: colorMap[status], fontWeight: "600" }}>{status}</span>;
+};
 
   // Navigation
   const handleCreate = () => navigate("/sale/create");
@@ -76,18 +88,7 @@ const Sale = () => {
       NotifyData("Sale Deletion Failed", "error");
     }
   };
-   // Status color
-  const statusDisplay= (item) => {
-    const balance = Number(item.balance_due || 0);
-    const received = Number(item.received_amount || 0);
-    const isCancelled = !!item.is_cancelled;
-
-    if (isCancelled) return <span style={{ color: "#95a5a6", fontWeight: "600" }}>Cancelled</span>;
-    if (balance === 0) return <span style={{ color: "#27ae60", fontWeight: "600" }}>Paid</span>;
-    if (received === 0 && balance > 0) return <span style={{ color: "#e74c3c", fontWeight: "600" }}>Unpaid</span>;
-    if (received > 0 && balance > 0) return <span style={{ color: "#f39c12", fontWeight: "600" }}>Partially Paid</span>;
-    return null;
-  };
+  
 
   // Table headers
   const SaleHead = [
@@ -172,8 +173,8 @@ const SaleData = filteredSales.length > 0
           values: [
             item.invoice_date || "-",
             item.invoice_no || "-",
-            item.name || "-",
-            "Sale Invoice",
+            item.name || "-", 
+            "Sales",
             item.payment_type || "Cash",
             `₹ ${total}`,
             balanceDisplay,
@@ -293,9 +294,44 @@ const SaleData = filteredSales.length > 0
             </div>
 
             {/* Header */}
-            <Row className="sale-invoice-header align-items-center mb-3">
-              <Col><h5 className="m-0">Sale Invoices</h5></Col>
-            </Row>
+            <Row className="align-items-center mb-3">
+  <Col>
+    <h5
+      style={{ cursor: "pointer" }}
+      onClick={() => setOpen(!open)}
+    >
+      Sale Invoices <FaChevronDown />
+    </h5>
+
+    {open && (
+      <div
+        style={{
+          position: "absolute",
+          background: "white",
+          border: "1px solid #ddd",
+          borderRadius: "6px",
+          padding: "5px 0",
+          width: "180px",
+          zIndex: 999,
+        }}
+      >
+        {["Sale Invoices", "Estimate/Quotation", "Proforma Invoice", "Payment-In", "sale Order","Delivery Challan","sale Return","Purchase Bill","Payment-Out","Expenses","Purchase Order","Purchase Return"].map((x) => (
+          <div
+            key={x}
+            onClick={() => setOpen(false)}
+            style={{
+              padding: "8px 12px",
+              cursor: "pointer",
+            }}
+          >
+            {x}
+          </div>
+        ))}
+      </div>
+    )}
+  </Col>
+</Row>
+
 
             {/* Search */}
             <Row className="mb-3">

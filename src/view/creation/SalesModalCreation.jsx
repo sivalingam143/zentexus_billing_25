@@ -46,7 +46,7 @@ const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).subst
 const INITIAL_ROW = {
   id: generateUniqueId(),
   product_id: "",        
-  item_name: "",
+  product_name: "",
   category: "",
   Description: "",
   hsn_code:"",
@@ -202,8 +202,9 @@ useEffect(() => {
 
 const productOptions = React.useMemo(() => {
   return products.map(p => ({
-    value: p.item_name,           
-    label: p.item_name,
+    value: p.product_name, 
+    label: p.product_name, // Added label
+    product_id: p.product_id, // <<< CRITICAL FIX: Include product_id
     hsn_code: p.hsn_code || ""    
   }));
 }, [products]);
@@ -212,7 +213,11 @@ console.log("productOptions",productOptions)
 // Auto-show HSN column when any row has HSN filled
 
 useEffect(() => {
-  const hasAnyHsn = formData.rows.some(row => row.hsn_code && row.hsn_code.trim() !== "");
+  // const hasAnyHsn = formData.rows.some(row => row.hsn_code && row.hsn_code.trim() !== "");
+  const hasAnyHsn = formData.rows.some(row => {
+  const hsn = String(row.hsn_code || "").trim();
+  return hsn !== "";
+})
   setFormData(prev => ({
     ...prev,
     visibleColumns: {
@@ -238,7 +243,7 @@ useEffect(() => {
     ? itemsArray.map((product, index) => ({  // ← renamed to 'product' to avoid confusion
         id: generateUniqueId(),
         product_id: product.product_id || "",           
-        item_name: product.item_name || product.item || "", 
+        product_name: product.product_name || "", 
         hsn_code: product.hsn_code || "",
         category: String(product.category || ""),
         
@@ -408,18 +413,7 @@ let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 
 const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
-// const addRow = () => {const newId = formData.rows.length ? Math.max(...formData.rows.map((r) => r.id)) + 1: 1;
-// const newRows = [...formData.rows, { ...INITIAL_ROW, id: newId }];
-// const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0),0 );
-// let finalRound = formData.rount_off === 1 ? Number(formData.round_off_amount) : 0;
-//     if (formData.rount_off === 1 && !isManualRoundOff) {
-//       const autoRound = calculateAutoRoundOff(newTotalAmountRaw);
-//       finalRound = Number(autoRound);
-//       setFormData((prev) => ({ ...prev, round_off_amount: autoRound }));
-//     }
-// const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
-//     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
-//   };
+
 const addRow = () => {
     const newRows = [...formData.rows, { ...INITIAL_ROW, id: generateUniqueId() }];  // Use unique ID for new row
     const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0), 0);
@@ -433,69 +427,68 @@ const addRow = () => {
     setFormData((prev) => ({ ...prev, rows: newRows, total: newTotal }));
   };
 const onRowChange = (id, field, value) => {
-    let actualValue = value;
-    if (value?.value !== undefined) {
-      actualValue = value.value;
-    } else if (value?.target?.value !== undefined) {
-      actualValue = value.target.value;
-    }
-
-// Add this function inside your component (after all useState)
-const onRowChange = (rowId, field, value) => {
-  setFormData(prev => ({
-    ...prev,
-    rows: prev.rows.map(row =>
-      row.id === rowId ? { ...row, [field]: value } : row
-    )
-  }));
-};
-const newRows = formData.rows.map((row) => {
+  setFormData(prev => {
+    const newRows = prev.rows.map(row => {
       if (row.id !== id) return row;
+
+      // Handle Select component (value is object) vs input (value is in target)
+      let actualValue = value;
+      if (value && value.target) actualValue = value.target.value;
+      if (value && value.value !== undefined) actualValue = value.value;
+
       const updatedRow = { ...row, [field]: actualValue };
-      const taxPercent = Number(updatedRow.taxPercent || 0);
+
+      // Recalculate amounts
       const qty = Number(updatedRow.qty) || 0;
       const price = Number(updatedRow.price) || 0;
       const discountPercent = Number(updatedRow.discountPercent) || 0;
-      const priceUnitType = String(updatedRow.priceUnitType || "Without Tax");
+      const taxPercent = Number(updatedRow.taxPercent) || 0;
+      const priceUnitType = updatedRow.priceUnitType || "Without Tax";
+
       let basicTotal = qty * price;
       const discountAmount = (basicTotal * discountPercent) / 100;
       let taxableAmount = basicTotal - discountAmount;
       let taxAmount = 0;
       let finalAmount = taxableAmount;
+
       if (priceUnitType === "Without Tax") {
         taxAmount = (taxableAmount * taxPercent) / 100;
         finalAmount = taxableAmount + taxAmount;
       } else {
-        const totalWithTax = taxableAmount;
-        taxAmount = (totalWithTax * taxPercent) / (100 + taxPercent);
-        finalAmount = totalWithTax;
+        taxAmount = (taxableAmount * taxPercent) / (100 + taxPercent);
+        finalAmount = taxableAmount;
       }
+
       return {
         ...updatedRow,
-        taxPercent,
         discountAmount: discountAmount.toFixed(2),
         taxAmount: taxAmount.toFixed(2),
         amount: finalAmount.toFixed(2),
       };
     });
 
-const newTotalAmountRaw = newRows.reduce((a, r) => a + Number(r.amount || 0),0);
-let finalRound = 0;
-let newRoundOffAmount = formData.round_off_amount;
-  if (formData.rount_off === 1) {
+    // Recalculate total
+    const totalAmountRaw = newRows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    let finalTotal = totalAmountRaw;
+    let roundOffAmt = prev.round_off_amount;
+
+    if (prev.rount_off === 1) {
       if (!isManualRoundOff) {
-        newRoundOffAmount = calculateAutoRoundOff(newTotalAmountRaw);
+        roundOffAmt = (Math.round(totalAmountRaw) - totalAmountRaw).toFixed(2);
       }
-      finalRound = Number(newRoundOffAmount);
+      finalTotal = (totalAmountRaw + Number(roundOffAmt)).toFixed(2);
+    } else {
+      finalTotal = totalAmountRaw.toFixed(2);
     }
-const newTotal = (newTotalAmountRaw + finalRound).toFixed(2);
-    setFormData((prev) => ({
+
+    return {
       ...prev,
       rows: newRows,
-      round_off_amount: newRoundOffAmount,
-      total: newTotal,
-    }));
-  };
+      total: finalTotal,
+      round_off_amount: prev.rount_off === 1 ? roundOffAmt : "0",
+    };
+  });
+};
 const handleRoundOffChange = (e) => {
 const val = e.target.value || "0";
     setIsManualRoundOff(true);
@@ -547,16 +540,21 @@ const handleSave = async () => {
     console.log("documentsJson",documentsJson)
 
     // 2. Final payload
-    const payload = {
-      ...formData,
-      products: JSON.stringify(formData.rows),
-      add_image: formData.add_image || "",
-      documents: documentsJson,
-      invoice_no: formData.invoice_no,
-      total: formData.total,
-      rount_off: formData.rount_off ? 1 : 0,
-      round_off_amount: formData.round_off_amount,
-    };
+    // Create payload WITHOUT mutating formData
+const payload = {
+  ...formData,
+  products: JSON.stringify(formData.rows), // ← Safe: rows still exist here
+  add_image: formData.add_image || "",
+  documents: documentsJson,
+  invoice_no: formData.invoice_no,
+  total: formData.total,
+  rount_off: formData.rount_off ? 1 : 0,
+  round_off_amount: formData.round_off_amount,
+  received_amount: formData.received_amount || 0,
+};
+
+// Only AFTER stringifying, remove rows (optional, but safe now)
+delete payload.rows;
      console.log("payload",payload);
     // VERY IMPORTANT: Only add edit_sales_id in EDIT mode
     if (isEditMode) {
@@ -642,8 +640,8 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                  <thead>
                  <tr>
                  <th>#</th>
-                 <th>Item</th>
                  {formData.visibleColumns.category && <th>Category</th>}
+                 <th>Item</th>
                  {formData.visibleColumns.description && <th>Description</th>}
                  {formData.visibleColumns.hsn_code && <th>HSN_code</th>}
                  <th>Qty</th>
@@ -695,31 +693,6 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     <tr key={row.id}>
       <td>{index + 1}</td>        {/* ← ADD THIS LINE */}
       
-
-<td style={{ minWidth: "380px" }}>
-  <Select
-    options={productOptions}
-    value={productOptions.find(opt => opt.value === row.item_name) || null}
-    onChange={(selected) => {
-      if (selected) {
-      
-        onRowChange(row.id, "item_name", selected.value);
-        onRowChange(row.id, "hsn_code", selected.hsn_code);
-      } else {
-        
-        onRowChange(row.id, "item_name", "");
-        onRowChange(row.id, "hsn_code", "");
-      }
-    }}
-    placeholder="Search item by name..."
-    isClearable
-    isSearchable
-    menuPortalTarget={document.body}
-    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
-    isDisabled={isDisabled}
-  />
-</td>
-
 {formData.visibleColumns.category && (
   <td>
     <DropDown
@@ -730,6 +703,58 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     />
   </td>
 )}
+{/* Replace your entire <td> block for Item selection with this */}
+
+{/* <td style={{ minWidth: "380px" }}>
+  <Select
+    options={productOptions}
+    value={productOptions.find(opt => opt.value === row.item_name) || null}
+    onChange={(selected) => {
+      if (!selected) {
+        onRowChange(row.id, "item_name", "");
+        onRowChange(row.id, "hsn_code", "");
+        onRowChange(row.id, "price", ""); // optional: clear price too
+        return;
+      }
+      onRowChange(row.id, "item_name", selected.value);
+      onRowChange(row.id, "hsn_code", selected.hsn_code || "");
+      // Optional: auto-fill price if you have it in product data
+      // const product = products.find(p => p.product_name === selected.value);
+      // onRowChange(row.id, "price", product?.selling_price || "");
+    }}
+    placeholder="Select or search product..."
+    isClearable
+    isSearchable
+    menuPortalTarget={document.body}
+    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+    isDisabled={isDisabled}
+  />
+</td> */}
+<td style={{ minWidth: "380px" }}>
+  <Select
+    options={productOptions}
+    value={productOptions.find(opt => opt.value === row.product_name) || null}
+    onChange={(selected) => {
+      if (!selected) {
+        onRowChange(row.id, "product_name", "");
+        onRowChange(row.id, "product_id", "");
+        onRowChange(row.id, "hsn_code", "");
+        return;
+      }
+      onRowChange(row.id, "product_name", selected.value);
+      onRowChange(row.id, "product_id", selected.product_id);
+      onRowChange(row.id, "hsn_code", selected.hsn_code || "");
+    }}
+    placeholder="Select product"
+    isClearable
+    isSearchable
+    menuPortalTarget={document.body}
+    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+    isDisabled={isDisabled}
+  />
+</td>
+
+
 {formData.visibleColumns.description && (
   <td>
     <TextArea
@@ -743,14 +768,13 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
 )}
 {formData.visibleColumns.hsn_code && (
   <td>
-    <TextArea
-      value={row.hsn_code || ""}
-      onChange={(e) => onRowChange(row.id, "HSN_code", e.target.value)}
-      readOnly={isDisabled}
-      
-      
-    />
-  </td>
+  <TextArea
+    type="text"
+    value={String(row.hsn_code || "").trim()}
+    onChange={(e) => onRowChange(row.id, "hsn_code", e.target.value)}
+    readOnly={isDisabled}
+  />
+</td>
 )}
 
         <td><TextInputform expanse="number" value={row.qty} onChange={(e) => onRowChange(row.id, "qty", e.target.value)} readOnly={isDisabled} /></td>
