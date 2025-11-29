@@ -24,12 +24,13 @@ export const createService = createAsyncThunk(
   async (serviceData, { rejectWithValue }) => {
     try {
       const response = await createServiceApi(serviceData);
-      return response.body;
+      return response.body;   // response.body must contain a service object for this to work
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
+
 
 export const updateService = createAsyncThunk(
   "service/updateService",
@@ -87,7 +88,7 @@ const serviceSlice = createSlice({
       })
       .addCase(updateService.fulfilled, (state, action) => {
         const updated = action.payload;
-        const index = state.services.findIndex(s => s.service_code === updated.edit_service_code || s.service_code === updated.service_code);
+        const index = state.services.findIndex(s => s.service_code === updated.edit_service_id || s.service_code === updated.service_id);
         if (index !== -1) state.services[index] = { ...state.services[index], ...updated };
       })
       .addCase(deleteService.fulfilled, (state, action) => {

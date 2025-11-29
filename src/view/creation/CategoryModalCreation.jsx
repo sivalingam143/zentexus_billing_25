@@ -59,10 +59,17 @@ function AddCate({ show, onHide, onSaveSuccess, categoryToEdit }) {
       </Modal.Body>
       <Modal.Footer className="border-0 justify-content-center p-4">
         <Button
-          variant="primary"
+          variant="none"
           onClick={handleSave}
           disabled={loading || !categoryName.trim()}
-          style={{ borderRadius: "20px", width: "80%", padding: "10px" }}
+            style={{
+    borderRadius: "20px",
+    width: "80%",
+    padding: "10px",
+    backgroundColor: "red",
+    color: "white",
+    border: "none"
+  }}
         >
           {loading ? <Spinner size="sm" /> : categoryToEdit ? "Update" : "Create"}
         </Button>

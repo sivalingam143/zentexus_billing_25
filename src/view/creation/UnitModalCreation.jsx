@@ -37,7 +37,7 @@ function AddUnit({ show, onHide, onSaveSuccess, unitToEdit }) {
 
     if (unitToEdit) {
       // Update mode
-      unitData.units_id = unitToEdit.units_id;
+      unitData.unit_id = unitToEdit.unit_id;
       await dispatch(updateUnit(unitData));
     } else {
       // Create mode

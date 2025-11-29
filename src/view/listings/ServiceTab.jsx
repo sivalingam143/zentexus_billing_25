@@ -3,10 +3,18 @@ import React, { useState } from "react";
 import { Button, Table, Col, Card } from "react-bootstrap";
 import { FaSearch, FaFileExcel } from "react-icons/fa";
 import AddItem from "../creation/ItemModalCreation";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchServices } from "../../slice/serviceSlice";
 
 export default function ServiceTab() {
-  const [showAddItem, setShowAddItem] = useState(false);
+  const dispatch = useDispatch();
+  const { services, status } = useSelector(state => state.service);
 
+  const [showAddItem, setShowAddItem] = useState(false);
+ useEffect(() => {
+    dispatch(fetchServices()); // will call service.php with empty search_text
+  }, [dispatch]);
   return (
     <>
       <Col md={3} className="d-flex flex-column p-3">

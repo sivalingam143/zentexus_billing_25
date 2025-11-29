@@ -46,6 +46,16 @@ function AddItem({ show, onHide, activeTab = "PRODUCT" }) {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [activePricingTab, setActivePricingTab] = useState("pricing");
 
+
+
+  const [showWholesale, setShowWholesale] = useState(false);
+
+// Add wholesale price state (you can extend it later if you need multiple tiers)
+const [wholesaleDetails, setWholesaleDetails] = useState({
+  price: "",
+  tax_type: "Without Tax",
+  min_qty: ""
+});
   // Pricing
   const [salePriceDetails, setSalePriceDetails] = useState({
     price: "", tax_type: "Without Tax", discount: "", discount_type: "Percentage"
@@ -85,7 +95,9 @@ function AddItem({ show, onHide, activeTab = "PRODUCT" }) {
   // Auto select first unit & category
   useEffect(() => {
     if (units.length > 0 && !selectedUnit) setSelectedUnit(units[0].unit_name);
-    if (categories.length > 0 && !selectedCategory) setSelectedCategory(categories[0].id);
+    if (categories.length > 0 && !selectedCategory) 
+    setSelectedCategory(categories[0].category_id);
+
   }, [units, categories]);
 
   // Close dropdowns on outside click
@@ -125,74 +137,114 @@ function AddItem({ show, onHide, activeTab = "PRODUCT" }) {
     imagePreview ? setShowImageModal(true) : imageInputRef.current?.click();
   };
 
+
+
+
+  const resetForm = () => {
+  setItemName("");
+  setHsn("");
+  setItemCode("");
+  setSelectedUnit(units[0]?.unit_name || "");
+  setSelectedCategory(categories[0]?.category_id || "");
+  setImagePreview("");
+  setImageFileName("");
+  setSalePriceDetails({
+    price: "", tax_type: "Without Tax", discount: "", discount_type: "Percentage"
+  });
+  setPurchasePriceDetails({
+    price: "", tax_type: "Without Tax", tax_rate: "None"
+  });
+  setStockDetails({
+    opening_qty: "", at_price: "", stock_date: new Date().toISOString().split("T")[0],
+    min_stock: "", location: ""
+  });
+};
+
+
+
+
+const handleSaveNew = async () => {
+  try {
+    await handleSave(false); // false = do NOT close modal
+    alert("Saved Successfully!");
+    resetForm(); // clear fields for new entry
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
   // MAIN SAVE FUNCTION
-  const handleSave = async () => {
-    const selectedUnitObj = units.find(u => u.unit_name === selectedUnit) || {};
-    const unit_id = selectedUnitObj.units_id || "";
-    const selectedCatObj = categories.find(c => c.id == selectedCategory) || {};
-    const category_name = selectedCatObj.category_name || "";
+ const handleSave = async (closeModal = true) => {
+  const selectedCatObj = categories.find(c => c.category_id == selectedCategory) || {};
+  const selectedUnitObj = units.find(u => u.unit_name === selectedUnit) || {};
 
-    const sale_price = JSON.stringify({
-      price: salePriceDetails.price || "0",
-      tax_type: salePriceDetails.tax_type,
-      discount: salePriceDetails.discount || "0",
-      discount_type: salePriceDetails.discount_type
-    });
+  const category_name = selectedCatObj.category_name || "";
+  const unit_id = selectedUnitObj.unit_id || "";
 
-    const commonData = {
-   product_name: itemName.trim(),
-product_code:itemCode,
-      hsn_code: hsn || 0,
-      category_id: selectedCategory,
-      category_name: category_name,
-      unit_value: selectedUnit,
-      unit_id: unit_id,
-      add_image: imagePreview,
-      sale_price: sale_price,
-    };
+  const sale_price = JSON.stringify({
+    price: salePriceDetails.price || "0",
+    tax_type: salePriceDetails.tax_type,
+    discount: salePriceDetails.discount || "0",
+    discount_type: salePriceDetails.discount_type
+  });
 
-    if (!commonData.product_name || !commonData.category_id || !commonData.unit_value) {
-      alert("Please fill Item Name, Category & Unit");
-      return;
-    }
-
-    try {
-      if (isProduct) {
-        const productData = {
-          ...commonData,
-          purchase_price: JSON.stringify({
-            price: purchasePriceDetails.price || "0",
-            tax_type: purchasePriceDetails.tax_type,
-            tax_rate: purchasePriceDetails.tax_rate
-          }),
-          stock: JSON.stringify(stockDetails),
-          type: "product"
-        };
-        await dispatch(createProduct(productData)).unwrap();
-      } else {
-        const serviceData = {
-          service_name: itemName.trim(),
-          service_hsn: hsn || 0,
-          category_id: selectedCategory,
-          category_name: category_name,
-          unit_value: selectedUnit,
-          unit_id: unit_id,
-          add_image: imagePreview,
-          service_code :itemCode,
-          sale_price: sale_price,
-          tax_rate: purchasePriceDetails.tax_rate,  // reuse the tax_rate field
-          type: "service"
-        };
-        await dispatch(createService(serviceData)).unwrap();
-      }
-
-      alert("Saved Successfully!");
-      onHide();
-    } catch (err) {
-      console.error("Save failed:", err);
-      alert(err.message || "Failed to save");
-    }
+  const commonData = {
+    product_name: itemName.trim(),
+    product_code: itemCode,
+    hsn_code: hsn || 0,
+    category_id: selectedCategory,
+    category_name,
+    unit_value: selectedUnit,
+    unit_id,
+    add_image: imagePreview,
+    sale_price,
   };
+
+  if (!commonData.product_name || !commonData.category_id || !commonData.unit_value) {
+    alert("Please fill Item Name, Category & Unit");
+    return;
+  }
+
+  try {
+    if (isProduct) {
+      await dispatch(createProduct({
+        ...commonData,
+        purchase_price: JSON.stringify({
+          price: purchasePriceDetails.price || "0",
+          tax_type: purchasePriceDetails.tax_type,
+          tax_rate: purchasePriceDetails.tax_rate
+        }),
+        stock: JSON.stringify(stockDetails),
+        type: "product"
+      })).unwrap();
+    } else {
+      await dispatch(createService({
+        service_name: itemName.trim(),
+        service_hsn: hsn || 0,
+        category_id: selectedCategory,
+        category_name,
+        unit_value: selectedUnit,
+        unit_id,
+        add_image: imagePreview,
+        service_code: itemCode,
+        sale_price,
+        tax_rate: purchasePriceDetails.tax_rate,
+        type: "service"
+      })).unwrap();
+    }
+
+    if (closeModal) {
+      alert("Saved Successfully!");
+      onHide(); // CLOSE modal
+    }
+
+  } catch (err) {
+    console.error("Save failed:", err);
+    alert(err.message || "Failed to save");
+  }
+};
+
 
   return (
     <>
@@ -208,8 +260,24 @@ product_code:itemCode,
                   width: "calc(50% - 2px)", height: "100%", borderRadius: "50px",
                   transition: "transform 0.3s", transform: type === "add" ? "translateX(0%)" : "translateX(100%)"
                 }} />
-                <Button variant="transparent" className={`flex-grow-1 ${type === "add" ? "text-white" : "text-primary"}`} onClick={() => setType("add")}>Product</Button>
-                <Button variant="transparent" className={`flex-grow-1 ${type === "reduce" ? "text-white" : "text-primary"}`} onClick={() => setType("reduce")}>Service</Button>
+<Button
+  variant="transparent"
+  style={{ zIndex: 2, background: "transparent", border: "none", boxShadow: "none" }}
+  className={`flex-grow-1 fw-semibold ${type === "add" ? "text-white" : "text-primary"}`}
+  onClick={() => setType("add")}
+>
+  Product
+</Button>
+
+<Button
+  variant="transparent"
+  style={{ zIndex: 2, background: "transparent", border: "none", boxShadow: "none" }}
+  className={`flex-grow-1 fw-semibold ${type === "reduce" ? "text-white" : "text-primary"}`}
+  onClick={() => setType("reduce")}
+>
+  Service
+</Button>
+
               </div>
             </Modal.Title>
             <div className="d-flex gap-3">
@@ -238,7 +306,7 @@ product_code:itemCode,
                 {showUnitMenu && (
                   <div className="position-absolute start-0 end-0 bg-white border shadow-sm rounded mt-1" style={{ zIndex: 9999, maxHeight: "200px", overflowY: "auto" }}>
                     {units.map(u => (
-                      <div key={u.units_id} className="px-3 py-2 hover-bg-light" style={{ cursor: "pointer" }} onClick={() => { setSelectedUnit(u.unit_name); setShowUnitMenu(false); }}>
+                      <div key={u.unit_id} className="px-3 py-2 hover-bg-light" style={{ cursor: "pointer" }} onClick={() => { setSelectedUnit(u.unit_name); setShowUnitMenu(false); }}>
                         {u.unit_name} ({u.short_name})
                       </div>
                     ))}
@@ -270,14 +338,17 @@ product_code:itemCode,
               <div className="position-relative">
                 <div className="form-control white-input d-flex align-items-center justify-content-between pe-2" style={{ cursor: "pointer", height: "38px" }} onClick={() => setShowCategoryMenu(!showCategoryMenu)}>
                   <span className={!selectedCategory ? "text-muted" : ""}>
-                    {selectedCategory ? categories.find(c => c.id == selectedCategory)?.category_name : "-- Select Category --"}
+                    {selectedCategory
+  ? categories.find(c => c.category_id == selectedCategory)?.category_name
+  : "-- Select Category --"}
+
                   </span>
                   <FaChevronDown className="text-primary" />
                 </div>
                 {showCategoryMenu && (
                   <div className="position-absolute start-0 end-0 bg-white border shadow-sm rounded mt-1" style={{ zIndex: 9999, maxHeight: "200px", overflowY: "auto" }}>
                     {categories.map(c => (
-                      <div key={c.id} className="px-3 py-2 hover-bg-light" style={{ cursor: "pointer" }} onClick={() => { setSelectedCategory(c.id); setShowCategoryMenu(false); }}>
+                      <div key={c.category_id} className="px-3 py-2 hover-bg-light" style={{ cursor: "pointer" }} onClick={() => { setSelectedCategory(c.category_id); setShowCategoryMenu(false); }}>
                         {c.category_name}
                       </div>
                     ))}
@@ -308,6 +379,50 @@ product_code:itemCode,
                       <option>Amount</option>
                     </Form.Select></Col>
                   </Row>
+                  {showWholesale && (
+    <Row className="g-2 mt-3 p-3 border-top pt-3">
+      <Col md={4}>
+        <Form.Control
+          className="white-input"
+          placeholder="Wholesale Price"
+          value={wholesaleDetails.price}
+          onChange={e => setWholesaleDetails({ ...wholesaleDetails, price: e.target.value })}
+        />
+      </Col>
+      <Col md={4}>
+        <Form.Select
+          className="white-input"
+          value={wholesaleDetails.tax_type}
+          onChange={e => setWholesaleDetails({ ...wholesaleDetails, tax_type: e.target.value })}
+        >
+          <option>Without Tax</option>
+          <option>With Tax</option>
+        </Form.Select>
+      </Col>
+      <Col md={4}>
+        <Form.Control
+          className="white-input"
+          placeholder="Minimum Wholesale Qty"
+          value={wholesaleDetails.min_qty}
+          onChange={e => setWholesaleDetails({ ...wholesaleDetails, min_qty: e.target.value })}
+        />
+      </Col>
+    </Row>
+  )}
+
+  <Row className="mt-3">
+    <Col>
+      <Button
+        variant="link"
+        className="text-primary p-0"
+        onClick={() => setShowWholesale(!showWholesale)}
+      >
+        {showWholesale ? "− Remove" : "+ Add"} wholesale price
+      </Button>
+    </Col>
+  </Row>
+
+ 
                 </Card>
 
                 {isProduct ? (
@@ -367,13 +482,24 @@ product_code:itemCode,
         </Modal.Body>
 
         <Modal.Footer className="border-0 justify-content-end bg-light">
-          <Button variant="outline-secondary" className="me-2" onClick={handleSave} disabled={productStatus === "loading" || serviceStatus === "loading" }>
-            Save & New
-          </Button>
-          <Button variant="primary" onClick={handleSave} disabled={productStatus === "loading" || serviceStatus === "loading" }>
-            {productStatus === "loading" || serviceStatus === "loading" ? "Saving..." : "Save"}
-          </Button>
-        </Modal.Footer>
+  <Button
+    variant="outline-secondary"
+    className="me-2"
+    onClick={handleSaveNew}
+    disabled={productStatus === "loading" || serviceStatus === "loading"}
+  >
+    Save & New
+  </Button>
+
+  <Button
+    variant="primary"
+    onClick={() => handleSave(true)}
+    disabled={productStatus === "loading" || serviceStatus === "loading"}
+  >
+    {productStatus === "loading" || serviceStatus === "loading" ? "Saving..." : "Save"}
+  </Button>
+</Modal.Footer>
+
       </Modal>
     </>
   );

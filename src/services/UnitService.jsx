@@ -33,7 +33,7 @@ export const createUnitApi = async (unitData) => {
 
 export const updateUnitApi = async (unitData) => {
   const payload = {
-    edit_unit_id: unitData.units_id,
+    edit_unit_id: unitData.unit_id,
     unit_name: unitData.unit_name,
     short_name: unitData.short_name || "",
   };
@@ -48,8 +48,8 @@ export const updateUnitApi = async (unitData) => {
   return data;
 };
 
-export const deleteUnitApi = async (units_id) => {
-  const payload = { delete_unit_id: units_id };
+export const deleteUnitApi = async (unit_id) => {
+  const payload = { delete_unit_id: unit_id };
 
   const response = await axiosInstance.post(API_ENDPOINT, payload);
   const { data } = response;

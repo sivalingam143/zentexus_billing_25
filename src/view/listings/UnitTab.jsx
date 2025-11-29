@@ -32,7 +32,7 @@ export default function UnitsTab() {
   const unitsList = Array.isArray(units) ? units : [];
 
   const unitRows = unitsList.map((unit) => (
-    <tr key={unit.units_id || unit.id}>
+    <tr key={unit.unit_id || unit.id}>
       <td>{unit.unit_name}</td>
       <td>{unit.short_name || "-"}</td>
       <td className="text-center">
@@ -55,7 +55,7 @@ export default function UnitsTab() {
             className="text-danger"
             onClick={() => {
               if (window.confirm("Are you sure you want to delete this unit?")) {
-                dispatch(deleteUnit(unit.units_id || unit.id));
+                dispatch(deleteUnit(unit.unit_id || unit.id));
               }
             }}
           >

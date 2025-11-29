@@ -333,8 +333,17 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                 View / Edit
               </Dropdown.Item>
               <Dropdown.Item onClick={handleDeleteInvoice} className="text-danger">
-                Delete Opening Balance
+                Delete
               </Dropdown.Item>
+               <Dropdown.Item>
+                Duplicate
+               </Dropdown.Item>
+               <Dropdown.Item>Open PDF</Dropdown.Item>
+              <Dropdown.Item>Preview</Dropdown.Item>
+              <Dropdown.Item>Print</Dropdown.Item>
+              <Dropdown.Item>convert to return</Dropdown.Item>
+              <Dropdown.Item>make payment</Dropdown.Item>
+              <Dropdown.Item>view history</Dropdown.Item>
             </>
           ) : (
             <>

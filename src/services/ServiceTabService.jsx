@@ -21,8 +21,11 @@ export const createServiceApi = async (serviceData) => {
   if (data.head?.code !== 200) {
     throw new Error(data.head?.msg || "Failed to create service");
   }
-  return data;
+
+  // Return full service row if PHP returns body.service
+  return data.body?.service || data.body;
 };
+
 
 export const updateServiceApi = async (serviceData) => {
   const response = await axiosInstance.post(API_ENDPOINT, serviceData);
@@ -35,7 +38,7 @@ export const updateServiceApi = async (serviceData) => {
 };
 
 export const deleteServiceApi = async (service_code) => {
-  const payload = { delete_service_code: service_code };
+  const payload = { delete_service_id: service_code };
   const response = await axiosInstance.post(API_ENDPOINT, payload);
   const { data } = response;
 

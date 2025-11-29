@@ -1,336 +1,233 @@
-// src/pages/tabs/ProductTab.jsx   (or src/listings/ProductTab.jsx)
-import React, { useState,useEffect } from "react";
-import { Button, Table, Col, Card } from "react-bootstrap";
-import { FaSearch, FaFileExcel } from "react-icons/fa";   // ← Fixed import
+// src/pages/tabs/ProductTab.jsx
+import React, { useState, useEffect } from "react";
+import { Button, Table, Col, Card, Row } from "react-bootstrap";
+import { FaSearch, FaFileExcel } from "react-icons/fa";
 import AdjustItem from "../creation/AdjustItemCreation";
 import AddItem from "../creation/ItemModalCreation";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts } from "../../slice/ProductSlice";
 
-
 export default function ProductTab() {
   const [showAdjustItem, setShowAdjustItem] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
   const dispatch = useDispatch();
-  const { products, status, error } = useSelector((state) => state.product);
+  const { products = [], status } = useSelector((state) => state.product);
 
+  // Fetch products on mount
   useEffect(() => {
-  console.log("Fetching products...");
-  dispatch(fetchProducts());
-}, [dispatch]);
+    if (status === "idle") {
+      dispatch(fetchProducts());
+    }
+  }, [status, dispatch]);
 
-const { units = [] } = useSelector((state) => state.unit);
+  // Auto-select first product when list updates (e.g. after adding new item)
+  useEffect(() => {
+    if (products.length > 0 && !selectedProduct) {
+      setSelectedProduct(products[0]);
+    }
+  }, [products, selectedProduct]);
+
+  // Re-fetch products when modal closes (in case new item was added)
+  const handleCloseAddItem = () => {
+    setShowAddItem(false);
+    dispatch(fetchProducts()); // Refresh list
+  };
+
+  if (status === "loading") return <div className="text-center p-5">Loading items...</div>;
+  if (status === "failed") return <div className="text-danger p-5">Failed to load items</div>;
 
   return (
-    <>
-      {/* Left Panel */}
-      <Col md={3} className="d-flex flex-column p-3">
-        <Card className="h-100">
-          <Card.Body className="d-flex flex-column p-0">
-            <div className="p-3 d-flex justify-content-between align-items-center">
-              <FaSearch />
-              <Button variant="warning" className="text-white fw-bold px-3" onClick={() => setShowAddItem(true)}>
+    <Row className="h-100">
+      {/* LEFT PANEL - LIST OF ITEMS */}
+      <Col md={3} className="p-3">
+        <Card className="h-100 shadow-sm">
+          <Card.Body className="p-3 d-flex flex-column">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <FaSearch className="text-muted" />
+              <Button
+                variant="warning"
+                className="text-white fw-bold small"
+                onClick={() => setShowAddItem(true)}
+              >
                 + Add Item
               </Button>
             </div>
 
-            <Table responsive bordered hover size="sm" className="mb-0 text-start">
-              <thead>
-                <tr>
-                  <th>ITEM</th>
-                  <th>QUANTITY</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>sampleee</td>
-                  <td>0</td>
-                </tr>
-              </tbody>
-            </Table>
+            <div className="flex-grow-1 overflow-auto">
+              <Table bordered hover size="sm" className="mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th>ITEM</th>
+                    <th>QTY</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.length === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="text-center text-muted py-4">
+                        No items yet
+                      </td>
+                    </tr>
+                  ) : (
+                    products.map((product) => {
+                      const salePrice = product.sale_price ? JSON.parse(product.sale_price) : {};
+                      const purchasePrice = product.purchase_price ? JSON.parse(product.purchase_price) : {};
+                      const stock = product.stock ? JSON.parse(product.stock) : {};
+                      const qty = stock.opening_qty || 0;
+
+                      return (
+                        <tr
+                          key={product.id}
+                          onClick={() => setSelectedProduct(product)}
+                          className={`cursor-pointer ${selectedProduct?.id === product.id ? "table-primary" : ""}`}
+                        >
+                          <td className="fw-semibold">{product.product_name}</td>
+                          <td className="text-center">{qty}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            </div>
           </Card.Body>
         </Card>
       </Col>
 
-      {/* Right Panel */}
-      <Col md={9} className="p-3 d-flex flex-column" style={{ height: "100%" }}>
-        {/* Detail Card – ADJUST ITEM button is here */}
-        <Card className="mb-3">
-          <Card.Body>
-            <div className="d-flex justify-content-between align-items-start">
-              <div>
-                <h6 className="fw-bold mb-1">SAMPLEEE</h6>
-                <div className="small mb-1">
-                  SALE PRICE: <span className="text-success">₹ 0.00</span> (excl)
-                </div>
-                <div className="small mb-1">
-                  PURCHASE PRICE: <span className="text-success">₹ 0.00</span> (excl)
-                </div>
-              </div>
+      {/* RIGHT PANEL - SELECTED ITEM DETAILS */}
+      <Col md={9} className="p-3">
+        {selectedProduct ? (
+          <>
+            {/* Top Detail Card */}
+            <Card className="mb-3 shadow-sm">
+              <Card.Body>
+                <div className="d-flex justify-content-between align-items-start">
+                  <div>
+                    <h5 className="fw-bold mb-1">{selectedProduct.product_name}</h5>
 
-              <div className="text-end">
-                <Button
-                  variant="primary"
-                  className="mb-2 fw-semibold text-black px-4 py-2"
-                  style={{ 
-    borderRadius: "6px",
-    
-  }}
-                  onClick={() => setShowAdjustItem(true)}
-                >
-                  ADJUST ITEM
-                </Button>
-                <div className="small fw-normal">
-                  <span className="text-danger">Warning</span> STOCK QUANTITY:{" "}
-                  <span className="text-danger">0</span>
-                </div>
-                <div className="small fw-normal">
-                  STOCK VALUE: <span className="text-success">₹ 0.00</span>
-                </div>
-              </div>
-            </div>
-          </Card.Body>
-        </Card>
+                    {(() => {
+                      const sale = selectedProduct.sale_price ? JSON.parse(selectedProduct.sale_price) : {};
+                      const purchase = selectedProduct.purchase_price ? JSON.parse(selectedProduct.purchase_price) : {};
+                      const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
 
-        {/* Transactions Card */}
-        <Card className="flex-grow-1 d-flex flex-column">
-          <Card.Body className="d-flex flex-column h-100 p-3">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <h5 className="mb-0">TRANSACTIONS</h5>
-              <div className="d-flex align-items-center gap-2">
-                <div style={{ position: "relative", width: "200px" }}>
-                  <FaSearch
-                    style={{
-                      position: "absolute",
-                      left: "10px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      color: "gray",
-                    }}
-                  />
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    style={{ paddingLeft: "30px" }}
-                    placeholder="Search..."
-                  />
+                      return (
+                        <>
+                          <div className="small text-muted">
+                            SALE PRICE:{" "}
+                            <strong className="text-success">
+                              ₹ {parseFloat(sale.price || 0).toFixed(2)}{" "}
+                              ({sale.tax_type === "With Tax" ? "incl" : "excl"})
+                            </strong>
+                          </div>
+                          <div className="small text-muted">
+                            PURCHASE PRICE:{" "}
+                            <strong className="text-success">
+                              ₹ {parseFloat(purchase.price || 0).toFixed(2)}{" "}
+                              ({purchase.tax_type === "With Tax" ? "incl" : "excl"})
+                            </strong>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="text-end">
+                    <Button
+                      variant="primary"
+                      className="mb-3 px-4"
+                      onClick={() => setShowAdjustItem(true)}
+                    >
+                      ADJUST ITEM
+                    </Button>
+                    <div className="small">
+                      STOCK QUANTITY:{" "}
+                      <strong className={parseFloat(selectedProduct.stock ? JSON.parse(selectedProduct.stock).opening_qty || 0 : 0) <= 0 ? "text-danger" : ""}>
+                        {selectedProduct.stock ? JSON.parse(selectedProduct.stock).opening_qty || 0 : 0}
+                      </strong>
+                    </div>
+                    <div className="small">
+                      STOCK VALUE:{" "}
+                      <strong className="text-success">
+                        ₹{" "}
+                        {(
+                          (selectedProduct.stock ? JSON.parse(selectedProduct.stock).opening_qty || 0 : 0) *
+                          (selectedProduct.purchase_price ? JSON.parse(selectedProduct.purchase_price).price || 0 : 0)
+                        ).toFixed(2)}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
-                {/* Fixed Excel button */}
-                <Button variant="light">
-                  <FaFileExcel size={20} color="#217346" />
-                </Button>
-              </div>
-            </div>
+              </Card.Body>
+            </Card>
 
-            <Table responsive bordered hover size="sm" className="pro-table text-center mt-3">
-              <thead>
-                <tr>
-                  <th>TYPE</th>
-                  <th>INVOICE</th>
-                  <th>NAME</th>
-                  <th>DATE</th>
-                  <th>QUANTITY</th>
-                  <th>PRICE</th>
-                  <th>STATUS</th>
-                </tr>
-              </thead>
-              <tbody />
-            </Table>
+            {/* Transactions Table */}
+            <Card className="flex-grow-1 shadow-sm vh-100">
+              <Card.Body className="d-flex flex-column h-100">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="mb-0">TRANSACTIONS</h5>
+                  <div className="d-flex gap-2">
+                    <div className="position-relative">
+                      <FaSearch className="position-absolute top-50 start-2 translate-middle-y text-muted" />
+                      <input
+                        type="text"
+                        className="form-control form-control-sm ps-5"
+                        placeholder="Search..."
+                        style={{ width: "200px" }}
+                      />
+                    </div>
+                    <Button variant="light">
+                      
+                      <FaFileExcel size={20} className="text-success" />
+                    </Button>
+                  </div>
+                </div>
 
-            <div className="flex-grow-1 d-flex justify-content-center align-items-center">
-              <span className="text-muted">No Rows to Show</span>
-            </div>
-          </Card.Body>
-        </Card>
+                <Table bordered hover className="flex-grow-1">
+                  <thead className="table-light">
+                    <tr>
+                      <th>TYPE</th>
+                      <th>INVOICE/REF</th>
+                      <th>NAME</th>
+                      <th>DATE</th>
+                      <th>QUANTITY</th>
+                      <th>PRICE/UNIT</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colSpan={7} className="text-center text-muted py-5">
+                        No transactions yet
+                      </td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Card.Body>
+            </Card>
+          </>
+        ) : (
+          <Card className="h-100 d-flex align-items-center justify-content-center text-muted shadow-sm">
+            <Card.Body className="text-center">
+              <h5>No item selected</h5>
+              <p>Select an item from the left panel or add a new one</p>
+            </Card.Body>
+          </Card>
+        )}
       </Col>
 
       {/* Modals */}
-      <AdjustItem show={showAdjustItem} onHide={() => setShowAdjustItem(false)} itemName="SAMPLEEE" />
-      <AddItem show={showAddItem} onHide={() => setShowAddItem(false)} activeTab="PRODUCT" />
-    </>
+      <AddItem
+        show={showAddItem}
+        onHide={handleCloseAddItem}
+        activeTab="PRODUCT"
+      />
+      <AdjustItem
+        show={showAdjustItem}
+        onHide={() => setShowAdjustItem(false)}
+        itemName={selectedProduct?.product_name}
+      />
+    </Row>
   );
 }
-
-
-
-
-
-
-
-// // src/pages/tabs/ProductTab.jsx
-// import React, { useState, useEffect } from "react";
-// import { Button, Table, Col, Card } from "react-bootstrap";
-// import { FaSearch, FaFileExcel } from "react-icons/fa";
-// import AdjustItem from "../creation/AdjustItemCreation";
-// import AddItem from "../creation/ItemModalCreation";
-// import { useDispatch, useSelector } from "react-redux";
-// import { fetchProducts } from "../../slice/ProductSlice"; // Note: your import path
-
-// export default function ProductTab() {
-//   const [showAdjustItem, setShowAdjustItem] = useState(false);
-//   const [showAddItem, setShowAddItem] = useState(false);
-//   const [selectedProduct, setSelectedProduct] = useState(null); // For detail card
-//   const dispatch = useDispatch();
-//   const { products = [], status, error } = useSelector((state) => state.product);
-
-//   useEffect(() => {
-//     console.log("🔄 Fetching products...");
-//     dispatch(fetchProducts("")); // Empty search = all products
-//   }, [dispatch]);
-
-//   // Select first product for detail card (or change on click)
-//   useEffect(() => {
-//     if (products.length > 0 && !selectedProduct) {
-//       setSelectedProduct(products[0]);
-//     }
-//   }, [products, selectedProduct]);
-
-//   if (status === "loading") return <div className="text-center p-4">Loading products...</div>;
-//   if (error) return <div className="text-danger p-4">Error: {error}</div>;
-//   if (products.length === 0) return <div className="text-muted p-4">No products found. Add one!</div>;
-
-//   // Pass categories and units to modal (hardcoded for now — replace with Redux later)
-//   const categories = [{ id: 1, category_name: "Electronics" }, { id: 2, category_name: "Clothing" }];
-//   const units = [{ unit_name: "Piece", short_name: "pc" }, { unit_name: "Kg", short_name: "kg" }];
-
-//   return (
-//     <>
-//       {/* Left Panel - NOW SHOWS REAL PRODUCTS */}
-//       <Col md={3} className="d-flex flex-column p-3">
-//         <Card className="h-100">
-//           <Card.Body className="d-flex flex-column p-0">
-//             <div className="p-3 d-flex justify-content-between align-items-center">
-//               <FaSearch />
-//               <Button variant="warning" className="text-white fw-bold px-3" onClick={() => setShowAddItem(true)}>
-//                 + Add Item
-//               </Button>
-//             </div>
-
-//             <Table responsive bordered hover size="sm" className="mb-0 text-start">
-//               <thead>
-//                 <tr>
-//                   <th>ITEM</th>
-//                   <th>QUANTITY</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {products.map((product) => (
-//                   <tr key={product.id} onClick={() => setSelectedProduct(product)} className="cursor-pointer">
-//                     <td>{product.item_name || "Unnamed"}</td>
-//                     <td>{product.stock || 0}</td>
-//                   </tr>
-//                 ))}
-//               </tbody>
-//             </Table>
-//           </Card.Body>
-//         </Card>
-//       </Col>
-
-//       {/* Right Panel - NOW SHOWS SELECTED PRODUCT DETAILS */}
-//       <Col md={9} className="p-3 d-flex flex-column" style={{ height: "100%" }}>
-//         {selectedProduct ? (
-//           <Card className="mb-3">
-//             <Card.Body>
-//               <div className="d-flex justify-content-between align-items-start">
-//                 <div>
-//                   <h6 className="fw-bold mb-1">{selectedProduct.item_name}</h6>
-//                   <div className="small mb-1">
-//                     SALE PRICE: <span className="text-success">₹ {parseFloat(selectedProduct.sale_price || 0).toFixed(2)}</span> (excl)
-//                   </div>
-//                   <div className="small mb-1">
-//                     PURCHASE PRICE: <span className="text-success">₹ {parseFloat(selectedProduct.purchase_price || 0).toFixed(2)}</span> (excl)
-//                   </div>
-//                   <div className="small mb-1">
-//                     TYPE: <span className="text-primary">{selectedProduct.type}</span>
-//                   </div>
-//                 </div>
-
-//                 <div className="text-end">
-//                   <Button
-//                     variant="primary"
-//                     className="mb-2 fw-semibold text-black px-4 py-2"
-//                     style={{ borderRadius: "6px" }}
-//                     onClick={() => setShowAdjustItem(true)}
-//                   >
-//                     ADJUST ITEM
-//                   </Button>
-//                   <div className="small fw-normal">
-//                     <span className="text-danger">Warning</span> STOCK QUANTITY: <span className="text-danger">{selectedProduct.stock || 0}</span>
-//                   </div>
-//                   <div className="small fw-normal">
-//                     STOCK VALUE: <span className="text-success">₹ {(selectedProduct.stock * selectedProduct.purchase_price || 0).toFixed(2)}</span>
-//                   </div>
-//                 </div>
-//               </div>
-//             </Card.Body>
-//           </Card>
-//         ) : (
-//           <Card className="mb-3">
-//             <Card.Body className="text-center text-muted">Select a product from left panel</Card.Body>
-//           </Card>
-//         )}
-
-//         {/* Transactions Card */}
-//         <Card className="flex-grow-1 d-flex flex-column">
-//           <Card.Body className="d-flex flex-column h-100 p-3">
-//             <div className="d-flex justify-content-between align-items-center mb-2">
-//               <h5 className="mb-0">TRANSACTIONS</h5>
-//               <div className="d-flex align-items-center gap-2">
-//                 <div style={{ position: "relative", width: "200px" }}>
-//                   <FaSearch
-//                     style={{
-//                       position: "absolute",
-//                       left: "10px",
-//                       top: "50%",
-//                       transform: "translateY(-50%)",
-//                       color: "gray",
-//                     }}
-//                   />
-//                   <input
-//                     type="text"
-//                     className="form-control form-control-sm"
-//                     style={{ paddingLeft: "30px" }}
-//                     placeholder="Search..."
-//                   />
-//                 </div>
-//                 <Button variant="light">
-//                   <FaFileExcel size={20} color="#217346" />
-//                 </Button>
-//               </div>
-//             </div>
-
-//             <Table responsive bordered hover size="sm" className="pro-table text-center mt-3">
-//               <thead>
-//                 <tr>
-//                   <th>TYPE</th>
-//                   <th>INVOICE</th>
-//                   <th>NAME</th>
-//                   <th>DATE</th>
-//                   <th>QUANTITY</th>
-//                   <th>PRICE</th>
-//                   <th>STATUS</th>
-//                 </tr>
-//               </thead>
-//               <tbody>
-//                 {/* Add transaction data here later */}
-//                 <tr>
-//                   <td colSpan="7" className="text-muted">No transactions yet</td>
-//                 </tr>
-//               </tbody>
-//             </Table>
-//           </Card.Body>
-//         </Card>
-//       </Col>
-
-//       {/* Modals - NOW PASSING PROPS */}
-//       <AdjustItem show={showAdjustItem} onHide={() => setShowAdjustItem(false)} itemName={selectedProduct?.item_name} />
-//       <AddItem 
-//         show={showAddItem} 
-//         onHide={() => setShowAddItem(false)} 
-//         activeTab="PRODUCT" 
-//         categories={categories}  // ← NOW PASSED
-//         units={units}           // ← NOW PASSED
-//       />
-//     </>
-//   );
-// }

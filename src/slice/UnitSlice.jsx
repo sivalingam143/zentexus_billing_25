@@ -45,10 +45,10 @@ export const updateUnit = createAsyncThunk(
 
 export const deleteUnit = createAsyncThunk(
   "unit/deleteUnit",
-  async (units_id, { rejectWithValue }) => {
+  async (unit_id, { rejectWithValue }) => {
     try {
-      await deleteUnitApi(units_id);
-      return { units_id };
+      await deleteUnitApi(unit_id);
+      return { unit_id };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -102,7 +102,7 @@ const unitSlice = createSlice({
       .addCase(updateUnit.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.unitResponse = action.payload.response;
-        const index = state.units.findIndex((u) => u.units_id === action.payload.units_id);
+        const index = state.units.findIndex((u) => u.unit_id === action.payload.unit_id);
         if (index !== -1) {
           state.units[index] = { ...state.units[index], ...action.payload };
         }
@@ -117,7 +117,7 @@ const unitSlice = createSlice({
       })
       .addCase(deleteUnit.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.units = state.units.filter((u) => u.units_id !== action.payload.units_id);
+        state.units = state.units.filter((u) => u.unit_id !== action.payload.unit_id);
       })
       .addCase(deleteUnit.rejected, (state, action) => {
         state.status = "failed";
