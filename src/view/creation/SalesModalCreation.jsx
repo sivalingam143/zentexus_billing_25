@@ -205,7 +205,8 @@ const productOptions = React.useMemo(() => {
     value: p.product_name, 
     label: p.product_name, // Added label
     product_id: p.product_id, // <<< CRITICAL FIX: Include product_id
-    hsn_code: p.hsn_code || ""    
+    hsn_code: p.hsn_code || "" 
+       
   }));
 }, [products]);
 console.log("productOptions",productOptions)
@@ -647,7 +648,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                  <th>Qty</th>
                  <th>Unit</th>
                  <th>Price</th>
-                 <th>Price/unit</th>
+                 <th >Price/unit</th>
                 {formData.visibleColumns.discount && <th>Discount</th>}
                 <th>Tax</th>
                 <th>
@@ -694,7 +695,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
       <td>{index + 1}</td>        {/* ← ADD THIS LINE */}
       
 {formData.visibleColumns.category && (
-  <td>
+  <td style={{minWidth:"180px"}}>
     <DropDown
       value={row.category}
       onChange={(e) => onRowChange(row.id, "category", e.target.value)}
@@ -703,34 +704,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     />
   </td>
 )}
-{/* Replace your entire <td> block for Item selection with this */}
-
-{/* <td style={{ minWidth: "380px" }}>
-  <Select
-    options={productOptions}
-    value={productOptions.find(opt => opt.value === row.item_name) || null}
-    onChange={(selected) => {
-      if (!selected) {
-        onRowChange(row.id, "item_name", "");
-        onRowChange(row.id, "hsn_code", "");
-        onRowChange(row.id, "price", ""); // optional: clear price too
-        return;
-      }
-      onRowChange(row.id, "item_name", selected.value);
-      onRowChange(row.id, "hsn_code", selected.hsn_code || "");
-      // Optional: auto-fill price if you have it in product data
-      // const product = products.find(p => p.product_name === selected.value);
-      // onRowChange(row.id, "price", product?.selling_price || "");
-    }}
-    placeholder="Select or search product..."
-    isClearable
-    isSearchable
-    menuPortalTarget={document.body}
-    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
-    isDisabled={isDisabled}
-  />
-</td> */}
-<td style={{ minWidth: "380px" }}>
+<td style={{ minWidth: "300px" }}>
   <Select
     options={productOptions}
     value={productOptions.find(opt => opt.value === row.product_name) || null}
@@ -756,7 +730,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
 
 
 {formData.visibleColumns.description && (
-  <td>
+  <td style={{minWidth:"180px"}}>
     <TextArea
       value={row.Description || ""}
       onChange={(e) => onRowChange(row.id, "Description", e.target.value)}
@@ -767,7 +741,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
   </td>
 )}
 {formData.visibleColumns.hsn_code && (
-  <td>
+  <td style={{minWidth:"100px"}}>
   <TextArea
     type="text"
     value={String(row.hsn_code || "").trim()}
@@ -778,12 +752,12 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
 )}
 
         <td><TextInputform expanse="number" value={row.qty} onChange={(e) => onRowChange(row.id, "qty", e.target.value)} readOnly={isDisabled} /></td>
-        <td><DropDown value={row.unit} onChange={(v) => onRowChange(row.id, "unit", v)} options={unitOptions} disabled={isDisabled} /></td>
-        <td><TextInputform formtype="number" value={row.price} onChange={(e) => onRowChange(row.id, "price", e.target.value)} readOnly={isDisabled} /></td>
-        <td><DropDown value={row.priceUnitType} onChange={(v) => onRowChange(row.id, "priceUnitType", v)} options={priceUnitTypeOptions} disabled={isDisabled} /></td>
+        <td style={{minWidth:"150px"}}><DropDown value={row.unit} onChange={(v) => onRowChange(row.id, "unit", v)} options={unitOptions} disabled={isDisabled} /></td>
+        <td style={{minWidth:"100px"}}><TextInputform formtype="number" value={row.price} onChange={(e) => onRowChange(row.id, "price", e.target.value)} readOnly={isDisabled} /></td>
+        <td style={{minWidth:"100px"}}><DropDown value={row.priceUnitType} onChange={(v) => onRowChange(row.id, "priceUnitType", v)} options={priceUnitTypeOptions} disabled={isDisabled} /></td>
 
         {formData.visibleColumns.discount && (
-          <td>
+          <td style={{minWidth:"100px"}}>
             <InputGroup size="sm">
               <FormControl type="number" placeholder="%" value={row.discountPercent} onChange={(e) => onRowChange(row.id, "discountPercent", e.target.value)} readOnly={isDisabled} />
               <FormControl value={row.discountAmount} readOnly />
@@ -791,7 +765,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
           </td>
         )}
 
-        <td>
+        <td style={{minWidth:"100px"}}>
           <Select value={TAX_OPTIONS.find(opt => String(opt.value) === String(row.taxPercent)) || TAX_OPTIONS[0]}
             onChange={(v) => onRowChange(row.id, "taxPercent", v)} options={TAX_OPTIONS} isDisabled={isDisabled} menuPortalTarget={document.body} />
           <TextInputform readOnly value={row.taxAmount || "0.00"} />
