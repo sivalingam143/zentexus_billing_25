@@ -69,13 +69,17 @@ useEffect(() => {
           <Card.Body className="p-3 d-flex flex-column">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <FaSearch className="text-muted" />
-              <Button
-                variant="warning"
-                className="text-white fw-bold small"
-                onClick={() => setShowAddItem(true)}
-              >
-                + Add Item
-              </Button>
+             <Button
+  variant="warning"
+  className="text-white fw-bold small"
+  onClick={() => {
+    setEditProduct(null);   // <-- RESET EDIT MODE
+    setShowAddItem(true);   // <-- OPEN MODAL CLEAN
+  }}
+>
+  + Add Item
+</Button>
+
             </div>
 
             <div className="flex-grow-1 overflow-auto">

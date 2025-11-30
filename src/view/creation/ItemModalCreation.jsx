@@ -8,7 +8,7 @@ import DatePicker from "react-datepicker";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUnits } from "../../slice/UnitSlice";
 import { fetchCategories } from "../../slice/CategorySlice";
-import { createProduct } from "../../slice/ProductSlice";
+import { createProduct , deleteProduct , updateProduct} from "../../slice/ProductSlice";
 
 import { createService } from "../../slice/serviceSlice";  // Your service slice
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -47,6 +47,7 @@ function AddItem({ show, onHide, activeTab = "PRODUCT" , editProduct = null}) {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [activePricingTab, setActivePricingTab] = useState("pricing");
 
+const [isEditMode, setIsEditMode] = useState(false);
 
 
   const [showWholesale, setShowWholesale] = useState(false);
@@ -109,6 +110,13 @@ const [wholesaleDetails, setWholesaleDetails] = useState({
   }
 }, [editProduct, show]);
 
+useEffect(() => {
+  if (editProduct && show) {
+    setIsEditMode(true);      // 🔥 switch modal into EDIT mode
+  } else {
+    setIsEditMode(false);     // 🔥 switch modal into ADD mode
+  }
+}, [editProduct, show]);
 
 
   // Fetch units & categories
@@ -217,85 +225,58 @@ const handleSave = async (closeModal = true) => {
     discount_type: salePriceDetails.discount_type
   });
 
-  const commonData = {
+  const purchase_price = JSON.stringify({
+    price: purchasePriceDetails.price || "0",
+    tax_type: purchasePriceDetails.tax_type,
+    tax_rate: purchasePriceDetails.tax_rate
+  });
+
+  const enhancedStock = {
+    ...stockDetails,
+    opening_qty: parseFloat(stockDetails.opening_qty) || 0,
+    at_price: parseFloat(stockDetails.at_price) || 0,
+    current_qty: parseFloat(stockDetails.opening_qty) || 0,
+    current_value: (stockDetails.opening_qty || 0) * (stockDetails.at_price || 0),
+  };
+
+  // ⭐ COMMON DATA
+  const payload = {
     product_name: itemName.trim(),
     product_code: itemCode,
-    hsn_code: hsn || 0,
+    hsn_code: hsn,
     category_id: selectedCategory,
     category_name,
     unit_value: selectedUnit,
     unit_id,
     add_image: imagePreview,
     sale_price,
+    purchase_price,
+    stock: JSON.stringify(enhancedStock),
+    type: "product"
   };
 
-  if (!commonData.product_name || !commonData.category_id || !commonData.unit_value) {
-    alert("Please fill Item Name, Category & Unit");
-    return;
-  }
-
   try {
-    if (isProduct) {
-      const openingQty = parseFloat(stockDetails.opening_qty) || 0;
-      const atPrice = parseFloat(stockDetails.at_price) || 0;
+    if (isEditMode) {
+      // ⭐ UPDATE EXISTING PRODUCT
+      await dispatch(updateProduct({ 
+        edit_product_id: editProduct.product_id,
 
-      // Enhanced stock object that includes opening transaction
-      const enhancedStock = {
-        ...stockDetails,
-        opening_qty: openingQty,
-        at_price: atPrice,
-        current_qty: openingQty,
-        current_value: openingQty * atPrice,
-        opening_transaction: openingQty > 0 ? {
-          type: "Opening Stock",
-          reference: "Opening Stock",
-          name: "Opening Stock",
-          date: stockDetails.stock_date || new Date().toISOString().split("T")[0],
-          quantity: openingQty,
-          price_per_unit: atPrice,
-          status: "Completed"
-        } : null
-      };
-
-      const payload = {
-        ...commonData,
-        purchase_price: JSON.stringify({
-          price: purchasePriceDetails.price || "0",
-          tax_type: purchasePriceDetails.tax_type,
-          tax_rate: purchasePriceDetails.tax_rate
-        }),
-        stock: JSON.stringify(enhancedStock),
-        type: "product"
-      };
-
-      await dispatch(createProduct(payload)).unwrap();
-    } else {
-      // Service (unchanged)
-      await dispatch(createService({
-        service_name: itemName.trim(),
-        service_hsn: hsn || 0,
-        category_id: selectedCategory,
-        category_name,
-        unit_value: selectedUnit,
-        unit_id,
-        add_image: imagePreview,
-        service_code: itemCode,
-        sale_price,
-        tax_rate: purchasePriceDetails.tax_rate,
-        type: "service"
+        ...payload 
       })).unwrap();
+      alert("Updated Successfully!");
+    } else {
+      // ⭐ CREATE NEW PRODUCT
+      await dispatch(createProduct(payload)).unwrap();
+      alert("Created Successfully!");
     }
 
-    if (closeModal) {
-      alert("Saved Successfully!");
-      onHide();
-    }
+    if (closeModal) onHide();
+
   } catch (err) {
-    console.error("Save failed:", err);
-    alert(err.message || "Failed to save");
+    console.error(err);
+    alert("Failed to save item");
   }
 };
-
 
   return (
     <>
@@ -305,7 +286,8 @@ const handleSave = async (closeModal = true) => {
         <Modal.Header className="border-0 pb-1 align-items-start">
           <div className="w-100 d-flex justify-content-between align-items-start">
             <Modal.Title className="h5 fw-bold d-flex align-items-center gap-2">
-              {isProduct ? "Add Item" : "Add Service"}
+             {isEditMode ? "Edit Item" : isProduct ? "Add Item" : "Add Service"}
+
               <div className="d-flex position-relative" style={{ width: "180px", borderRadius: "50px", padding: "2px", gap: "6px" }}>
                 <div className="position-absolute bg-primary" style={{
                   width: "calc(50% - 2px)", height: "100%", borderRadius: "50px",
@@ -533,23 +515,53 @@ const handleSave = async (closeModal = true) => {
         </Modal.Body>
 
         <Modal.Footer className="border-0 justify-content-end bg-light">
-  <Button
-    variant="outline-secondary"
-    className="me-2"
-    onClick={handleSaveNew}
-    disabled={productStatus === "loading" || serviceStatus === "loading"}
-  >
-    Save & New
-  </Button>
 
-  <Button
-    variant="primary"
-    onClick={() => handleSave(true)}
-    disabled={productStatus === "loading" || serviceStatus === "loading"}
-  >
-    {productStatus === "loading" || serviceStatus === "loading" ? "Saving..." : "Save"}
-  </Button>
+  {isEditMode ? (
+    <>
+      {/* DELETE */}
+      <Button
+        variant="danger"
+        className="me-2"
+        onClick={() => {
+          if (window.confirm("Delete this item permanently?")) {
+            dispatch(deleteProduct(editProduct.product_id));
+            alert("Item Deleted");
+            onHide();
+          }
+        }}
+      >
+        Delete
+      </Button>
+
+      {/* UPDATE */}
+     <Button variant="primary" onClick={() => handleSave(true)}>
+  Update
+</Button>
+
+    </>
+  ) : (
+    <>
+      {/* SAVE & NEW */}
+      <Button
+        variant="outline-secondary"
+        className="me-2"
+        onClick={handleSaveNew}
+      >
+        Save & New
+      </Button>
+
+      {/* SAVE */}
+      <Button
+        variant="primary"
+        onClick={() => handleSave(true)}
+      >
+        Save
+      </Button>
+    </>
+  )}
+
 </Modal.Footer>
+
 
       </Modal>
     </>
