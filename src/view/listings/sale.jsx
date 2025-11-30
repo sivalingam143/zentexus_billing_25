@@ -12,9 +12,10 @@ import { TbCircleLetterI } from "react-icons/tb";
 import { HiOutlineDotsVertical } from "react-icons/hi";
 import NotifyData from "../../components/NotifyData";
 import { FiPrinter, FiShare2 } from "react-icons/fi";
-import { FaWhatsapp,FaChevronDown } from "react-icons/fa";
+import { FaWhatsapp,FaChevronDown,FaRegCalendarAlt } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
 import { MdSms } from "react-icons/md";
+
 
 const Sale = () => {
   const dispatch = useDispatch();
@@ -78,6 +79,10 @@ const statusDisplay = (item) => {
   const handleCreate = () => navigate("/sale/create");
   const handleEdit = (sale) => navigate(`/sale/edit/${sale.sale_id}`);
   const handleView = (sale) => navigate(`/sale/view/${sale.sale_id}`);
+  const [selectedPeriod, setSelectedPeriod] = useState("This Year");
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const [selectedFirm, setSelectedFirm] = useState("All Firms");
+  const [firmOpen, setFirmOpen] = useState(false);
 
   const handleDelete = async (saleId) => {
     if (!window.confirm("Are you sure you want to delete this sale?")) return;
@@ -261,6 +266,7 @@ const SaleData = filteredSales.length > 0
     <div id="main">
       <Container fluid className="py-5">
         <Row>
+        
           <Col xl={12}>
             {/* Business Name */}
             <div className="d-flex align-items-center">
@@ -287,7 +293,7 @@ const SaleData = filteredSales.length > 0
               )}
               <div className="ms-auto d-flex align-items-center gap-2">
                 <Button variant="danger" onClick={handleCreate}>+Add Sale</Button>
-                <Button variant="success" onClick={() => navigate("/dashboardpurchase")}>+Add Purchase</Button>
+                <Button variant="success" onClick={() => navigate("/PurchaseModalCreation")}>+Add Purchase</Button>
                 <Button variant="info">+Add More</Button>
                 <Button variant="light">:</Button>
               </div>
@@ -332,9 +338,96 @@ const SaleData = filteredSales.length > 0
   </Col>
 </Row>
 
+<Row className="mb-4">
+  <Col lg={10} className="d-flex align-items-center flex-wrap gap-3">
+    <span className="text-muted fw-medium">Filter by :</span>
+
+    {/* This Year - Working Dropdown */}
+    <div className="position-relative">
+      <button
+        onClick={() => setPeriodOpen(!periodOpen)}
+        className="btn rounded-pill border-0 shadow-sm d-flex align-items-center gap-2"
+        style={{
+          backgroundColor: "#e3f2fd",
+          color: "#1565c0",
+          fontWeight: "500",
+          padding: "8px 20px",
+        }}
+      >
+        {selectedPeriod} <FaChevronDown className={`transition-transform ${periodOpen ? 'rotate-180' : ''}`} size={12} />
+      </button>
+
+      {periodOpen && (
+        <div className="position-absolute top-100 start-0 mt-2 bg-white rounded-3 shadow-lg border" style={{ zIndex: 1000, minWidth: "200px" }}>
+          {["Today", "Yesterday", "This Week", "This Month", "This Year", "Last Year", "Custom Range"].map((item) => (
+            <div
+              key={item}
+              onClick={() => {
+                setSelectedPeriod(item);
+                setPeriodOpen(false);
+                // Later: filter data here
+              }}
+              className="px-4 py-2 hover-bg-light cursor-pointer"
+              style={{ cursor: "pointer" }}
+            >
+              {item === "This Year" && <strong>{item}</strong>}
+              {item !== "This Year" && item}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+
+    {/* Date Range with Calendar Icon */}
+    <div
+      className="d-flex align-items-center gap-3 px-4 py-2 rounded-pill shadow-sm"
+      style={{
+        backgroundColor: "#e3f2fd",
+        color: "#1565c0",
+        fontWeight: "500",
+      }}
+    >
+      01/01/2025 <span className="text-muted">To</span> 31/12/2025
+    </div>
+
+    {/* All Firms - Working Dropdown */}
+    <div className="position-relative">
+      <button
+        onClick={() => setFirmOpen(!firmOpen)}
+        className="btn rounded-pill border-0 shadow-sm d-flex align-items-center gap-2"
+        style={{
+          backgroundColor: "#e3f2fd",
+          color: "#1565c0",
+          fontWeight: "500",
+          padding: "8px 24px",
+        }}
+      >
+        {selectedFirm} <FaChevronDown className={`transition-transform ${firmOpen ? 'rotate-180' : ''}`} size={12} />
+      </button>
+
+      {firmOpen && (
+        <div className="position-absolute top-100 start-0 mt-2 bg-white rounded-3 shadow-lg border" style={{ zIndex: 1000, minWidth: "220px" }}>
+          {["All Firms", "My Company Pvt Ltd", "ABC Traders", "XYZ Enterprises", "Global Exports"].map((firm) => (
+            <div
+              key={firm}
+              onClick={() => {
+                setSelectedFirm(firm);
+                setFirmOpen(false);
+              }}
+              className="px-4 py-2 hover-bg-light cursor-pointer"
+              style={{ cursor: "pointer" }}
+            >
+              {firm === "All Firms" ? <strong>{firm}</strong> : firm}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </Col>
+</Row>
 
             {/* Search */}
-            <Row className="mb-3">
+            {/* <Row className="mb-3">
               <Col lg={3}>
                 <TextInputform
                   PlaceHolder="Search by Name"
@@ -342,12 +435,12 @@ const SaleData = filteredSales.length > 0
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </Col>
-            </Row>
+            </Row> */}
 
             {/* Totals Card */}
              <Row className="mb-4">
                           <Col>
-                            <div className="p-4 bg-white rounded shadow-sm border">
+                            <div className="p-4 bg-white rounded shadow-sm border" style={{ width: "500px" }} >
                               <h5>Total Sales: <strong style={{ fontSize: "1.8rem" }}>₹ {totals.totalSales}</strong></h5>
                               <small className="opacity-75"><span style={{ color: "#45eb45ff" }}>100% up</span> vs last month</small>
                               <div className="text-muted mt-2">
