@@ -338,8 +338,9 @@ const SaleData = filteredSales.length > 0
   </Col>
 </Row>
 
-<Row className="mb-2">
-  <Col lg={12} className=" p-3 d-flex align-items-center flex-wrap gap-3 bg-white ">
+<Row className="mb-3">
+  <Col lg={12} className=" p-3 pb-3 d-flex align-items-center flex-wrap gap-3 bg-white rounded shadow-sm border ">
+  
     <span className="text-muted fw-medium">Filter by :</span>
 
     {/* This Year - Working Dropdown */}
@@ -438,9 +439,9 @@ const SaleData = filteredSales.length > 0
             </Row> */}
 
             {/* Totals Card */}
-             <Row className="mb-2">
+             <Row className="mb-3">
                           <Col>
-                            <div className="p-4 bg-white rounded shadow-sm border" style={{ width: "500px" }} >
+                            <div className="p-3 bg-white rounded shadow-sm border" style={{ width: "500px" }} >
                               <h5>Total Sales: <strong style={{ fontSize: "1.8rem" }}>₹ {totals.totalSales}</strong></h5>
                               <small className="opacity-75"><span style={{ color: "#45eb45ff" }}>100% up</span> vs last month</small>
                               <div className="text-muted mt-2">
