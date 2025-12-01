@@ -18,6 +18,10 @@ const [editProduct, setEditProduct] = useState(null);
   const dispatch = useDispatch();
   const { products = [], status } = useSelector((state) => state.product);
 
+
+
+
+
   // Fetch products on mount
   useEffect(() => {
     if (status === "idle") {
@@ -31,6 +35,22 @@ const [editProduct, setEditProduct] = useState(null);
       setSelectedProduct(products[0]);
     }
   }, [products, selectedProduct]);
+
+
+// Keep selectedProduct in sync with latest products list
+useEffect(() => {
+  if (selectedProduct && products.length > 0) {
+    const latest = products.find(p => p.product_id === selectedProduct.product_id);
+    if (latest) {
+      const oldStock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
+      const newStock = latest.stock ? JSON.parse(latest.stock) : {};
+      
+      if (JSON.stringify(oldStock) !== JSON.stringify(newStock)) {
+        setSelectedProduct(latest);
+      }
+    }
+  }
+}, [products]);
 
   // Re-fetch products when modal closes (in case new item was added)
   const handleCloseAddItem = () => {
@@ -49,13 +69,17 @@ const [editProduct, setEditProduct] = useState(null);
           <Card.Body className="p-3 d-flex flex-column">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <FaSearch className="text-muted" />
-              <Button
-                variant="warning"
-                className="text-white fw-bold small"
-                onClick={() => setShowAddItem(true)}
-              >
-                + Add Item
-              </Button>
+             <Button
+  variant="warning"
+  className="text-white fw-bold small"
+  onClick={() => {
+    setEditProduct(null);   // <-- RESET EDIT MODE
+    setShowAddItem(true);   // <-- OPEN MODAL CLEAN
+  }}
+>
+  + Add Item
+</Button>
+
             </div>
 
             <div className="flex-grow-1 overflow-auto">
@@ -79,13 +103,13 @@ const [editProduct, setEditProduct] = useState(null);
                       const salePrice = product.sale_price ? JSON.parse(product.sale_price) : {};
                       const purchasePrice = product.purchase_price ? JSON.parse(product.purchase_price) : {};
                       const stock = product.stock ? JSON.parse(product.stock) : {};
-                      const qty = stock.opening_qty || 0;
+              const qty = parseFloat(stock.current_qty ?? stock.opening_qty ?? 0);
 
                       return (
                         <tr
-                          key={product.id}
-                          onClick={() => setSelectedProduct(product)}
-                          className={`cursor-pointer ${selectedProduct?.id === product.id ? "table-primary" : ""}`}
+key={product.product_id}
+onClick={() => setSelectedProduct(product)}
+className={`cursor-pointer ${selectedProduct?.product_id === product.product_id ? "table-primary" : ""}`}
                         >
                           <td className="fw-semibold">{product.product_name}</td>
                           <td className="text-center">{qty}</td>
@@ -130,115 +154,157 @@ const [editProduct, setEditProduct] = useState(null);
       {/* RIGHT PANEL - SELECTED ITEM DETAILS */}
       <Col md={9} className="p-3">
         {selectedProduct ? (
-          <>
-            {/* Top Detail Card */}
-            <Card className="mb-3 shadow-sm">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h5 className="fw-bold mb-1">{selectedProduct.product_name}</h5>
+  <>
+    {/* Top Detail Card */}
+    <Card className="mb-3 shadow-sm">
+      <Card.Body>
+        <div className="d-flex justify-content-between align-items-start">
+          <div>
+            <h5 className="fw-bold mb-1">{selectedProduct.product_name}</h5>
 
-                    {(() => {
-                      const sale = selectedProduct.sale_price ? JSON.parse(selectedProduct.sale_price) : {};
-                      const purchase = selectedProduct.purchase_price ? JSON.parse(selectedProduct.purchase_price) : {};
-                      const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
+            {(() => {
+              const sale = selectedProduct.sale_price ? JSON.parse(selectedProduct.sale_price) : {};
+              const purchase = selectedProduct.purchase_price ? JSON.parse(selectedProduct.purchase_price) : {};
+              const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
 
-                      return (
-                        <>
-                          <div className="small text-muted">
-                            SALE PRICE:{" "}
-                            <strong className="text-success">
-                              ₹ {parseFloat(sale.price || 0).toFixed(2)}{" "}
-                              ({sale.tax_type === "With Tax" ? "incl" : "excl"})
-                            </strong>
-                          </div>
-                          <div className="small text-muted">
-                            PURCHASE PRICE:{" "}
-                            <strong className="text-success">
-                              ₹ {parseFloat(purchase.price || 0).toFixed(2)}{" "}
-                              ({purchase.tax_type === "With Tax" ? "incl" : "excl"})
-                            </strong>
-                          </div>
-                        </>
-                      );
-                    })()}
+              const openingQty = parseFloat(stock.opening_qty) || 0;
+              const atPrice = parseFloat(stock.at_price) || 0;
+              const currentQty = stock.current_qty ?? openingQty;
+              const currentValue = stock.current_value ?? (openingQty * atPrice);
+
+              return (
+                <>
+                  <div className="small text-muted">
+                    SALE PRICE: <strong className="text-success">
+                      ₹ {parseFloat(sale.price || 0).toFixed(2)} (excl)
+                    </strong>
                   </div>
-
-                  <div className="text-end">
-                    <Button
-                      variant="primary"
-                      className="mb-3 px-4"
-                      onClick={() => setShowAdjustItem(true)}
-                    >
-                      ADJUST ITEM
-                    </Button>
-                    <div className="small">
-                      STOCK QUANTITY:{" "}
-                      <strong className={parseFloat(selectedProduct.stock ? JSON.parse(selectedProduct.stock).opening_qty || 0 : 0) <= 0 ? "text-danger" : ""}>
-                        {selectedProduct.stock ? JSON.parse(selectedProduct.stock).opening_qty || 0 : 0}
-                      </strong>
-                    </div>
-                    <div className="small">
-                      STOCK VALUE:{" "}
-                      <strong className="text-success">
-                        ₹{" "}
-                        {(
-                          (selectedProduct.stock ? JSON.parse(selectedProduct.stock).opening_qty || 0 : 0) *
-                          (selectedProduct.purchase_price ? JSON.parse(selectedProduct.purchase_price).price || 0 : 0)
-                        ).toFixed(2)}
-                      </strong>
-                    </div>
+                  <div className="small text-muted">
+                    PURCHASE PRICE: <strong className="text-success">
+                      ₹ {parseFloat(purchase.price || 0).toFixed(2)} (excl)
+                    </strong>
                   </div>
-                </div>
-              </Card.Body>
-            </Card>
+                </>
+              );
+            })()}
+          </div>
 
-            {/* Transactions Table */}
-            <Card className="flex-grow-1 shadow-sm vh-100">
-              <Card.Body className="d-flex flex-column h-100">
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="mb-0">TRANSACTIONS</h5>
-                  <div className="d-flex gap-2">
-                    <div className="position-relative">
-                      <FaSearch className="position-absolute top-50 start-2 translate-middle-y text-muted" />
-                      <input
-                        type="text"
-                        className="form-control form-control-sm ps-5"
-                        placeholder="Search..."
-                        style={{ width: "200px" }}
-                      />
-                    </div>
-                    <Button variant="light">
-                      
-                      <FaFileExcel size={20} className="text-success" />
-                    </Button>
-                  </div>
-                </div>
+          <div className="text-end">
+            <Button variant="primary" className="mb-3 px-4" onClick={() => setShowAdjustItem(true)}>
+              ADJUST ITEM
+            </Button>
 
-                <Table bordered hover className="flex-grow-1">
-                  <thead className="table-light">
-                    <tr>
-                      <th>TYPE</th>
-                      <th>INVOICE/REF</th>
-                      <th>NAME</th>
-                      <th>DATE</th>
-                      <th>QUANTITY</th>
-                      <th>PRICE/UNIT</th>
-                      <th>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={7} className="text-center text-muted py-5">
-                        No transactions yet
-                      </td>
-                    </tr>
-                  </tbody>
-                </Table>
-              </Card.Body>
-            </Card>
-          </>
-        ) : (
+           {(() => {
+  const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
+  const qty = parseFloat(stock.current_qty ?? stock.opening_qty ?? 0);
+  const value = parseFloat(stock.current_value ?? 0);
+
+  return (
+    <>
+      <div className="small">
+        STOCK QUANTITY: <strong className={qty <= 0 ? "text-danger" : ""}>{qty}</strong>
+      </div>
+      <div className="small">
+        STOCK VALUE: <strong className="text-success">₹ {value.toFixed(2)}</strong>
+      </div>
+    </>
+  );
+})()}
+          </div>
+        </div>
+      </Card.Body>
+    </Card>
+
+    {/* Transactions Table */}
+    
+   
+{/* Transactions Table */}
+<Card className="h-100 shadow-sm d-flex flex-column">
+  <Card.Body className="d-flex flex-column h-100 p-3">
+    <div className="d-flex justify-content-between align-items-center mb-3">
+      <h5 className="mb-0 fw-bold">TRANSACTIONS</h5>
+      <div className="d-flex gap-2">
+        <div className="position-relative">
+          <FaSearch className="position-absolute top-50 start-2 translate-middle-y text-muted" />
+          <input type="text" className="form-control form-control-sm ps-5" placeholder="Search..." style={{ width: "200px" }} />
+        </div>
+        <Button variant="light"><FaFileExcel size={20} className="text-success" /></Button>
+      </div>
+    </div>
+
+    <div className="flex-grow-1 overflow-auto">
+      <Table bordered hover className="mb-0 table-sm">
+        <thead className="table-light sticky-top">
+          <tr>
+            <th>TYPE</th>
+            <th>INVOICE/REF</th>
+            <th>NAME</th>
+            <th>DATE</th>
+            <th>QUANTITY</th>
+            <th>PRICE/UNIT</th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(() => {
+            if (!selectedProduct) return null;
+
+            const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
+            let transactions = [...(stock.transactions || [])];
+
+            // Opening stock first
+            if (stock.opening_transaction) {
+              transactions.unshift(stock.opening_transaction);
+            }
+
+            if (transactions.length === 0) {
+              return (
+                <tr>
+                  <td colSpan={6} className="text-center text-muted py-5">
+                    No transactions yet
+                  </td>
+                </tr>
+              );
+            }
+
+            return transactions.map((t, i) => {
+              // NAME logic – exactly like Vyapar
+              let displayName = "";
+              if (t.type === "Opening Stock") {
+                displayName = "Opening Stock";
+              } else if (t.reference && t.reference.trim() !== "") {
+                displayName = t.reference;           // ← Your typed Details
+              } else if (t.type === "Add Adjustment") {
+                displayName = "Add Stock";
+              } else if (t.type === "Reduce Adjustment") {
+                displayName = "Reduce Stock";
+              } else {
+                displayName = t.type;
+              }
+
+              return (
+                <tr key={i}>
+                  <td>{t.type}</td>
+                  <td>-</td>
+                  <td>{displayName}</td>
+                  <td>{t.date.split("-").reverse().join("/")}</td>
+                  <td className={t.quantity > 0 ? "text-success" : "text-danger"}>
+                    {t.quantity > 0 ? "+" : ""}{Math.abs(t.quantity)}
+                  </td>
+                  <td>₹ {parseFloat(t.price_per_unit || 0).toFixed(2)}</td>
+                  <td></td>
+                </tr>
+              );
+            });
+          })()}
+        </tbody>
+      </Table>
+    </div>
+  </Card.Body>
+</Card>
+    
+  </>
+) : (
           <Card className="h-100 d-flex align-items-center justify-content-center text-muted shadow-sm">
             <Card.Body className="text-center">
               <h5>No item selected</h5>
@@ -262,10 +328,10 @@ const [editProduct, setEditProduct] = useState(null);
 />
 
       <AdjustItem
-        show={showAdjustItem}
-        onHide={() => setShowAdjustItem(false)}
-        itemName={selectedProduct?.product_name}
-      />
+  show={showAdjustItem}
+  onHide={() => setShowAdjustItem(false)}
+  product={selectedProduct}   // This fixes "sampleee" and passes the real product
+/>
     </Row>
   );
 }
