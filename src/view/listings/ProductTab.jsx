@@ -321,16 +321,35 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
         activeTab="PRODUCT"
       /> */}
 
-      <AddItem
+   {/* AddItem Modal */}
+<AddItem
   show={showAddItem}
-  onHide={() => { setShowAddItem(false); setEditProduct(null); dispatch(fetchProducts()); }}
+  onHide={() => {
+    setShowAddItem(false);
+    setEditProduct(null);
+    dispatch(fetchProducts()).then(() => {
+      if (editProduct) {
+        const fresh = products.find(p => p.product_id === editProduct.product_id);
+        if (fresh) setSelectedProduct(fresh);
+      }
+    });
+  }}
   editProduct={editProduct}
 />
 
-      <AdjustItem
+{/* AdjustItem Modal */}
+<AdjustItem
   show={showAdjustItem}
-  onHide={() => setShowAdjustItem(false)}
-  product={selectedProduct}   // This fixes "sampleee" and passes the real product
+  onHide={() => {
+    setShowAdjustItem(false);
+    dispatch(fetchProducts()).then(() => {
+      if (selectedProduct) {
+        const updated = products.find(p => p.product_id === selectedProduct.product_id);
+        if (updated) setSelectedProduct(updated);
+      }
+    });
+  }}
+  product={selectedProduct}
 />
     </Row>
   );

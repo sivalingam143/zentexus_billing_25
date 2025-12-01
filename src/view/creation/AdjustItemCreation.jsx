@@ -25,60 +25,65 @@ function AdjustItem({ show, onHide, product }) {
 
 const handleSave = async () => {
   if (!qty || parseFloat(qty) <= 0) {
-    alert("Please enter a valid quantity");
+    alert("Please enter valid quantity");
     return;
   }
-  if (!product) return;
 
-  const stockJson = product.stock ? JSON.parse(product.stock) : {};
+  // Parse current stock
+  let stockJson = {};
+  try {
+    stockJson = product.stock ? JSON.parse(product.stock) : {};
+  } catch (e) {
+    stockJson = {};
+  }
 
-  const currentQty = parseFloat(stockJson.current_qty ?? stockJson.opening_qty ?? 0);
-  const currentValue = parseFloat(stockJson.current_value ?? 0);
-
+  const currentQty = parseFloat(stockJson.current_qty || 0);
+  const currentValue = parseFloat(stockJson.current_value || 0);
   const adjQty = parseFloat(qty);
   const adjPrice = parseFloat(price) || 0;
   const isAdd = stock === "add";
 
   const newQty = isAdd ? currentQty + adjQty : currentQty - adjQty;
-  const newValue = isAdd
-    ? currentValue + adjQty * adjPrice
-    : currentValue - adjQty * adjPrice;
+  const newValue = isAdd ? currentValue + (adjQty * adjPrice) : currentValue - (adjQty * adjPrice);
 
   const newTransaction = {
     type: isAdd ? "Add Adjustment" : "Reduce Adjustment",
     reference: details || (isAdd ? "Add Stock" : "Reduce Stock"),
-    name: isAdd ? "Add Adjustment" : "Reduce Adjustment",
+    name: isAdd ? "Add Stock" : "Reduce Stock",
     date: date.toISOString().split("T")[0],
     quantity: isAdd ? adjQty : -adjQty,
     price_per_unit: adjPrice,
+    status: "Completed"
   };
 
   const updatedStock = {
     ...stockJson,
     current_qty: newQty,
     current_value: newValue,
-    ...(stockJson.opening_transaction && { opening_transaction: stockJson.opening_transaction }),
-    transactions: [...(stockJson.transactions || []), newTransaction],
+    transactions: [...(stockJson.transactions || []), newTransaction]
   };
 
-  try {
-    await dispatch(updateProduct({
-      edit_product_id: product.product_id,   // ← CRITICAL FIX
-      stock: JSON.stringify(updatedStock),
-    })).unwrap();
+  // THIS IS THE KEY FIX: Send ALL existing fields + updated stock
+  await dispatch(updateProduct({
+    edit_product_id: product.product_id,
+    // Preserve everything
+    product_name: product.product_name,
+    product_code: product.product_code || "",
+    hsn_code: product.hsn_code || 0,
+    category_id: product.category_id,
+    category_name: product.category_name || "",
+    unit_value: product.unit_value,
+    unit_id: product.unit_id || "",
+    add_image: product.add_image || "",
+    sale_price: product.sale_price,        // ← preserved
+    purchase_price: product.purchase_price, // ← preserved
+    type: "product",
+    // Only update stock
+    stock: JSON.stringify(updatedStock)
+  })).unwrap();
 
-    dispatch(fetchProducts());
-
-    setQty("");
-    setPrice("");
-    setDetails("");
-    onHide();
-
-    alert("Stock adjusted successfully!"); // Optional success
-  } catch (err) {
-    console.error("Update failed:", err);
-    alert("Failed to save adjustment: " + (err.message || "Server error"));
-  }
+  dispatch(fetchProducts());
+  onHide();
 };
 
   if (!product) return null;
