@@ -29,7 +29,6 @@ const handleSave = async () => {
     return;
   }
 
-  // Parse current stock
   let stockJson = {};
   try {
     stockJson = product.stock ? JSON.parse(product.stock) : {};
@@ -37,14 +36,26 @@ const handleSave = async () => {
     stockJson = {};
   }
 
-  const currentQty = parseFloat(stockJson.current_qty || 0);
+  const currentQty   = parseFloat(stockJson.current_qty || stockJson.opening_qty || 0);
   const currentValue = parseFloat(stockJson.current_value || 0);
-  const adjQty = parseFloat(qty);
-  const adjPrice = parseFloat(price) || 0;
-  const isAdd = stock === "add";
+  const adjQty       = parseFloat(qty);
+  const isAdd        = stock === "add";
 
-  const newQty = isAdd ? currentQty + adjQty : currentQty - adjQty;
-  const newValue = isAdd ? currentValue + (adjQty * adjPrice) : currentValue - (adjQty * adjPrice);
+  // Original cost price from Add Item → used ONLY for stock value calculation
+  const originalCostPrice = parseFloat(stockJson.at_price) || 
+                           (currentQty > 0 ? currentValue / currentQty : 0) || 0;
+
+  // What user typed → this will appear in the "PRICE/UNIT" column in table
+  const displayedPrice = parseFloat(price) || 0;
+
+  // CALCULATION LOGIC:
+  // → Reduce stock  → use originalCostPrice (correct stock value)
+  // → Add stock     → use displayedPrice (what user entered)
+  const priceForCalculation = isAdd ? displayedPrice : originalCostPrice;
+
+  const valueChange = adjQty * priceForCalculation;
+  const newQty   = isAdd ? currentQty + adjQty : currentQty - adjQty;
+  const newValue = isAdd ? currentValue + valueChange : currentValue - valueChange;
 
   const newTransaction = {
     type: isAdd ? "Add Adjustment" : "Reduce Adjustment",
@@ -52,21 +63,19 @@ const handleSave = async () => {
     name: isAdd ? "Add Stock" : "Reduce Stock",
     date: date.toISOString().split("T")[0],
     quantity: isAdd ? adjQty : -adjQty,
-    price_per_unit: adjPrice,
+    price_per_unit: displayedPrice,   // ← This shows ₹100 (or whatever you type)
     status: "Completed"
   };
 
   const updatedStock = {
     ...stockJson,
-    current_qty: newQty,
-    current_value: newValue,
-    transactions: [...(stockJson.transactions || []), newTransaction]
+    current_qty:   Math.max(0, newQty),
+    current_value: parseFloat(newValue.toFixed(2)),
+    transactions:  [...(stockJson.transactions || []), newTransaction]
   };
 
-  // THIS IS THE KEY FIX: Send ALL existing fields + updated stock
   await dispatch(updateProduct({
     edit_product_id: product.product_id,
-    // Preserve everything
     product_name: product.product_name,
     product_code: product.product_code || "",
     hsn_code: product.hsn_code || 0,
@@ -75,10 +84,9 @@ const handleSave = async () => {
     unit_value: product.unit_value,
     unit_id: product.unit_id || "",
     add_image: product.add_image || "",
-    sale_price: product.sale_price,        // ← preserved
-    purchase_price: product.purchase_price, // ← preserved
+    sale_price: product.sale_price,
+    purchase_price: product.purchase_price,
     type: "product",
-    // Only update stock
     stock: JSON.stringify(updatedStock)
   })).unwrap();
 
