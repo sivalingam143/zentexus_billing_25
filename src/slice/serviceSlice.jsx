@@ -46,10 +46,10 @@ export const updateService = createAsyncThunk(
 
 export const deleteService = createAsyncThunk(
   "service/deleteService",
-  async (service_code, { rejectWithValue }) => {
+  async (service_id, { rejectWithValue }) => {
     try {
-      await deleteServiceApi(service_code);
-      return service_code;
+      await deleteServiceApi(service_id);
+      return service_id;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -86,13 +86,21 @@ const serviceSlice = createSlice({
       .addCase(createService.fulfilled, (state, action) => {
         state.services.unshift(action.payload);
       })
-      .addCase(updateService.fulfilled, (state, action) => {
-        const updated = action.payload;
-        const index = state.services.findIndex(s => s.service_code === updated.edit_service_id || s.service_code === updated.service_id);
-        if (index !== -1) state.services[index] = { ...state.services[index], ...updated };
-      })
+     .addCase(updateService.fulfilled, (state, action) => {
+  const updated = action.payload; // this MUST contain service_id
+
+  const index = state.services.findIndex(
+    s => s.service_id == updated.service_id
+  );
+
+  if (index !== -1) {
+    state.services[index] = { ...state.services[index], ...updated };
+  }
+})
+
       .addCase(deleteService.fulfilled, (state, action) => {
-        state.services = state.services.filter(s => s.service_code !== action.payload);
+        state.services = state.services.filter(s => s.service_id != action.payload);
+
       });
   },
 });

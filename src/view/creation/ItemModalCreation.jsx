@@ -1,16 +1,13 @@
-// src/components/AddItem.jsx  (Keep this single file for both Product & Service)
+// src/components/AddItem.jsx
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Button, Row, Col, Modal, Form, Tabs, Tab, Card
-} from "react-bootstrap";
+import { Button, Row, Col, Modal, Form, Tabs, Tab, Card } from "react-bootstrap";
 import { FaCamera, FaCog, FaChevronDown } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchUnits } from "../../slice/UnitSlice";
 import { fetchCategories } from "../../slice/CategorySlice";
-import { createProduct , deleteProduct , updateProduct} from "../../slice/ProductSlice";
-
-import { createService } from "../../slice/serviceSlice";  // Your service slice
+import { createProduct, updateProduct, deleteProduct } from "../../slice/ProductSlice";
+import { createService, updateService, deleteService } from "../../slice/serviceSlice";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-datepicker/dist/react-datepicker.css";
 import "../../App.css";
@@ -26,20 +23,18 @@ const ImageModal = ({ show, onHide, imageSrc }) => (
   </Modal>
 );
 
-function AddItem({ show, onHide, activeTab = "PRODUCT" , editProduct = null}) {
+function AddItem({ show, onHide, activeTab = "PRODUCT", editProduct = null }) {
   const dispatch = useDispatch();
   const { units = [], status: unitStatus } = useSelector(state => state.unit);
   const { categories = [], status: categoryStatus } = useSelector(state => state.category);
-  const productStatus = useSelector(state => state.product?.status);
-  const serviceStatus = useSelector(state => state.service?.status);
 
-  const [type, setType] = useState("add"); // "add" = Product, "reduce" = Service (your old logic)
+  const [type, setType] = useState("add"); // add = Product, reduce = Service
   const [imagePreview, setImagePreview] = useState("");
   const [imageFileName, setImageFileName] = useState("");
   const [showImageModal, setShowImageModal] = useState(false);
   const imageInputRef = useRef(null);
 
-  // Form Fields
+  // Form fields
   const [itemName, setItemName] = useState("");
   const [hsn, setHsn] = useState("");
   const [itemCode, setItemCode] = useState("");
@@ -47,28 +42,11 @@ function AddItem({ show, onHide, activeTab = "PRODUCT" , editProduct = null}) {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [activePricingTab, setActivePricingTab] = useState("pricing");
 
-const [isEditMode, setIsEditMode] = useState(false);
-
-
   const [showWholesale, setShowWholesale] = useState(false);
-
-// Add wholesale price state (you can extend it later if you need multiple tiers)
-const [wholesaleDetails, setWholesaleDetails] = useState({
-  price: "",
-  tax_type: "Without Tax",
-  min_qty: ""
-});
-  // Pricing
-  const [salePriceDetails, setSalePriceDetails] = useState({
-    price: "", tax_type: "Without Tax", discount: "", discount_type: "Percentage"
-  });
-  const [purchasePriceDetails, setPurchasePriceDetails] = useState({
-    price: "", tax_type: "Without Tax", tax_rate: "None"
-  });
-  const [stockDetails, setStockDetails] = useState({
-    opening_qty: "", at_price: "", stock_date: new Date().toISOString().split("T")[0],
-    min_stock: "", location: ""
-  });
+  const [wholesaleDetails, setWholesaleDetails] = useState({ price: "", tax_type: "Without Tax", min_qty: "" });
+  const [salePriceDetails, setSalePriceDetails] = useState({ price: "", tax_type: "Without Tax", discount: "", discount_type: "Percentage" });
+  const [purchasePriceDetails, setPurchasePriceDetails] = useState({ price: "", tax_type: "Without Tax", tax_rate: "None" });
+  const [stockDetails, setStockDetails] = useState({ opening_qty: "", at_price: "", stock_date: new Date().toISOString().split("T")[0], min_stock: "", location: "" });
 
   // Dropdowns
   const [showUnitMenu, setShowUnitMenu] = useState(false);
@@ -84,40 +62,28 @@ const [wholesaleDetails, setWholesaleDetails] = useState({
     else setType("add");
   }, [activeTab, show]);
 
-  
-
-
-
+  // Edit mode
   useEffect(() => {
-  if (editProduct && show) {
-    setItemName(editProduct.product_name || "");
-    setHsn(editProduct.hsn_code || "");
-    setItemCode(editProduct.product_code || "");
-    setSelectedUnit(editProduct.unit_value || "");
-    setSelectedCategory(editProduct.category_id || "");
+    if (editProduct && show) {
+      setItemName(editProduct.product_name || editProduct.service_name || "");
+      setHsn(editProduct.hsn_code || "");
+      setItemCode(editProduct.product_code || editProduct.service_code || "");
+      setSelectedUnit(editProduct.unit_value || "");
+      setSelectedCategory(editProduct.category_id || "");
 
-    try {
-      const sale = JSON.parse(editProduct.sale_price || "{}");
-      const purchase = JSON.parse(editProduct.purchase_price || "{}");
-      const stock = JSON.parse(editProduct.stock || "{}");
+      try {
+        const sale = JSON.parse(editProduct.sale_price || "{}");
+        const purchase = JSON.parse(editProduct.purchase_price || "{}");
+        const stock = JSON.parse(editProduct.stock || "{}");
 
-      setSalePriceDetails({ price: sale.price || "", tax_type: sale.tax_type || "Without Tax", discount: sale.discount || "", discount_type: sale.discount_type || "Percentage" });
-      setPurchasePriceDetails({ price: purchase.price || "", tax_type: purchase.tax_type || "Without Tax", tax_rate: purchase.tax_rate || "None" });
-      setStockDetails({ opening_qty: stock.opening_qty || "", at_price: stock.at_price || "", stock_date: stock.stock_date || "", min_stock: stock.min_stock || "", location: stock.location || "" });
+        setSalePriceDetails({ price: sale.price || "", tax_type: sale.tax_type || "Without Tax", discount: sale.discount || "", discount_type: sale.discount_type || "Percentage" });
+        setPurchasePriceDetails({ price: purchase.price || "", tax_type: purchase.tax_type || "Without Tax", tax_rate: purchase.tax_rate || "None" });
+        setStockDetails({ opening_qty: stock.opening_qty || "", at_price: stock.at_price || "", stock_date: stock.stock_date || "", min_stock: stock.min_stock || "", location: stock.location || "" });
 
-      if (editProduct.add_image) setImagePreview(editProduct.add_image);
-    } catch (e) {}
-  }
-}, [editProduct, show]);
-
-useEffect(() => {
-  if (editProduct && show) {
-    setIsEditMode(true);      // 🔥 switch modal into EDIT mode
-  } else {
-    setIsEditMode(false);     // 🔥 switch modal into ADD mode
-  }
-}, [editProduct, show]);
-
+        if (editProduct.add_image) setImagePreview(editProduct.add_image);
+      } catch (e) {}
+    }
+  }, [editProduct, show]);
 
   // Fetch units & categories
   useEffect(() => {
@@ -127,12 +93,10 @@ useEffect(() => {
     }
   }, [show, unitStatus, categoryStatus, dispatch]);
 
-  // Auto select first unit & category
+  // Auto-select first unit & category
   useEffect(() => {
     if (units.length > 0 && !selectedUnit) setSelectedUnit(units[0].unit_name);
-    if (categories.length > 0 && !selectedCategory) 
-    setSelectedCategory(categories[0].category_id);
-
+    if (categories.length > 0 && !selectedCategory) setSelectedCategory(categories[0].category_id);
   }, [units, categories]);
 
   // Close dropdowns on outside click
@@ -145,7 +109,7 @@ useEffect(() => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // IMAGE LOGIC
+  // Image logic
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -160,157 +124,80 @@ useEffect(() => {
       reader.readAsDataURL(file);
     }
   };
-
   const handleRemoveImage = (e) => {
     e.stopPropagation();
     setImagePreview("");
     setImageFileName("");
     if (imageInputRef.current) imageInputRef.current.value = "";
   };
-
   const handleImageClick = () => {
     imagePreview ? setShowImageModal(true) : imageInputRef.current?.click();
   };
 
-
-
-
   const resetForm = () => {
-  setItemName("");
-  setHsn("");
-  setItemCode("");
-  setSelectedUnit(units[0]?.unit_name || "");
-  setSelectedCategory(categories[0]?.category_id || "");
-  setImagePreview("");
-  setImageFileName("");
-  setSalePriceDetails({
-    price: "", tax_type: "Without Tax", discount: "", discount_type: "Percentage"
-  });
-  setPurchasePriceDetails({
-    price: "", tax_type: "Without Tax", tax_rate: "None"
-  });
-  setStockDetails({
-    opening_qty: "", at_price: "", stock_date: new Date().toISOString().split("T")[0],
-    min_stock: "", location: ""
-  });
-};
-
-
-
-
-const handleSaveNew = async () => {
-  try {
-    await handleSave(false); // false = do NOT close modal
-    alert("Saved Successfully!");
-    resetForm(); // clear fields for new entry
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-
-  // MAIN SAVE FUNCTION
- // MAIN SAVE FUNCTION – ONLY THIS PART IS CHANGED
-const handleSave = async (closeModal = true) => {
-  const selectedCatObj = categories.find(c => c.category_id == selectedCategory) || {};
-  const selectedUnitObj = units.find(u => u.unit_name === selectedUnit) || {};
-
-  const category_name = selectedCatObj.category_name || "";
-  const unit_id = selectedUnitObj.unit_id || "";
-
-  const sale_price = JSON.stringify({
-    price: salePriceDetails.price || "0",
-    tax_type: salePriceDetails.tax_type,
-    discount: salePriceDetails.discount || "0",
-    discount_type: salePriceDetails.discount_type
-  });
-
-  const purchase_price = JSON.stringify({
-    price: purchasePriceDetails.price || "0",
-    tax_type: purchasePriceDetails.tax_type,
-    tax_rate: purchasePriceDetails.tax_rate
-  });
-
-  const enhancedStock = {
-    ...stockDetails,
-    opening_qty: parseFloat(stockDetails.opening_qty) || 0,
-    at_price: parseFloat(stockDetails.at_price) || 0,
-    current_qty: parseFloat(stockDetails.opening_qty) || 0,
-    current_value: (stockDetails.opening_qty || 0) * (stockDetails.at_price || 0),
+    setItemName(""); setHsn(""); setItemCode("");
+    setSelectedUnit(units[0]?.unit_name || "");
+    setSelectedCategory(categories[0]?.category_id || "");
+    setImagePreview(""); setImageFileName("");
+    setSalePriceDetails({ price: "", tax_type: "Without Tax", discount: "", discount_type: "Percentage" });
+    setPurchasePriceDetails({ price: "", tax_type: "Without Tax", tax_rate: "None" });
+    setStockDetails({ opening_qty: "", at_price: "", stock_date: new Date().toISOString().split("T")[0], min_stock: "", location: "" });
   };
 
-  // ⭐ COMMON DATA
-  const payload = {
-    product_name: itemName.trim(),
-    product_code: itemCode,
-    hsn_code: hsn,
-    category_id: selectedCategory,
-    category_name,
-    unit_value: selectedUnit,
-    unit_id,
-    add_image: imagePreview,
-    sale_price,
-    purchase_price,
-    stock: JSON.stringify(enhancedStock),
-    type: "product"
+  const handleSaveNew = async () => {
+    try { await handleSave(false, true); alert("Saved Successfully!"); resetForm(); } catch (err) { console.error(err); }
   };
 
-  try {
-    if (isEditMode) {
-      // ⭐ UPDATE EXISTING PRODUCT
-      await dispatch(updateProduct({ 
-        edit_product_id: editProduct.product_id,
+  const handleSave = async (closeModal = true, isNew = false) => {
+    const selectedCatObj = categories.find(c => c.category_id == selectedCategory) || {};
+    const selectedUnitObj = units.find(u => u.unit_name === selectedUnit) || {};
+    const category_name = selectedCatObj.category_name || "";
+    const unit_id = selectedUnitObj.unit_id || "";
+    const sale_price = JSON.stringify({ price: salePriceDetails.price || "0", tax_type: salePriceDetails.tax_type, discount: salePriceDetails.discount || "0", discount_type: salePriceDetails.discount_type });
 
-        ...payload 
-      })).unwrap();
-      alert("Updated Successfully!");
-    } else {
-      // ⭐ CREATE NEW PRODUCT
-      await dispatch(createProduct(payload)).unwrap();
-      alert("Created Successfully!");
-    }
+    const commonData = { product_name: itemName.trim(), product_code: itemCode, hsn_code: hsn || 0, category_id: selectedCategory, category_name, unit_value: selectedUnit, unit_id, add_image: imagePreview, sale_price };
 
-    if (closeModal) onHide();
+    if (!commonData.product_name || !commonData.category_id || !commonData.unit_value) { alert("Please fill Item Name, Category & Unit"); return; }
 
-  } catch (err) {
-    console.error(err);
-    alert("Failed to save item");
-  }
-};
+    try {
+      if (isProduct) {
+        const openingQty = parseFloat(stockDetails.opening_qty) || 0;
+        const atPrice = parseFloat(stockDetails.at_price) || 0;
+        const enhancedStock = { ...stockDetails, opening_qty: openingQty, at_price: atPrice, current_qty: openingQty, current_value: openingQty * atPrice,
+          opening_transaction: openingQty > 0 ? { type: "Opening Stock", reference: "Opening Stock", name: "Opening Stock", date: stockDetails.stock_date || new Date().toISOString().split("T")[0], quantity: openingQty, price_per_unit: atPrice, status: "Completed" } : null
+        };
+        const payload = { ...commonData, purchase_price: JSON.stringify({ price: purchasePriceDetails.price || "0", tax_type: purchasePriceDetails.tax_type, tax_rate: purchasePriceDetails.tax_rate }), stock: JSON.stringify(enhancedStock), type: "product" };
+        if (editProduct) await dispatch(updateProduct({ edit_product_id: editProduct.product_id, ...payload })).unwrap();
+        else await dispatch(createProduct(payload)).unwrap();
+      } else {
+        const payload = { service_name: itemName.trim(), service_hsn: hsn || 0,   service_code: itemCode, category_id: selectedCategory, category_name, unit_value: selectedUnit, unit_id, add_image: imagePreview, sale_price, tax_rate: purchasePriceDetails.tax_rate, type: "service" };
+        if (editProduct) await dispatch(updateService({ edit_service_id: editProduct.service_id, ...payload })).unwrap();
+        else await dispatch(createService(payload)).unwrap();
+      }
+
+      if (closeModal && !isNew) onHide();
+      if (isNew) resetForm();
+    } catch (err) { console.error(err); alert(err.message || "Failed to save"); }
+  };
+
+  const handleDelete = () => {
+    if (isProduct) dispatch(deleteProduct(editProduct.product_id));
+    else dispatch(deleteService(editProduct.service_id));
+    onHide();
+  };
 
   return (
     <>
       <ImageModal show={showImageModal} onHide={() => setShowImageModal(false)} imageSrc={imagePreview} />
-
       <Modal show={show} onHide={onHide} centered backdrop="static" size="xl">
         <Modal.Header className="border-0 pb-1 align-items-start">
           <div className="w-100 d-flex justify-content-between align-items-start">
             <Modal.Title className="h5 fw-bold d-flex align-items-center gap-2">
-             {isEditMode ? "Edit Item" : isProduct ? "Add Item" : "Add Service"}
-
+              {editProduct ? "Edit Item" : isProduct ? "Add Item" : "Add Service"}
               <div className="d-flex position-relative" style={{ width: "180px", borderRadius: "50px", padding: "2px", gap: "6px" }}>
-                <div className="position-absolute bg-primary" style={{
-                  width: "calc(50% - 2px)", height: "100%", borderRadius: "50px",
-                  transition: "transform 0.3s", transform: type === "add" ? "translateX(0%)" : "translateX(100%)"
-                }} />
-<Button
-  variant="transparent"
-  style={{ zIndex: 2, background: "transparent", border: "none", boxShadow: "none" }}
-  className={`flex-grow-1 fw-semibold ${type === "add" ? "text-white" : "text-primary"}`}
-  onClick={() => setType("add")}
->
-  Product
-</Button>
-
-<Button
-  variant="transparent"
-  style={{ zIndex: 2, background: "transparent", border: "none", boxShadow: "none" }}
-  className={`flex-grow-1 fw-semibold ${type === "reduce" ? "text-white" : "text-primary"}`}
-  onClick={() => setType("reduce")}
->
-  Service
-</Button>
-
+                <div className="position-absolute bg-primary" style={{ width: "calc(50% - 2px)", height: "100%", borderRadius: "50px", transition: "transform 0.3s", transform: type === "add" ? "translateX(0%)" : "translateX(100%)" }} />
+                <Button variant="transparent" style={{ zIndex: 2, background: "transparent", border: "none" }} className={`flex-grow-1 fw-semibold ${type === "add" ? "text-white" : "text-primary"}`} onClick={() => setType("add")}>Product</Button>
+                <Button variant="transparent" style={{ zIndex: 2, background: "transparent", border: "none" }} className={`flex-grow-1 fw-semibold ${type === "reduce" ? "text-white" : "text-primary"}`} onClick={() => setType("reduce")}>Service</Button>
               </div>
             </Modal.Title>
             <div className="d-flex gap-3">
@@ -320,7 +207,9 @@ const handleSave = async (closeModal = true) => {
           </div>
         </Modal.Header>
 
-        <Modal.Body className="pt-2">
+        
+          {/* ... Form fields, tabs, pricing, stock same as your previous code ... */}
+           <Modal.Body className="pt-2">
           <Row className="mb-4 g-3">
             <Col md={3}>
               <Form.Control className="white-input" placeholder={isProduct ? "Item Name *" : "Service Name *"} value={itemName} onChange={(e) => setItemName(e.target.value)} />
@@ -514,55 +403,21 @@ const handleSave = async (closeModal = true) => {
           </Tabs>
         </Modal.Body>
 
+        
+
         <Modal.Footer className="border-0 justify-content-end bg-light">
-
-  {isEditMode ? (
-    <>
-      {/* DELETE */}
-      <Button
-        variant="danger"
-        className="me-2"
-        onClick={() => {
-          if (window.confirm("Delete this item permanently?")) {
-            dispatch(deleteProduct(editProduct.product_id));
-            alert("Item Deleted");
-            onHide();
-          }
-        }}
-      >
-        Delete
-      </Button>
-
-      {/* UPDATE */}
-     <Button variant="primary" onClick={() => handleSave(true)}>
-  Update
-</Button>
-
-    </>
-  ) : (
-    <>
-      {/* SAVE & NEW */}
-      <Button
-        variant="outline-secondary"
-        className="me-2"
-        onClick={handleSaveNew}
-      >
-        Save & New
-      </Button>
-
-      {/* SAVE */}
-      <Button
-        variant="primary"
-        onClick={() => handleSave(true)}
-      >
-        Save
-      </Button>
-    </>
-  )}
-
-</Modal.Footer>
-
-
+          {editProduct ? (
+            <>
+              <Button variant="danger" onClick={handleDelete}>Delete</Button>
+              <Button variant="primary" onClick={() => handleSave(true)}>Update</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline-secondary" className="me-2" onClick={handleSaveNew}>Save & New</Button>
+              <Button variant="primary" onClick={() => handleSave(true)}>Save</Button>
+            </>
+          )}
+        </Modal.Footer>
       </Modal>
     </>
   );
