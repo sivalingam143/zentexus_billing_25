@@ -432,6 +432,7 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
         style={{
           backgroundColor: "#f0f2f5",
           minHeight: "100vh",
+          height:"100vh",
           padding: "20px",
         }}
       >
@@ -584,7 +585,7 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                     </Card.Body>
                   </Card>
 
-                  <div className="bg-white shadow-sm rounded p-4" style={{ height: "50vh" }}>
+                  <div className="bg-white shadow-sm rounded p-4" style={{ height: "100vh" }}>
   <div style={{ maxHeight: "50vh", overflowY: "auto", overflowX: "visible" }}>
     <h6 className="mb-3">Transactions</h6>
                     <Table

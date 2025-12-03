@@ -1,19 +1,17 @@
 // src/pages/tabs/UnitsTab.jsx
 import React, { useEffect, useCallback } from "react";
 import { Button, Table, Col, Card, Spinner, DropdownButton, Dropdown } from "react-bootstrap";
-import { FaSearch, FaEllipsisV,FaFileExcel } from "react-icons/fa";
+import { FaSearch, FaEllipsisV, FaFileExcel } from "react-icons/fa";
 import AddUnit from "../creation/UnitModalCreation";
 import AddConvo from "../listings/UnitConversion";
-import "../../App.css"
-
+import "../../App.css";
 
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUnits, deleteUnit } from "../../slice/UnitSlice";  // Correct import
+import { fetchUnits, deleteUnit } from "../../slice/UnitSlice";
 
 export default function UnitsTab() {
   const dispatch = useDispatch();
 
-  // Get data directly from Redux store
   const { units, status } = useSelector((state) => state.unit);
 
   const [showUnitModal, setShowUnitModal] = React.useState(false);
@@ -28,8 +26,9 @@ export default function UnitsTab() {
     fetchAllUnits();
   }, [fetchAllUnits]);
 
-  // Ensure units is always an array
-  const unitsList = Array.isArray(units) ? units : [];
+  const unitsList = Array.isArray(units) 
+  ? [...units].sort((a, b) => a.unit_name.localeCompare(b.unit_name))
+  : [];
 
   const unitRows = unitsList.map((unit) => (
     <tr key={unit.unit_id || unit.id}>
@@ -111,19 +110,27 @@ export default function UnitsTab() {
         </Card>
       </Col>
 
-      <Col md={9} className="p-3 d-flex flex-column">
+      {/* Right Side - Main Content */}
+      <Col md={9} className="p-3 d-flex flex-column position-relative">
+        {/* Top-right "Add Conversion" Button - Exactly like your image */}
+        <div className="position-absolute top-0 end-0 mt-3 me-3 px-4  " style={{ zIndex: 10 }}>
+          <Button
+            variant="primary"
+            className="fw-semibold text-white bg-primary mt-4 px-2 py-2"
+            style={{ borderRadius: "6px", fontSize: "14px" }}
+            onClick={() => setShowConvoModal(true)}
+          >
+            Add Conversion
+          </Button>
+        </div>
+
+        {/* Optional header card (you can remove if not needed) */}
         {unitsList.length > 0 && (
           <Card className="mb-3">
             <Card.Body>
               <div className="d-flex justify-content-between align-items-start mb-3 mt-0">
                 <h6 className="fw-bold">{unitsList[0].unit_name.toUpperCase()}</h6>
-                <Button
-                  variant="primary"
-                  className=" fw-semibold text-white p-3"
-                  onClick={() => setShowConvoModal(true)}
-                >
-                  ADD CONVERSION
-                </Button>
+                {/* Intentionally empty - button moved to top-right */}
               </div>
             </Card.Body>
           </Card>
@@ -131,16 +138,16 @@ export default function UnitsTab() {
 
         <Card className="flex-grow-1 d-flex flex-column">
           <Card.Body className="d-flex flex-column h-100 p-3">
-             <div className="d-flex justify-content-between align-items-center mb-2">
-                           <h5 className="mb-0">TRANSACTIONS</h5>
-                           <div className="d-flex align-items-center" style={{ gap: "8px" }}>
-                             <div style={{ position: "relative", width: "200px" }}>
-                               <FaSearch style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "gray" }} />
-                               <input type="text" className="form-control form-control-sm" style={{ paddingLeft: "30px" }} placeholder="Search..." />
-                             </div>
-                                              <Button variant="light"><FaFileExcel size={20} color="#217346" /></Button>
-                          </div>
-                         </div>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <h5 className="mb-0">TRANSACTIONS</h5>
+              <div className="d-flex align-items-center" style={{ gap: "8px" }}>
+                <div style={{ position: "relative", width: "200px" }}>
+                  <FaSearch style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "gray" }} />
+                  <input type="text" className="form-control form-control-sm" style={{ paddingLeft: "30px" }} placeholder="Search..." />
+                </div>
+                <Button variant="light"><FaFileExcel size={20} color="#217346" /></Button>
+              </div>
+            </div>
             <div className="flex-grow-1 d-flex justify-content-center align-items-center text-muted">
               <span>No Rows to Show</span>
             </div>
@@ -148,6 +155,7 @@ export default function UnitsTab() {
         </Card>
       </Col>
 
+      {/* Modals */}
       <AddUnit
         show={showUnitModal}
         onHide={() => {
@@ -157,6 +165,8 @@ export default function UnitsTab() {
         onSaveSuccess={fetchAllUnits}
         unitToEdit={selectedUnit}
       />
+
+      {/* Add Conversion Modal - Opens from top-right button */}
       <AddConvo show={showConvoModal} onHide={() => setShowConvoModal(false)} />
     </>
   );

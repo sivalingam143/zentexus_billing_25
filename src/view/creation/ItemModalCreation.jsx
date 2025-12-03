@@ -1,5 +1,6 @@
 // src/components/AddItem.jsx
 import React, { useState, useEffect, useRef } from "react";
+import SelectUnitModal from "./SelectUnitModal"
 import {
   Button,
   Row,
@@ -52,6 +53,10 @@ function AddItem({ show, onHide, activeTab = "PRODUCT", editProduct = null }) {
   const { categories = [], status: categoryStatus } = useSelector(
     (state) => state.category
   );
+
+const [showSelectUnitModal, setShowSelectUnitModal] = useState(false);
+const [baseUnit, setBaseUnit] = useState("");        // new
+const [secondaryUnit, setSecondaryUnit] = useState(""); // new
 
   const [type, setType] = useState("add"); // add = Product, reduce = Service
   const [imagePreview, setImagePreview] = useState("");
@@ -511,48 +516,30 @@ const enhancedStock = {
             </Col>
 
             {/* Unit Dropdown */}
-            <Col md={2} ref={unitRef}>
-              <div className="position-relative">
-                <div
-                  className="form-control white-input d-flex align-items-center justify-content-between pe-2"
-                  style={{
-                    backgroundColor: "#cce7f3",
-                    cursor: "pointer",
-                    height: "38px",
-                  }}
-                  onClick={() => setShowUnitMenu(!showUnitMenu)}
-                >
-                  <span className={!selectedUnit ? "text-muted" : ""}>
-                    {selectedUnit || "Select Unit"}
-                  </span>
-                  <FaChevronDown className="text-primary" />
-                </div>
-                {showUnitMenu && (
-                  <div
-                    className="position-absolute start-0 end-0 bg-white border shadow-sm rounded mt-1"
-                    style={{
-                      zIndex: 9999,
-                      maxHeight: "200px",
-                      overflowY: "auto",
-                    }}
-                  >
-                    {units.map((u) => (
-                      <div
-                        key={u.unit_id}
-                        className="px-3 py-2 hover-bg-light"
-                        style={{ cursor: "pointer" }}
-                        onClick={() => {
-                          setSelectedUnit(u.unit_name);
-                          setShowUnitMenu(false);
-                        }}
-                      >
-                        {u.unit_name} ({u.short_name})
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Col>
+            {/* === NEW Select Unit Button (keeps exact old style) === */}
+{/* Select Unit Button - Looks exactly like before */}
+<Col md={2}>
+  <div className="position-relative">
+    <div
+      className="form-control white-input d-flex align-items-center justify-content-between pe-2"
+      style={{
+        backgroundColor: "#cce7f3",
+        cursor: "pointer",
+        height: "38px",
+      }}
+     onClick={() => {
+  setBaseUnit(selectedUnit || "None");
+  setSecondaryUnit("None");
+  setShowSelectUnitModal(true);
+}}
+    >
+      <span className={!selectedUnit ? "text-muted" : ""}>
+        {selectedUnit || "Select Unit"}
+      </span>
+      <FaChevronDown className="text-primary" />
+    </div>
+  </div>
+</Col>
 
             {/* Image Upload */}
             <Col md={3}>
@@ -994,6 +981,22 @@ const enhancedStock = {
           )}
         </Modal.Footer>
       </Modal>
+<SelectUnitModal
+  show={showSelectUnitModal}
+  onHide={() => setShowSelectUnitModal(false)}
+  units={units}
+  baseUnit={baseUnit}
+  secondaryUnit={secondaryUnit}
+  onBaseUnitChange={setBaseUnit}
+  onSecondaryUnitChange={setSecondaryUnit}
+  onSave={() => {
+    if (baseUnit && baseUnit !== "None") {
+      setSelectedUnit(baseUnit);   // Only base unit is used in item
+    } else {
+      setSelectedUnit("");
+    }
+  }}
+/>
     </>
   );
 }
