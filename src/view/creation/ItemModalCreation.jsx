@@ -57,7 +57,7 @@ function AddItem({ show, onHide, activeTab = "PRODUCT", editProduct = null }) {
 const [showSelectUnitModal, setShowSelectUnitModal] = useState(false);
 const [baseUnit, setBaseUnit] = useState("");        // new
 const [secondaryUnit, setSecondaryUnit] = useState(""); // new
-
+const [unitMapping, setUnitMapping] = useState(null);
   const [type, setType] = useState("add"); // add = Product, reduce = Service
   const [imagePreview, setImagePreview] = useState("");
   const [imageFileName, setImageFileName] = useState("");
@@ -516,10 +516,10 @@ const enhancedStock = {
             </Col>
 
             {/* Unit Dropdown */}
-            {/* === NEW Select Unit Button (keeps exact old style) === */}
-{/* Select Unit Button - Looks exactly like before */}
+{/* === UNIT SECTION – FINAL (EXACTLY LIKE VYAPAR) === */}
 <Col md={2}>
-  <div className="position-relative">
+  <div>
+    {/* Main Button – Always shows base unit or "Select Unit" */}
     <div
       className="form-control white-input d-flex align-items-center justify-content-between pe-2"
       style={{
@@ -527,17 +527,31 @@ const enhancedStock = {
         cursor: "pointer",
         height: "38px",
       }}
-     onClick={() => {
-  setBaseUnit(selectedUnit || "None");
-  setSecondaryUnit("None");
-  setShowSelectUnitModal(true);
-}}
+      onClick={() => setShowSelectUnitModal(true)}
     >
-      <span className={!selectedUnit ? "text-muted" : ""}>
+      <span className={!selectedUnit ? "text-muted" : "fw-bold"}>
         {selectedUnit || "Select Unit"}
       </span>
       <FaChevronDown className="text-primary" />
     </div>
+
+    {/* After mapping saved → show "Edit Unit" + short conversion below */}
+    {unitMapping && (
+      <div className="mt-2 text-center">
+        <Button
+          variant="link"
+          size="sm"
+          className="text-primary p-0 fw-medium"
+          onClick={() => setShowSelectUnitModal(true)}
+          style={{ fontSize: "13px" }}
+        >
+          Edit Unit
+        </Button>
+        <div className="text-primary fw-bold small mt-1">
+          {unitMapping.shortText}
+        </div>
+      </div>
+    )}
   </div>
 </Col>
 
@@ -985,16 +999,10 @@ const enhancedStock = {
   show={showSelectUnitModal}
   onHide={() => setShowSelectUnitModal(false)}
   units={units}
-  baseUnit={baseUnit}
-  secondaryUnit={secondaryUnit}
-  onBaseUnitChange={setBaseUnit}
-  onSecondaryUnitChange={setSecondaryUnit}
-  onSave={() => {
-    if (baseUnit && baseUnit !== "None") {
-      setSelectedUnit(baseUnit);   // Only base unit is used in item
-    } else {
-      setSelectedUnit("");
-    }
+  onSaveMapping={(mapping) => {
+    setUnitMapping(mapping);
+    setSelectedUnit(mapping.baseUnit || "");
+    setShowSelectUnitModal(false);
   }}
 />
     </>

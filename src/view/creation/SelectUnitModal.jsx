@@ -1,11 +1,12 @@
 // src/components/modals/SelectUnitModal.jsx
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Row, Col, Alert } from "react-bootstrap";
+import { Modal, Button, Row, Col, Form, Alert } from "react-bootstrap";
 import { FaChevronDown } from "react-icons/fa";
-
-const SelectUnitModal = ({ show, onHide, units = [], onBaseUnitChange, onSave }) => {
+import { toast } from "react-toastify";
+const SelectUnitModal = ({ show, onHide, units = [], onSaveMapping }) => {
   const [baseUnit, setBaseUnit] = useState("None");
   const [secondaryUnit, setSecondaryUnit] = useState("None");
+  const [conversion, setConversion] = useState("1"); // ← Only this added
   const [showBase, setShowBase] = useState(false);
   const [showSec, setShowSec] = useState(false);
   const [error, setError] = useState("");
@@ -14,19 +15,46 @@ const SelectUnitModal = ({ show, onHide, units = [], onBaseUnitChange, onSave })
     if (show) {
       setBaseUnit("None");
       setSecondaryUnit("None");
+      setConversion("1"); // ← Reset conversion
       setError("");
     }
   }, [show]);
 
-  const save = () => {
-    if (baseUnit !== "None" && baseUnit === secondaryUnit) {
-      setError("Base Unit and Secondary Unit cannot be the same!");
-      return;
-    }
-    onBaseUnitChange(baseUnit === "None" ? "" : baseUnit);
-    onSave?.();
-    onHide();
+  const getShortCode = (name) => {
+  if (!name) return "";
+  const match = name.match(/\(([^)]+)\)/);
+  return match ? match[1] : name.split(" ")[0].toUpperCase();
+};
+
+ const save = () => {
+  if (baseUnit === "None") {
+    toast.error("Please select Base Unit");
+    return;
+  }
+
+  if (baseUnit === secondaryUnit && secondaryUnit !== "None") {
+    toast.error("Base Unit and Secondary Unit cannot be the same!");
+    return;
+  }
+
+  if (secondaryUnit !== "None" && (!conversion || Number(conversion) <= 0)) {
+    toast.error("Please enter a valid conversion rate");
+    return;
+  }
+
+  const mapping = {
+    baseUnit: baseUnit === "None" ? "" : baseUnit,
+    secondaryUnit: secondaryUnit === "None" ? null : secondaryUnit,
+    conversion: secondaryUnit !== "None" ? Number(conversion) : null,
+    shortText: secondaryUnit !== "None"
+      ? `1 ${getShortCode(baseUnit)} = ${conversion} ${getShortCode(secondaryUnit)}`
+      : getShortCode(baseUnit)
   };
+
+  onSaveMapping(mapping);
+  toast.success("Unit saved successfully!");
+  onHide();
+};
 
   return (
     <Modal show={show} onHide={onHide} centered backdrop="static" style={{ zIndex: 1060 }}>
@@ -92,6 +120,29 @@ const SelectUnitModal = ({ show, onHide, units = [], onBaseUnitChange, onSave })
             </div>
           </Col>
         </Row>
+
+        {/* ← ONLY THIS BLOCK ADDED → Conversion Input */}
+        {secondaryUnit !== "None" && baseUnit !== secondaryUnit && (
+          <Row className="mt-3">
+            <Col md={12}>
+              <Form.Group>
+                <Form.Label className="small fw-bold">Conversion Rate</Form.Label>
+                <div className="d-flex align-items-center gap-2">
+                  <span>1 {baseUnit === "None" ? "Base" : baseUnit} =</span>
+                  <Form.Control
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={conversion}
+                    onChange={(e) => setConversion(e.target.value)}
+                    style={{ width: "100px" }}
+                  />
+                  <span>{secondaryUnit}</span>
+                </div>
+              </Form.Group>
+            </Col>
+          </Row>
+        )}
       </Modal.Body>
 
       <Modal.Footer>
