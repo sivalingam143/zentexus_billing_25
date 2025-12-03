@@ -3,7 +3,9 @@ import React, { useState, useEffect } from "react";
 import { Modal, Button, Row, Col, Form, Alert } from "react-bootstrap";
 import { FaChevronDown } from "react-icons/fa";
 import { toast } from "react-toastify";
-const SelectUnitModal = ({ show, onHide, units = [], onSaveMapping }) => {
+
+
+const SelectUnitModal = ({ show, onHide, units = [], unitMapping, onSaveMapping }) => {
   const [baseUnit, setBaseUnit] = useState("None");
   const [secondaryUnit, setSecondaryUnit] = useState("None");
   const [conversion, setConversion] = useState("1"); // ← Only this added
@@ -11,32 +13,36 @@ const SelectUnitModal = ({ show, onHide, units = [], onSaveMapping }) => {
   const [showSec, setShowSec] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (show) {
-      setBaseUnit("None");
-      setSecondaryUnit("None");
-      setConversion("1"); // ← Reset conversion
-      setError("");
-    }
-  }, [show]);
+  // ── In SelectUnitModal.jsx ──
+// Add this useEffect (put it with the other useEffect blocks)
 
-  const getShortCode = (name) => {
+useEffect(() => {
+  if (show && unitMapping) {
+    // Pre-fill modal when editing existing mapping
+    setBaseUnit(unitMapping.baseUnit || "None");
+    setSecondaryUnit(unitMapping.secondaryUnit || "None");
+    setConversion(unitMapping.conversion?.toString() || "1");
+  }
+}, [show, unitMapping]);
+
+// ── ALSO UPDATE getShortCode in SelectUnitModal.jsx (very important) ──
+const getShortCode = (name) => {
   if (!name) return "";
   const match = name.match(/\(([^)]+)\)/);
-  return match ? match[1] : name.split(" ")[0].toUpperCase();
+  if (match) return match[1];
+  // Fallback: take first word or full uppercase
+  const firstWord = name.split(" ")[0];
+  return firstWord.toUpperCase();
 };
-
- const save = () => {
+const save = () => {
   if (baseUnit === "None") {
     toast.error("Please select Base Unit");
     return;
   }
-
   if (baseUnit === secondaryUnit && secondaryUnit !== "None") {
     toast.error("Base Unit and Secondary Unit cannot be the same!");
     return;
   }
-
   if (secondaryUnit !== "None" && (!conversion || Number(conversion) <= 0)) {
     toast.error("Please enter a valid conversion rate");
     return;
@@ -51,7 +57,7 @@ const SelectUnitModal = ({ show, onHide, units = [], onSaveMapping }) => {
       : getShortCode(baseUnit)
   };
 
-  onSaveMapping(mapping);
+  onSaveMapping(mapping);   // This calls AddItem's handler
   toast.success("Unit saved successfully!");
   onHide();
 };

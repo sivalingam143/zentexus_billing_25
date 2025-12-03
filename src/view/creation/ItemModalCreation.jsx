@@ -516,10 +516,11 @@ const enhancedStock = {
             </Col>
 
             {/* Unit Dropdown */}
-{/* === UNIT SECTION – FINAL (EXACTLY LIKE VYAPAR) === */}
+
+
 <Col md={2}>
-  <div>
-    {/* Main Button – Always shows base unit or "Select Unit" */}
+  <div className="position-relative">
+    {/* Main Unit Input – shows full base unit name */}
     <div
       className="form-control white-input d-flex align-items-center justify-content-between pe-2"
       style={{
@@ -529,25 +530,31 @@ const enhancedStock = {
       }}
       onClick={() => setShowSelectUnitModal(true)}
     >
-      <span className={!selectedUnit ? "text-muted" : "fw-bold"}>
-        {selectedUnit || "Select Unit"}
+      <span className={!unitMapping?.baseUnit ? "text-muted" : "fw-bold"}>
+        {unitMapping?.baseUnit || selectedUnit || "Select Unit"}
       </span>
       <FaChevronDown className="text-primary" />
     </div>
 
-    {/* After mapping saved → show "Edit Unit" + short conversion below */}
+    {/* Edit Unit Button + Short Conversion Text (exactly like Vyapar) */}
     {unitMapping && (
-      <div className="mt-2 text-center">
+      <div
+        className="position-absolute start-50 translate-middle-x text-center"
+        style={{ top: "100%", marginTop: "4px", width: "100%" }}
+      >
         <Button
           variant="link"
           size="sm"
           className="text-primary p-0 fw-medium"
           onClick={() => setShowSelectUnitModal(true)}
-          style={{ fontSize: "13px" }}
+          style={{ fontSize: "12.5px", textDecoration: "none" }}
         >
           Edit Unit
         </Button>
-        <div className="text-primary fw-bold small mt-1">
+        <div
+          className="text-primary fw-bold"
+          style={{ fontSize: "11.5px", lineHeight: "1.2" }}
+        >
           {unitMapping.shortText}
         </div>
       </div>
@@ -995,10 +1002,13 @@ const enhancedStock = {
           )}
         </Modal.Footer>
       </Modal>
+
+
 <SelectUnitModal
   show={showSelectUnitModal}
   onHide={() => setShowSelectUnitModal(false)}
   units={units}
+  unitMapping={unitMapping}          // ← added
   onSaveMapping={(mapping) => {
     setUnitMapping(mapping);
     setSelectedUnit(mapping.baseUnit || "");
