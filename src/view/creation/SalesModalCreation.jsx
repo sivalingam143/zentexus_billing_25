@@ -79,6 +79,8 @@ const [imageFileName, setImageFileName] = useState("");      // To show filename
 const [attachedDocs, setAttachedDocs] = useState([]); // [{name, data, previewUrl}]
 const { categories = [], status: categoryStatus = "idle" } = useSelector((state) => state.category);
 const { products, status: productStatus } = useSelector(state => state.product);
+const [selectedCategory, setSelectedCategory] = useState("");
+const [showProductTable, setShowProductTable] = useState(false);
 console.log("products value",products);
 console.log("categories",categories)
 // const fileInputRef = useRef(null);
@@ -694,17 +696,32 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     <tr key={row.id}>
       <td>{index + 1}</td>        {/* ← ADD THIS LINE */}
       
+
 {formData.visibleColumns.category && (
-  <td style={{minWidth:"180px"}}>
-    <DropDown
-      value={row.category}
-      onChange={(e) => onRowChange(row.id, "category", e.target.value)}
-      options={categoryOptions}
-      disabled={isDisabled}
+  <td style={{ minWidth: "180px" }}>
+    <Select
+      options={[
+        { value: "", label: "ALL" },
+        ...categories.map(cat => ({
+          value: cat.category_name,
+          label: cat.category_name
+        }))
+      ]}
+      value={selectedCategory ? { value: selectedCategory, label: selectedCategory } : { value: "", label: "ALL" }}
+      onChange={(option) => {
+        const selectedCat = option.value;
+        setSelectedCategory(selectedCat);  // This controls the product table filter
+        onRowChange(row.id, "category", selectedCat); // Keep your original functionality
+      }}
+      placeholder="Select Category"
+      isDisabled={isDisabled}
+      menuPortalTarget={document.body}
+      styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
     />
   </td>
 )}
-<td style={{ minWidth: "300px" }}>
+
+<td style={{ minWidth: "300px", position: "relative" }}>
   <Select
     options={productOptions}
     value={productOptions.find(opt => opt.value === row.product_name) || null}
@@ -719,13 +736,112 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
       onRowChange(row.id, "product_id", selected.product_id);
       onRowChange(row.id, "hsn_code", selected.hsn_code || "");
     }}
-    placeholder="Select product"
+    onMenuOpen={() => setShowProductTable(true)}
+    onMenuClose={() => setShowProductTable(false)}
+    placeholder="Click to select item"
     isClearable
     isSearchable
     menuPortalTarget={document.body}
     styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
     isDisabled={isDisabled}
   />
+
+  {showProductTable && selectedCategory && (
+  <div 
+    style={{
+    position: "fixed",              // Use fixed instead of absolute
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "90vw",
+    maxWidth: "1200px",
+    height: "80vh",
+    maxHeight: "700px",
+    background: "white",
+    borderRadius: "12px",
+    boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+    zIndex: 20000,
+    overflow: "hidden"
+  }}
+  >
+    <Table bordered hover size="sm" className="mb-0">
+      <thead style={{ backgroundColor: "#f8f9fa" }}>
+        <tr>
+          <th style={{ width: "40%", fontWeight: "600" }}>Add Item</th>
+          <th style={{ textAlign: "right", fontWeight: "600" }}>SALE PRICE</th>
+          <th style={{ textAlign: "right", fontWeight: "600" }}>PURCHASE PRICE</th>
+          <th style={{ textAlign: "center", fontWeight: "600" }}>STOCK</th>
+          <th style={{ textAlign: "center", fontWeight: "600" }}>LOCATION</th>
+        </tr>
+      </thead>
+      <tbody>
+        {products
+          .filter(p => p.category_name === selectedCategory)
+          .map((product, idx) => {
+            let salePrice = "0";
+            let purchasePrice = "0";
+            let stock = "0";
+            let location = "-";
+
+            try {
+              const sp = JSON.parse(product.sale_price || "{}");
+              salePrice = sp.price || "0";
+            } catch (e) {}
+            try {
+              const pp = JSON.parse(product.purchase_price || "{}");
+              purchasePrice = pp.price || "0";
+            } catch (e) {}
+            try {
+              const st = JSON.parse(product.stock || "{}");
+              stock = st.opening_qty || "0";
+              location = st.location || "-";
+            } catch (e) {}
+
+            return (
+              <tr
+                key={product.product_id || idx}
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  const newRow = {
+                    ...INITIAL_ROW,
+                    id: generateUniqueId(),
+                    product_id: product.product_id,
+                    product_name: product.product_name,
+                    category: product.category_name,
+                    hsn_code: product.hsn_code || "",
+                    qty: "1",
+                    unit: product.unit_value || "NONE",
+                    price: salePrice,
+                    amount: salePrice
+                  };
+
+                  setFormData(prev => ({
+                    ...prev,
+                    rows: [...prev.rows, newRow]
+                  }));
+
+                  setShowProductTable(false);
+                }}
+              >
+                <td>
+                  <strong>{product.product_name}</strong>
+                  {product.product_code && (
+                    <small className="text-muted d-block">
+                      Code: {product.product_code}
+                    </small>
+                  )}
+                </td>
+                <td style={{ textAlign: "right" }}>{salePrice}</td>
+                <td style={{ textAlign: "right" }}>{purchasePrice}</td>
+                <td style={{ textAlign: "center" }}>{stock}</td>
+                <td style={{ textAlign: "center" }}>{location}</td>
+              </tr>
+            );
+          })}
+      </tbody>
+    </Table>
+  </div>
+)}
 </td>
 
 
