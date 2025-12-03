@@ -203,15 +203,6 @@ useEffect(() => {
   }
 }, [productStatus, dispatch]);
 
-// const productOptions = React.useMemo(() => {
-//   return products.map(p => ({
-//     value: p.product_name, 
-//     label: p.product_name, // Added label
-//     product_id: p.product_id, // <<< CRITICAL FIX: Include product_id
-//     hsn_code: p.hsn_code || "" 
-       
-//   }));
-// }, [products]);
 const productOptions = React.useMemo(() => {
   return products.map(p => {
     let salePrice = "0";
