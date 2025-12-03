@@ -821,58 +821,13 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                 <th>Location</th>
               </tr>
             </thead>
-            {/* <tbody>
-              {products.map((product) => {
-                let salePrice = "0";
-                let stock = "0";
-                let location = "-";
-
-                try {
-                  const sp = JSON.parse(product.sale_price || "{}");
-                  salePrice = sp.price || "0";
-                } catch (e) {}
-                try {
-                  const st = JSON.parse(product.stock || "{}");
-                  stock = st.opening_qty || "0";
-                  location = st.location || "-";
-                } catch (e) {}
-
-                return (
-                  <tr
-                    key={product.product_id}
-                    style={{ cursor: "pointer" }}
-                    className="hover-row"
-                    onClick={() => {
-                      onRowChange(row.id, "product_name", product.product_name);
-                      onRowChange(row.id, "product_id", product.product_id);
-                      onRowChange(row.id, "hsn_code", product.hsn_code || "");
-                      onRowChange(row.id, "price", salePrice);
-                      onRowChange(row.id, "qty", "1");
-                      setShowProductTable(false);
-                    }}
-                  >
-                    <td><strong>{product.product_name}</strong></td>
-                    <td className="text-end text-success fw-bold">₹{salePrice}</td>
-                    <td className="text-center">{stock}</td>
-                    <td className="text-center">{location}</td>
-                  </tr>
-                );
-              })}
-            </tbody> */}
             <tbody>
   {products
     .filter(product => {
       if (!selectedCategory || selectedCategory === "" || selectedCategory === "ALL") return true;
 
-      const productCat = product.category || 
-                         product.category_name || 
-                         product.cat_name || 
-                         product.product_category || 
-                         product.Category || 
-                         "";
-
-      return String(productCat).trim().toLowerCase() === 
-             String(selectedCategory).trim().toLowerCase();
+      const productCat = product.category_name || "";
+      return productCat === selectedCategory;
     })
     .map((product) => {
       let salePrice = "0";
@@ -902,7 +857,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
             onRowChange(row.id, "qty", "1");
 
             // Auto-fill category when product is selected
-            const cat = product.category || product.category_name || product.cat_name || "";
+            const cat = product.category_name || "";
             onRowChange(row.id, "category", cat);
 
             setShowProductTable(false);
@@ -919,12 +874,13 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
   {/* Show message if no products */}
   {products.filter(p => {
     if (!selectedCategory || selectedCategory === "") return true;
-    const cat = p.category || p.category_name || p.cat_name || p.product_category || p.Category || "";
-    return String(cat).trim().toLowerCase() === String(selectedCategory).trim().toLowerCase();
+    const cat = p.category_name || "";
+    return cat === selectedCategory;
   }).length === 0 && (
     <tr>
       <td colSpan="4" className="text-center py-5 text-muted">
-        <h5>No products found in this category</h5>
+        <h5>No products found in "{selectedCategory}" category</h5>
+        <small>Available categories: stationary, groceries</small>
       </td>
     </tr>
   )}
@@ -1287,4 +1243,4 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
   );
 };
 
-export default SaleCreation;          
+export default SaleCreation;

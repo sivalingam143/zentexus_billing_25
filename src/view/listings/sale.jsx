@@ -70,7 +70,7 @@ const statusDisplay = (item) => {
     Paid: "#27ae60",
     Unpaid: "#e74c3c",
     "Partially Paid": "#f39c12",
-    Cancelled: "#95a5a6"
+    Cancelled: "#0be0f0ff"
   };
   return <span style={{ color: colorMap[status], fontWeight: "600" }}>{status}</span>;
 };
