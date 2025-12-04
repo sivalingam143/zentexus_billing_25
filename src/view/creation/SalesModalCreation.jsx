@@ -13,6 +13,8 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import DropdownButton from 'react-bootstrap/DropdownButton';
 import { fetchCategories } from "../../slice/CategorySlice"; // correct path
 import { fetchProducts } from "../../slice/ProductSlice";
+import PartyModal from "../creation/PartyModalCreation";   // adjust path if needed
+import AddItem from "../creation/ItemModalCreation"; // Adjust path if needed
 // Static options
 const UNITS = ["NONE", "KG", "Litre", "Piece","meters"];
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
@@ -79,6 +81,12 @@ const [imageFileName, setImageFileName] = useState("");      // To show filename
 const [attachedDocs, setAttachedDocs] = useState([]); // [{name, data, previewUrl}]
 const { categories = [], status: categoryStatus = "idle" } = useSelector((state) => state.category);
 const { products, status: productStatus } = useSelector(state => state.product);
+const [showPartyModal, setShowPartyModal] = useState(false);
+const [partyForm, setPartyForm] = useState({});
+const [showAddItemModal, setShowAddItemModal] = useState(false);
+const handleOpenPartyModal = () => setShowPartyModal(true);
+const handleClosePartyModal = () => setShowPartyModal(false);
+
 
 const [showProductTable, setShowProductTable] = useState(false);
 
@@ -179,6 +187,14 @@ const [formData, setFormData] = useState({
       ...customerOptions,
     ]);
   }, [parties]);
+  const handleAddParty = () => {
+  console.log("Saving new party:", partyForm);
+
+  // TODO: dispatch createParty() after your API is ready
+
+  handleClosePartyModal();
+};
+
 useEffect(() => {
   if (isCreateMode) {
     setImagePreview("");
@@ -393,7 +409,7 @@ const handlePartySelect = (selectedOption) => {
   }
 
   if (selectedOption.value === "add_party") {
-    // handle add party logic
+    handleOpenPartyModal();   // ← OPEN THE MODAL HERE
     return;
   }
 
@@ -783,15 +799,32 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
         onClick={(e) => e.stopPropagation()} // Don't close when clicking inside
       >
         {/* Header */}
-        <div className="p-3 bg-primary text-white d-flex justify-content-between align-items-center">
-          <h4 className="mb-0">Select Product</h4>
+        <div className="p-2 bg-primary text-white d-flex justify-content-between align-items-center">
+          {/* <h4 className="mb-0">Select Product</h4> */}
+          <div className="p-2 bg-primary text-white d-flex justify-content-between align-items-center shadow-sm">
+ 
+  <div className="d-flex gap-3">
+    <Button
+      variant="light"
+      size="sm"
+      className="fw-bold px-4 d-flex align-items-center gap-2"
+      onClick={() => {
+        setShowAddItemModal(true);
+        setShowProductTable(false); // Optional: hide table while adding
+      }}
+    >
+      Add Item
+    </Button>
+    
+  </div>
+</div>
           <Button variant="light" size="sm" onClick={() => setShowProductTable(false)}>
             X Close
           </Button>
         </div>
 
         {/* Search Box */}
-        <div className="p-3 border-bottom">
+        {/* <div className="p-3 border-bottom">
           <input
             type="text"
             placeholder="Search product..."
@@ -802,7 +835,9 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
             }}
             autoFocus
           />
-        </div>
+        </div> */}
+        {/* Clean Header - Only "Add Item" button */}
+
 
         {/* Table */}
         <div style={{ height: "calc(85vh - 140px)", overflowY: "auto" }}>
@@ -1236,6 +1271,27 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
     </Button>
   </Modal.Body>
 </Modal>
+<PartyModal
+  show={showPartyModal}
+  handleClose={handleClosePartyModal}
+  isEdit={false}
+  formData={partyForm}
+  setFormData={setPartyForm}
+  handleSubmit={handleAddParty}
+  handleSaveAndNew={() => {}}
+  handleDelete={() => {}}
+/>
+{/* Add New Item Modal - Opens on "Add Item" click */}
+<AddItem
+  show={showAddItemModal}
+  onHide={() => {
+    setShowAddItemModal(false);
+    setShowProductTable(true);        // Re-open the product selector
+    dispatch(fetchProducts(""));      // Refresh list so new item appears immediately
+  }}
+  activeTab="PRODUCT"  // or make dynamic if you allow services too
+/>
+
 
       </Container>
     </div>
