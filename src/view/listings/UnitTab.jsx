@@ -173,6 +173,7 @@ useEffect(() => {
                 .map((c, i) => (
                   <div key={i} className="border-bottom py-3 px-1">
                     <div className="d-flex justify-content-between align-items-center">
+                     
                       <div className="text-muted small">CONVERSION</div>
                     </div>
                     <div className="mt-2 fw-medium">
@@ -188,6 +189,7 @@ useEffect(() => {
                       <div className="mt-2 fw-medium">{c.displayText}</div>
                     </div>
                   ))
+                 
               ) : (
                 <div className="flex-grow-1 d-flex justify-content-center align-items-center text-muted">
                   No conversion added yet

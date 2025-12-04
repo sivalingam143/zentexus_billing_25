@@ -1,5 +1,6 @@
 // src/listings/CategoryTab.jsx   (or src/pages/tabs/CategoryTab.jsx)
 import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 import {
   Button,
   Table,
@@ -12,6 +13,7 @@ import {
   InputGroup,
   FormControl,
 } from "react-bootstrap";
+import MoveCategoryModal from "../creation/MoveCategoryModal";
 import { FaSearch, FaEllipsisV } from "react-icons/fa";
 import AddCate from "../creation/CategoryModalCreation";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,7 +30,7 @@ export default function CategoryTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
-
+const [showMoveModal, setShowMoveModal] = useState(false);
   useEffect(() => {
     if (catStatus === "idle") dispatch(fetchCategories());
     if (prodStatus === "idle") dispatch(fetchProducts());
@@ -173,9 +175,23 @@ export default function CategoryTab() {
                 </div>
               </Col>
               <Col className="text-end">
-                <Button variant="primary" className="fw-semibold">
-                  Move To This Category
-                </Button>
+        <Button
+    variant="primary"
+    className="fw-semibold"
+    onClick={() => {
+      if (!selectedCategory) {
+        toast.error("You cannot perform this operation for 'Items not in any Category'", {
+          position: "top-right",
+          autoClose: 4000,
+        });
+        return;
+      }
+      setShowMoveModal(true);
+    }}
+    disabled={!selectedCategory}
+  >
+    Move To This Category
+  </Button>
               </Col>
             </Row>
           </Card.Body>
@@ -254,6 +270,26 @@ export default function CategoryTab() {
         }}
         categoryToEdit={categoryToEdit}
       />
+<MoveCategoryModal
+  show={showMoveModal}
+  onHide={() => setShowMoveModal(false)}
+  allProducts={products}
+  targetCategoryId={selectedCategory?.category_id}
+  
+  onMoveSuccess={(movedProductIds) => {
+    // This is the magic — instantly update products in Redux without new action
+    dispatch(fetchProducts.fulfilled(
+      products.map(p => 
+        movedProductIds.includes(p.id) 
+          ? { ...p, category_id: selectedCategory?.category_id }
+          : p
+      )
+    ));
+
+
+  }}
+/>
     </>
+    
   );
 }

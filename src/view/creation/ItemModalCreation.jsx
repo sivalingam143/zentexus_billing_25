@@ -305,7 +305,13 @@ setWholesaleDetails({
       console.error(err);
     }
   };
-
+const handleAssignCode = () => {
+    // Generates a large, unique integer (e.g., 1764835200000) using milliseconds since epoch.
+    // This ensures a unique, purely numeric code suitable for an INT/BIGINT column.
+    const uniqueIntCode = Date.now().toString(); 
+    // Set the state as a string of digits
+    setItemCode(uniqueIntCode); 
+};
   const handleSave = async (closeModal = true, isNew = false) => {
     const selectedCatObj =
       categories.find((c) => c.category_id == selectedCategory) || {};
@@ -701,11 +707,13 @@ const enhancedStock = {
                 value={itemCode}
                 onChange={(e) => setItemCode(e.target.value)}
               />
+              {/* UPDATED: Add onClick handler to assign code */}
               <Button
                 variant="light"
                 size="sm"
                 className="position-absolute end-0 top-50 translate-middle-y me-1 text-primary border p-1"
                 style={{ backgroundColor: "#cce7f3" }}
+                onClick={handleAssignCode} // <-- New handler
               >
                 Assign Code
               </Button>
