@@ -157,15 +157,30 @@ useEffect(() => {
   }
 
   // Sale Price – safe parse
-  try {
-    const sale = editProduct.sale_price ? JSON.parse(editProduct.sale_price) : {};
-    setSalePriceDetails({
-      price: sale.price || "",
-      tax_type: sale.tax_type || "Without Tax",
-      discount: sale.discount || "",
-      discount_type: sale.discount_type || "Percentage"
+// Sale Price – safe parse + wholesale support
+try {
+  const sale = editProduct.sale_price ? JSON.parse(editProduct.sale_price) : {};
+  setSalePriceDetails({
+    price: sale.price || "",
+    tax_type: sale.tax_type || "Without Tax",
+    discount: sale.discount || "",
+    discount_type: sale.discount_type || "Percentage"
+  });
+
+  // Load wholesale if exists
+  if (sale.wholesale) {
+    setShowWholesale(true);
+    setWholesaleDetails({
+      price: sale.wholesale.price || "",
+      tax_type: sale.wholesale.tax_type || "Without Tax",
+      min_qty: sale.wholesale.min_qty || ""
     });
-  } catch (e) {}
+  } else {
+    setShowWholesale(false);
+  }
+} catch (e) {
+  console.error("Failed to parse sale_price", e);
+}
 
   // Purchase Price (only products)
   if (!isService && editProduct.purchase_price) {
@@ -255,6 +270,12 @@ useEffect(() => {
     setSelectedCategory(categories[0]?.category_id || "");
     setImagePreview("");
     setImageFileName("");
+    setShowWholesale(false);
+setWholesaleDetails({
+  price: "",
+  tax_type: "Without Tax",
+  min_qty: "",
+});
     setSalePriceDetails({
       price: "",
       tax_type: "Without Tax",
@@ -292,12 +313,22 @@ useEffect(() => {
       units.find((u) => u.unit_name === selectedUnit) || {};
     const category_name = selectedCatObj.category_name || "";
     const unit_id = selectedUnitObj.unit_id || "";
-    const sale_price = JSON.stringify({
-      price: salePriceDetails.price || "0",
-      tax_type: salePriceDetails.tax_type,
-      discount: salePriceDetails.discount || "0",
-      discount_type: salePriceDetails.discount_type,
-    });
+   const sale_price_obj = {
+  price: salePriceDetails.price || "0",
+  tax_type: salePriceDetails.tax_type,
+  discount: salePriceDetails.discount || "0",
+  discount_type: salePriceDetails.discount_type,
+};
+
+if (showWholesale && wholesaleDetails.price) {
+  sale_price_obj.wholesale = {
+    price: wholesaleDetails.price || "0",
+    tax_type: wholesaleDetails.tax_type,
+    min_qty: wholesaleDetails.min_qty || "1"
+  };
+}
+
+const sale_price = JSON.stringify(sale_price_obj);
 
     const commonData = {
       product_name: itemName.trim(),

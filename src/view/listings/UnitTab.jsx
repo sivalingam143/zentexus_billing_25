@@ -19,6 +19,19 @@ const [selectedBaseUnit, setSelectedBaseUnit] = React.useState(null);
   const [showConvoModal, setShowConvoModal] = React.useState(false);
   const [selectedUnit, setSelectedUnit] = React.useState(null);
 
+// Load from localStorage when page opens
+useEffect(() => {
+  const saved = localStorage.getItem("unit_conversions");
+  if (saved) {
+    setConversions(JSON.parse(saved));
+  }
+}, []);
+
+// Save to localStorage whenever conversions update
+useEffect(() => {
+  localStorage.setItem("unit_conversions", JSON.stringify(conversions));
+}, [conversions]);
+
   const fetchAllUnits = useCallback(() => {
     dispatch(fetchUnits());
   }, [dispatch]);
