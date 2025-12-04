@@ -15,9 +15,10 @@ import { fetchCategories } from "../../slice/CategorySlice"; // correct path
 import { fetchProducts } from "../../slice/ProductSlice";
 import PartyModal from "../creation/PartyModalCreation";   // adjust path if needed
 import AddItem from "../creation/ItemModalCreation"; // Adjust path if needed
+// Add this import for units
+import { fetchUnits } from "../../slice/UnitSlice"; // Import fetchUnits
 
 // Static options
-const UNITS = ["NONE", "KG", "Litre", "Piece","meters"];
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
 const TAX_OPTIONS = [
   { value: "", label: "Select" },
@@ -82,11 +83,15 @@ const [imageFileName, setImageFileName] = useState("");      // To show filename
 const [attachedDocs, setAttachedDocs] = useState([]); // [{name, data, previewUrl}]
 const { categories = [], status: categoryStatus = "idle" } = useSelector((state) => state.category);
 const { products, status: productStatus } = useSelector(state => state.product);
+// Add unit selector
+const { units, status: unitStatus } = useSelector((state) => state.unit);
 const [showPartyModal, setShowPartyModal] = useState(false);
 const [partyForm, setPartyForm] = useState({});
 const [showAddItemModal, setShowAddItemModal] = useState(false);
 const handleOpenPartyModal = () => setShowPartyModal(true);
 const handleClosePartyModal = () => setShowPartyModal(false);
+// Add state for auto-fill checkbox
+const [autoFillReceived, setAutoFillReceived] = useState(false);
 
 
 const [showProductTable, setShowProductTable] = useState(false);
@@ -159,6 +164,7 @@ useEffect(() => {
     });
   }
 }, [isCreateMode, dispatch]);
+
   const handleReceivedAmountChange = (e) => {
   const value = e.target.value;
   setFormData(prev => ({
@@ -166,6 +172,37 @@ useEffect(() => {
     received_amount: value || " "
   }));
 };
+
+// Handle auto-fill checkbox
+const handleAutoFillReceived = (e) => {
+  const isChecked = e.target.checked;
+  setAutoFillReceived(isChecked);
+  
+  if (isChecked) {
+    // Fill received amount with total amount
+    setFormData(prev => ({
+      ...prev,
+      received_amount: prev.total || "0"
+    }));
+  } else {
+    // Clear received amount
+    setFormData(prev => ({
+      ...prev,
+      received_amount: " "
+    }));
+  }
+};
+
+// Update received amount when total changes and auto-fill is checked
+useEffect(() => {
+  if (autoFillReceived) {
+    setFormData(prev => ({
+      ...prev,
+      received_amount: prev.total || "0"
+    }));
+  }
+}, [formData.total, autoFillReceived]);
+
   console.log(formData)
   const [credit, setCredit] = useState(true);
   const [customers, setCustomers] = useState([ { value: "", label: "Select Party" },]);
@@ -199,6 +236,13 @@ useEffect(() => {
       dispatch(fetchParties());
     }
   }, [partiesStatus, dispatch]);
+
+// Fetch units on mount
+useEffect(() => {
+  if (unitStatus === "idle") {
+    dispatch(fetchUnits());
+  }
+}, [unitStatus, dispatch]);
 
 // Fetch sales for edit/view
   useEffect(() => {
@@ -241,6 +285,8 @@ useEffect(() => {
     setImageFileName("");
     setAttachedDocs([]);
     setHasUserUploadedImage(false);
+    // Reset auto-fill checkbox in create mode
+    setAutoFillReceived(false);
   }
 }, [isCreateMode]);
 
@@ -277,6 +323,29 @@ const productOptions = React.useMemo(() => {
   });
 }, [products]);
 console.log("productOptions",productOptions)
+
+// Generate unit options from database
+const unitOptions = React.useMemo(() => {
+  // Start with "NONE" option
+  const options = [
+    { value: "NONE", label: "NONE" }
+  ];
+  
+  // Filter active units (delete_at = 0) from your database
+  const activeUnits = units.filter(unit => unit.delete_at === 0);
+  
+  // Add each active unit to options
+  activeUnits.forEach(unit => {
+    if (unit.unit_name) {
+      options.push({
+        value: unit.unit_name,
+        label: unit.unit_name
+      });
+    }
+  });
+  
+  return options;
+}, [units]);
 
 // Auto-show HSN column when any row has HSN filled
 
@@ -368,6 +437,9 @@ useEffect(() => {
     }
   }
   setAttachedDocs(docs.map(d => ({ name: d.name, data: d.data })));
+
+  // Reset auto-fill checkbox in edit/view mode
+  setAutoFillReceived(false);
 
   setFormData({
     parties_id: saleToEdit.parties_id || "",
@@ -652,7 +724,6 @@ delete payload.rows;
 };
 const handleBack = () => navigate("/Sale");
 const title = isViewMode? "View Sale": isEditMode  ? "Edit Sale" : "Create Sale";
-const unitOptions = UNITS.map((u) => ({ value: u, label: u }));
 const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt,}));
  return (
     <div id="main">
@@ -1000,8 +1071,17 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
 )}
 
         <td style={{minWidth:"100px"}}><TextInputform expanse="number" value={row.qty} onChange={(e) => onRowChange(row.id, "qty", e.target.value)} readOnly={isDisabled} /></td>
-        <td style={{minWidth:"150px"}}><DropDown value={row.unit} onChange={(v) => onRowChange(row.id, "unit", v)} options={unitOptions} disabled={isDisabled} /></td>
-        <td style={{minWidth:"100px"}}><TextInputform formtype="number" value={row.price} onChange={(e) => onRowChange(row.id, "price", e.target.value)} readOnly={isDisabled} /></td>
+        <td style={{minWidth:"150px"}}>
+          <Select
+            value={unitOptions.find(opt => opt.value === row.unit) || unitOptions[0]}
+            options={unitOptions}
+            onChange={(selectedOption) => onRowChange(row.id, "unit", selectedOption.value)}
+            isDisabled={isDisabled}
+            menuPortalTarget={document.body}
+            styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+          />
+        </td>
+        <td style={{minWidth:"100px"}}><TextInputform expanse="number" value={row.price} onChange={(e) => onRowChange(row.id, "price", e.target.value)} readOnly={isDisabled} /></td>
         <td style={{minWidth:"100px"}}><DropDown value={row.priceUnitType} onChange={(v) => onRowChange(row.id, "priceUnitType", v)} options={priceUnitTypeOptions} disabled={isDisabled} /></td>
 
         {formData.visibleColumns.discount && (
@@ -1210,31 +1290,65 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
               <TextInputform formtype="number" value={formData.round_off_amount} onChange={handleRoundOffChange} readOnly={formData.rount_off !== 1 || isDisabled}/>
                 <strong>Total</strong>
               <TextInputform readOnly value={formData.total} />
-              {/* Received Amount Row */}
               
+    {/* Received Amount Row */}
     <div className="d-flex align-items-center gap-3 mb-2">
-      <strong style={{ width: "140px" }}>Received Amount</strong>
-      <TextInputform
-        formtype="number"
-        step="0.01"
-        value={formData.received_amount || ""}
-        onChange={(e) => handleInputChange("received_amount", e.target.value)}
-        readOnly={isDisabled}
-        style={{ width: "160px" }}
-      />
+       {!isDisabled && (
+          <div className="d-flex align-items-center gap-1">
+            <input
+              type="checkbox"
+              id="auto-fill-received"
+              checked={autoFillReceived}
+              onChange={handleAutoFillReceived}
+              disabled={isDisabled}
+              style={{ 
+                cursor: "pointer", 
+                width: "18px", 
+                height: "18px"
+              }}
+            />
+            <label 
+              htmlFor="auto-fill-received" 
+              style={{ 
+                fontSize: "0.9rem", 
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                marginLeft: "5px"
+              }}
+            >
+             
+            </label>
+          </div>
+        )}
+      <strong style={{ width: "140px" }}>Received</strong>
+      <div className="d-flex align-items-center gap-2">
+        <TextInputform
+          expanse="number"
+          step="0.01"
+          value={formData.received_amount || ""}
+          onChange={(e) => {
+            handleInputChange("received_amount", e.target.value);
+            // If user manually changes received amount, uncheck the auto-fill
+            if (autoFillReceived) {
+              setAutoFillReceived(false);
+            }
+          }}
+          readOnly={isDisabled}
+          style={{ width: "160px" }}
+        />
+       
+      </div>
     </div>
 
     {/* Balance Due Row */}
     <div className="d-flex align-items-center gap-3">
-      <strong style={{ width: "140px", color: "#d63031" }}>Balance Due</strong>
+      <strong style={{ width: "140px" }}>Balance</strong>
       <TextInputform
         readOnly
-        value={(Number(formData.total || 0) - Number(formData.received_amount || 0)).toFixed(2)}
+        value={(Number(formData.total || 0) - Number(formData.received_amount || 0))}
         style={{ 
           width: "160px", 
-          fontWeight: "bold",
-          backgroundColor: "#fff4f4",
-          border: "1px solid #fab1b1"
+          textAlign: "center"
         }}
       />
     </div>
