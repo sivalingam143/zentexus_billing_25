@@ -2,8 +2,9 @@
 import React, { useState } from "react";
 import { Modal, Button, Form, InputGroup, Table } from "react-bootstrap";
 import { FaSearch } from "react-icons/fa";
-import axiosInstance from "../../config/API";   // your existing API instance
+import axiosInstance from "../../config/API";
 import { toast } from "react-toastify";
+
 export default function MoveCategoryModal({
   show,
   onHide,
@@ -11,8 +12,6 @@ export default function MoveCategoryModal({
   targetCategoryId,
   onMoveSuccess,
 }) {
-
-    
   const [search, setSearch] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,11 +24,9 @@ export default function MoveCategoryModal({
     p.product_name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const toggleItem = (productId) => {
+  const toggleItem = (id) => {
     setSelectedItems((prev) =>
-      prev.includes(productId)
-        ? prev.filter((id) => id !== productId)
-        : [...prev, productId]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
@@ -41,33 +38,32 @@ export default function MoveCategoryModal({
     }
   };
 
-const moveProductsToCategory = async () => {
-  if (selectedItems.length === 0) return;
+  const moveProductsToCategory = async () => {
+    if (!selectedItems.length) return;
 
-  setLoading(true);
-  try {
-    const requests = selectedItems.map((productId) =>
-      axiosInstance.post("products.php", {
-        edit_product_id: productId,
-        category_id: targetCategoryId, // this is correct
-      })
-    );
+    setLoading(true);
 
-    await Promise.all(requests);
+    try {
+      const tasks = selectedItems.map((pid) =>
+        axiosInstance.post("products.php", {
+          edit_product_id: pid,          // Product ID (primary key `id`)
+          category_id: targetCategoryId, // Target Category ID (used by products.php to update both category_id and fetch/update category_name)
+        })
+      );
+      await Promise.all(tasks);
 
-    toast.success(`${selectedItems.length} product(s) moved successfully!`);
-    if (onMoveSuccess) {
-  onMoveSuccess(selectedItems); // <-- No longer needed
-}
-    onHide();
-  } catch (error) {
-    console.error("Move failed:", error);
-    toast.error("Failed to move one or more products");
-  } finally {
-    setLoading(false);
-  }
-};
+      toast.success(`${selectedItems.length} product(s) moved successfully!`);
 
+      if (onMoveSuccess) onMoveSuccess();  // ✔ required to refresh UI
+
+      onHide();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to move product(s)");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
@@ -92,22 +88,26 @@ const moveProductsToCategory = async () => {
             <thead className="table-light sticky-top">
               <tr>
                 <th style={{ width: "40px" }}>
-         
-
-<Form.Check
-  type="checkbox"
-  checked={selectedItems.length === filtered.length && filtered.length > 0}
-  indeterminate={selectedItems.length > 0 && selectedItems.length < filtered.length ? true : undefined}
-  onChange={toggleAll}
-/>
+                  <Form.Check
+                    type="checkbox"
+                    checked={
+                      selectedItems.length === filtered.length &&
+                      filtered.length > 0
+                    }
+                    onChange={toggleAll}
+                  />
                 </th>
                 <th>Item Name</th>
                 <th>Quantity</th>
               </tr>
             </thead>
+
             <tbody>
               {filtered.map((p) => {
-                const qty = p.stock ? JSON.parse(p.stock).opening_qty || 0 : 0;
+                const qty = p.stock
+                  ? JSON.parse(p.stock).opening_qty || 0
+                  : 0;
+
                 return (
                   <tr key={p.id}>
                     <td>
@@ -126,17 +126,21 @@ const moveProductsToCategory = async () => {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center text-muted py-4">No items available to move</div>
+          <div className="text-center text-muted py-3">
+            No items available to move
+          </div>
         )}
       </Modal.Body>
 
       <Modal.Footer>
-        <Form.Check label="Remove selected items from existing category" className="me-auto" />
-        <Button variant="secondary" onClick={onHide}>Cancel</Button>
+        <Button variant="secondary" onClick={onHide}>
+          Cancel
+        </Button>
+
         <Button
           variant="danger"
-        onClick={moveProductsToCategory} 
-          disabled={selectedItems.length === 0 || loading}
+          onClick={moveProductsToCategory}
+          disabled={loading || selectedItems.length === 0}
         >
           {loading ? "Moving..." : "Move to this category"}
         </Button>

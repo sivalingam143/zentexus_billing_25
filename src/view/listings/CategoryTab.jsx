@@ -23,14 +23,18 @@ import { fetchProducts } from "../../slice/ProductSlice";
 export default function CategoryTab() {
   const dispatch = useDispatch();
 
-  const { categories = [], status: catStatus } = useSelector((state) => state.category);
-  const { products = [], status: prodStatus } = useSelector((state) => state.product);
+  const { categories = [], status: catStatus } = useSelector(
+    (state) => state.category
+  );
+  const { products = [], status: prodStatus } = useSelector(
+    (state) => state.product
+  );
 
   const [selectedCategory, setSelectedCategory] = useState(null); // null = uncategorized
   const [searchTerm, setSearchTerm] = useState("");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
-const [showMoveModal, setShowMoveModal] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
   useEffect(() => {
     if (catStatus === "idle") dispatch(fetchCategories());
     if (prodStatus === "idle") dispatch(fetchProducts());
@@ -72,7 +76,13 @@ const [showMoveModal, setShowMoveModal] = useState(false);
               </Button>
             </div>
 
-            <Table responsive bordered hover size="sm" className="mb-0 text-start">
+            <Table
+              responsive
+              bordered
+              hover
+              size="sm"
+              className="mb-0 text-start"
+            >
               <thead>
                 <tr>
                   <th>CATEGORY</th>
@@ -88,9 +98,7 @@ const [showMoveModal, setShowMoveModal] = useState(false);
                   onClick={() => setSelectedCategory(null)}
                 >
                   <td>Items not in any Category</td>
-                  <td>
-                    {products.filter((p) => !p.category_id).length}
-                  </td>
+                  <td>{products.filter((p) => !p.category_id).length}</td>
                   <td></td>
                 </tr>
 
@@ -175,23 +183,26 @@ const [showMoveModal, setShowMoveModal] = useState(false);
                 </div>
               </Col>
               <Col className="text-end">
-        <Button
-    variant="primary"
-    className="fw-semibold"
-    onClick={() => {
-      if (!selectedCategory) {
-        toast.error("You cannot perform this operation for 'Items not in any Category'", {
-          position: "top-right",
-          autoClose: 4000,
-        });
-        return;
-      }
-      setShowMoveModal(true);
-    }}
-    disabled={!selectedCategory}
-  >
-    Move To This Category
-  </Button>
+                <Button
+                  variant="primary"
+                  className="fw-semibold"
+                  onClick={() => {
+                    if (!selectedCategory) {
+                      toast.error(
+                        "You cannot perform this operation for 'Items not in any Category'",
+                        {
+                          position: "top-right",
+                          autoClose: 4000,
+                        }
+                      );
+                      return;
+                    }
+                    setShowMoveModal(true);
+                  }}
+                  disabled={!selectedCategory}
+                >
+                  Move To This Category
+                </Button>
               </Col>
             </Row>
           </Card.Body>
@@ -270,26 +281,15 @@ const [showMoveModal, setShowMoveModal] = useState(false);
         }}
         categoryToEdit={categoryToEdit}
       />
-<MoveCategoryModal
-  show={showMoveModal}
-  onHide={() => setShowMoveModal(false)}
-  allProducts={products}
-  targetCategoryId={selectedCategory?.category_id}
-  
-  onMoveSuccess={(movedProductIds) => {
-    // This is the magic — instantly update products in Redux without new action
-    dispatch(fetchProducts.fulfilled(
-      products.map(p => 
-        movedProductIds.includes(p.id) 
-          ? { ...p, category_id: selectedCategory?.category_id }
-          : p
-      )
-    ));
-
-
-  }}
-/>
+      <MoveCategoryModal
+        show={showMoveModal}
+        onHide={() => setShowMoveModal(false)}
+        allProducts={products}
+        targetCategoryId={selectedCategory?.category_id}
+        onMoveSuccess={() => {
+          dispatch(fetchProducts()); // ✔ refresh after move
+        }}
+      />
     </>
-    
   );
 }
