@@ -1520,13 +1520,34 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
         {/* Header */}
         <div className="p-4" style={{ background: "#fff", minHeight: "100vh" }}>
           <div className="border-bottom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
-            <div className="container-fluid px-0">
-              <div className="row text-dark fw-bold" style={{ fontSize: "16px" }}>
-                <div className="col-12 d-flex align-items-center">
-                  Item Settings
+            {enableItem ? (
+              <div className="container-fluid px-0">
+                <div className="row text-dark fw-bold" style={{ fontSize: "16px" }}>
+                  {/* Column 1 Header */}
+                  <div className="col-md-4 d-flex align-items-center">
+                    Item Settings
+                  </div>
+
+                  {/* Column 2 Header */}
+                  <div className="col-md-4 d-flex justify-content-center">
+                    Additional Item Fields
+                  </div>
+
+                  {/* Column 3 Header */}
+                  <div className="col-md-4 d-flex justify-content-end">
+                    Item Custom Fields
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="container-fluid px-0">
+                <div className="row text-dark fw-bold" style={{ fontSize: "16px" }}>
+                  <div className="col-md-4 d-flex align-items-center">
+                    Item Settings
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Close Button */}
             <Button variant="light" onClick={() => setShowSettingsModal(false)}>
@@ -1534,7 +1555,7 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
             </Button>
           </div>
 
-          {/* Enable Item Checkbox - ALWAYS SHOWN */}
+          {/* Enable Item Checkbox - ABOVE all columns */}
           <div className="mb-4">
             <div className="form-check">
               <input 
@@ -1551,15 +1572,16 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
             </div>
           </div>
 
-          {/* ONLY SHOW COLUMNS WHEN ENABLED */}
-          {enableItem && (
+          {enableItem ? (
             <div className="row">
-              {/* LEFT COLUMN */}
+              {/* LEFT COLUMN - Show when enabled */}
               <div className="col-md-4">
                 {/* What do you sell? */}
                 <div className="mb-3">
                   <label className="form-label">What do you sell?</label>
                   <select className="form-select">
+                    <option>Product</option>
+                    <option>Service</option>
                     <option>Product/Service</option>
                   </select>
                 </div>
@@ -1575,18 +1597,22 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                   "Description",
                   "Item wise Tax",
                   "Item wise Discount",
-                  "Update Sale Price from Transaction"
+                  "Update Sale Price from Transaction",
+                  "Wholesale Price"
                 ].map((text, idx) => (
                   <div className="form-check mb-3" key={idx}>
                     <input className="form-check-input" type="checkbox" id={`chk_${idx}`} />
                     <label className="form-check-label ms-2" htmlFor={`chk_${idx}`}>
                       {text}
                     </label>
+                    
                   </div>
+                  
                 ))}
               </div>
-
-              {/* MIDDLE COLUMN */}
+              
+              
+              {/* MIDDLE COLUMN - Show when enabled */}
               <div className="col-md-4">
                 {/* MRP / Price */}
                 <h6 className="fw-bold mt-4">MRP/Price</h6>
@@ -1642,11 +1668,20 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
                 </div>
               </div>
 
-              {/* RIGHT COLUMN */}
+              {/* RIGHT COLUMN - Show when enabled */}
               <div className="col-md-4">
                 <button className="btn btn-outline-primary">
                   Add Custom Fields &gt;
                 </button>
+              </div>
+            </div>
+          ) : (
+            /* Show when disabled - FULL WIDTH centered message */
+            <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: "400px" }}>
+              <div className="text-center">
+                <i className="fas fa-box-open fa-4x text-muted mb-4"></i>
+                <h4 className="text-muted mb-3">Item is Disabled</h4>
+                
               </div>
             </div>
           )}
