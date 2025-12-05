@@ -1,6 +1,7 @@
 import React, { useState, useEffect,useRef } from "react";
 import {Container,Row,Col,Form,Button,InputGroup,FormControl,Table,} from "react-bootstrap";
 import { FaTimes, FaPlus } from "react-icons/fa";
+import { BsGearWideConnected } from "react-icons/bs";
 import Select from "react-select";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
@@ -17,6 +18,7 @@ import PartyModal from "../creation/PartyModalCreation";   // adjust path if nee
 import AddItem from "../creation/ItemModalCreation"; // Adjust path if needed
 // Add this import for units
 import { fetchUnits } from "../../slice/UnitSlice"; // Import fetchUnits
+import { BsX } from "react-icons/bs";
 
 // Static options
 const PRICE_UNIT_TYPES = ["Without Tax", "With Tax"];
@@ -90,10 +92,10 @@ const [partyForm, setPartyForm] = useState({});
 const [showAddItemModal, setShowAddItemModal] = useState(false);
 const handleOpenPartyModal = () => setShowPartyModal(true);
 const handleClosePartyModal = () => setShowPartyModal(false);
+const [showSettingsModal, setShowSettingsModal] = useState(false);
+const [enableItem, setEnableItem] = useState(true);  // default true so content shows
 // Add state for auto-fill checkbox
 const [autoFillReceived, setAutoFillReceived] = useState(false);
-
-
 const [showProductTable, setShowProductTable] = useState(false);
 
 console.log("products value",products);
@@ -830,7 +832,14 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
             </Dropdown.Item>
           ))}
           <Dropdown.Divider />
-          <Dropdown.Item className="text-primary fw-bold">More Settings</Dropdown.Item>
+          {/* <Dropdown.Item className="text-primary fw-bold">More Settings</Dropdown.Item> */}
+          <Dropdown.Item 
+  className="text-primary fw-bold d-flex align-items-center gap-2"
+  onClick={() => setShowSettingsModal(true)}
+>
+  <BsGearWideConnected style={{ fontSize: "1.25rem" }} />
+  More Settings
+</Dropdown.Item>
         </DropdownButton>
       </th>
       <th>Actions</th>
@@ -1087,17 +1096,29 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
         {formData.visibleColumns.discount && (
           <td style={{minWidth:"100px"}}>
             <InputGroup size="sm">
-              <FormControl type="number" placeholder="%" value={row.discountPercent} onChange={(e) => onRowChange(row.id, "discountPercent", e.target.value)} readOnly={isDisabled} />
+              <FormControl expanse="number" placeholder="%" value={row.discountPercent} onChange={(e) => onRowChange(row.id, "discountPercent", e.target.value)} readOnly={isDisabled} />
               <FormControl value={row.discountAmount} readOnly />
             </InputGroup>
           </td>
         )}
 
-        <td style={{minWidth:"100px"}}>
-          <Select value={TAX_OPTIONS.find(opt => String(opt.value) === String(row.taxPercent)) || TAX_OPTIONS[0]}
-            onChange={(v) => onRowChange(row.id, "taxPercent", v)} options={TAX_OPTIONS} isDisabled={isDisabled} menuPortalTarget={document.body} />
-          <TextInputform readOnly value={row.taxAmount || "0.00"} />
-        </td>
+       
+        <td style={{ minWidth: "120px" }}>
+  <Select
+    value={TAX_OPTIONS.find(opt => String(opt.value) === String(row.taxPercent)) || TAX_OPTIONS[0]}
+    onChange={(v) => onRowChange(row.id, "taxPercent", v.value)}
+    options={TAX_OPTIONS}
+    isDisabled={isDisabled}
+    menuPortalTarget={document.body}
+    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+  />
+  <TextInputform
+    readOnly
+    value={row.taxAmount || "0.00"}
+    style={{ marginTop: "5px" }}
+    className="text-center"
+  />
+</td>
         <td><TextInputform readOnly value={row.amount} /></td>
         <td>{!isViewMode && <Button variant="danger" size="sm" onClick={() => deleteRow(row.id)}><FaTimes /></Button>}</td>
       </tr>
@@ -1111,17 +1132,26 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
       </tr>
     )}
 
+    
     <tr>
-      <td colSpan={2 + Object.values(formData.visibleColumns).filter(Boolean).length}>
-        <strong>TOTAL</strong>
-      </td>
-      <td>{totalQty}</td>
-      <td colSpan="5"></td>
-      {formData.visibleColumns.discount && <td>{totalDiscount.toFixed(2)}</td>}
-      <td>{totalTax.toFixed(2)}</td>
-      <td>{totalAmountRaw.toFixed(2)}</td>
-      <td colSpan="2"></td>
-    </tr>
+  <td colSpan={2 + Object.values(formData.visibleColumns).filter(Boolean).length} >
+    <strong>TOTAL</strong>
+  </td>
+  
+  <td className="fw-bold text-center">{totalQty}</td>
+  
+  {/* Skip Unit, Price, Price/Unit, Discount columns */}
+  <td colSpan={3 + (formData.visibleColumns.discount ? 1 : 0)}></td>
+  
+  {/* Total Tax - exactly under Tax column */}
+  <td className="fw-bold text-center">{totalTax.toFixed(2)}</td>
+  
+  {/* Total Amount - exactly under Amount column */}
+  <td className="fw-bold text-end">{totalAmountRaw.toFixed(2)}</td>
+  
+  {/* Actions column - just empty (no extra space) */}
+  <td></td>
+</tr>
   </tbody>
 </Table>
                 
@@ -1455,7 +1485,206 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
   }}
   activeTab="PRODUCT"  // or make dynamic if you allow services too
 />
+{/* SETTINGS MODAL - EXACTLY LIKE YOUR SCREENSHOT */}
+<Modal 
+  show={showSettingsModal} 
+  onHide={() => setShowSettingsModal(false)} 
+  size="xl" 
+  fullscreen="lg-down"
+>
+  <Modal.Body className="p-0">
+    <div className="d-flex">
+      {/* LEFT SIDEBAR - DARK */}
+      <div className="bg-dark text-white" style={{ width: "280px", minHeight: "100vh" }}>
+        <div className="p-4">
+          <h4 className="mb-4 d-flex align-items-center gap-2">
+            <BsGearWideConnected /> Settings
+          </h4>
+          <nav>
+            {[
+              "GENERAL", "TRANSACTION", "PRINT", "TAXES & GST",
+              "TRANSACTION MESSAGE", "PARTY", "ITEM", "SERVICE REMINDERS", "ACCOUNTING"
+            ].map((item, i) => (
+              <div 
+                key={i}
+                className={`py-3 px-4 cursor-pointer ${item === "ITEM" ? "bg-primary text-white" : "text-white"}`}
+                style={{ borderLeft: item === "ITEM" ? "4px solid #0d6efd" : "none" }}
+              >
+                {item}
+              </div>
+            ))}
+          </nav>
+        </div>
+      </div>
+        <div className="flex-grow-1 bg-white">
+  {/* Header */}
+ <div className="p-4" style={{ background: "#fff", minHeight: "100vh" }}>
+  
+ 
+<div className="border-bottom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
 
+  {/* 3-Column Header Titles */}
+  <div className="container-fluid px-0">
+    <div className="row text-dark fw-bold" style={{ fontSize: "16px" }}>
+      
+      {/* Column 1 Header */}
+      <div className="col-md-4 d-flex align-items-center">
+        Item Settings
+      </div>
+
+      {/* Column 2 Header */}
+      <div className="col-md-4 d-flex justify-content-center">
+        Additional Item Fields
+      </div>
+
+      {/* Column 3 Header */}
+      <div className="col-md-4 d-flex justify-content-end">
+        Item Custom Fields
+      </div>
+
+    </div>
+  </div>
+
+  {/* Close Button */}
+  <Button variant="light" onClick={() => setShowSettingsModal(false)}>
+    <BsX size={22} />
+  </Button>
+</div>
+
+
+
+  <div className="row">
+
+    {/* LEFT COLUMN */}
+    <div className="col-md-4">
+
+      
+
+      {/* Enable Item */}
+      <div className="form-check mb-3">
+        <input className="form-check-input" type="checkbox" id="enable_item" defaultChecked />
+        <label className="form-check-label ms-2" htmlFor="enable_item">
+          Enable Item
+        </label>
+      </div>
+
+      {/* What do you sell? */}
+      <div className="mb-3">
+        <label className="form-label">What do you sell?</label>
+        <select className="form-select">
+          <option>Product/Service</option>
+        </select>
+      </div>
+
+      {/* Checkbox List */}
+      {[
+        "Barcode Scan",
+        "Stock Maintenance",
+        "Show Low Stock Dialog",
+        "Items Unit",
+        "Item Category",
+        "Party Wise Item Rate",
+        "Description",
+        "Item wise Tax",
+        "Item wise Discount",
+        "Update Sale Price from Transaction"
+      ].map((text, idx) => (
+        <div className="form-check mb-3" key={idx}>
+          <input className="form-check-input" type="checkbox" id={`chk_${idx}`} />
+          <label className="form-check-label ms-2" htmlFor={`chk_${idx}`}>
+            {text}
+          </label>
+        </div>
+      ))}
+
+    </div>
+
+    {/* MIDDLE COLUMN */}
+    <div className="col-md-4">
+    
+      
+
+      {/* MRP / Price */}
+      <h6 className="fw-bold mt-4">MRP/Price</h6>
+      <div className="form-check d-flex align-items-center gap-3 mb-3">
+        <input className="form-check-input" type="checkbox" id="mrp" />
+        <label className="form-check-label" htmlFor="mrp">MRP</label>
+        <input type="text" className="form-control" placeholder="MRP" style={{ maxWidth: "140px" }} />
+      </div>
+
+      {/* Serial No Tracking */}
+      <h6 className="fw-bold mt-4">Serial No. Tracking</h6>
+      <div className="form-check d-flex align-items-center gap-3 mb-3">
+        <input className="form-check-input" type="checkbox" id="serial" />
+        <label className="form-check-label" htmlFor="serial">Serial No / IMEI No.</label>
+        <input type="text" className="form-control" placeholder="Serial No." style={{ maxWidth: "140px" }} />
+      </div>
+
+      {/* Batch Tracking */}
+      <h6 className="fw-bold mt-4">Batch Tracking</h6>
+
+      <div className="form-check d-flex align-items-center gap-3 mb-3">
+        <input className="form-check-input" type="checkbox" id="batch_no" />
+        <label className="form-check-label" htmlFor="batch_no">Batch No.</label>
+        <input type="text" className="form-control" placeholder="Batch No." style={{ maxWidth: "140px" }} />
+      </div>
+
+      {/* Expiry Date */}
+      <div className="form-check d-flex align-items-center gap-3 mb-3">
+        <input className="form-check-input" type="checkbox" id="exp" />
+        <label className="form-check-label" htmlFor="exp">Exp Date</label>
+        <input type="text" className="form-control" placeholder="mm/yy" style={{ maxWidth: "140px" }} />
+      </div>
+
+      {/* Mfg Date */}
+      <div className="form-check d-flex align-items-center gap-3 mb-3">
+        <input className="form-check-input" type="checkbox" id="mfg" />
+        <label className="form-check-label" htmlFor="mfg">Mfg Date</label>
+        <input type="text" className="form-control" placeholder="dd/mm/yy" style={{ maxWidth: "140px" }} />
+      </div>
+
+      {/* Model No */}
+      <div className="form-check d-flex align-items-center gap-3 mb-3">
+        <input className="form-check-input" type="checkbox" id="model" />
+        <label className="form-check-label" htmlFor="model">Model No.</label>
+        <input type="text" className="form-control" placeholder="Model No." style={{ maxWidth: "140px" }} />
+      </div>
+
+      {/* Size */}
+      <div className="form-check d-flex align-items-center gap-3 mb-3">
+        <input className="form-check-input" type="checkbox" id="size" />
+        <label className="form-check-label" htmlFor="size">Size</label>
+        <input type="text" className="form-control" placeholder="Size" style={{ maxWidth: "140px" }} />
+      </div>
+
+    </div>
+
+    {/* RIGHT COLUMN */}
+    <div className="col-md-4">
+
+     
+
+      <button className="btn btn-outline-primary">
+        Add Custom Fields &gt;
+      </button>
+
+    </div>
+  </div>
+</div>
+
+
+
+        
+            <div className="p-4">
+  <div className="d-flex align-items-center gap-3">
+   
+    
+          </div>
+        </div>
+      </div>
+    </div>
+  </Modal.Body>
+</Modal>
 
       </Container>
     </div>
@@ -1463,3 +1692,5 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
 };
 
 export default SaleCreation;
+
+
