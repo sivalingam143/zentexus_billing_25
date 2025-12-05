@@ -787,8 +787,18 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
               </Row>
               <Row className="item-table-row mt-4">
               <Col>
-                <Table bordered >
-                 <thead>
+              {/* THIS DIV MAKES ONLY TABLE SCROLLABLE */}
+    <div 
+      style={{
+        maxHeight: "500px",           // Nee vendha height adjust panniko (or 60vh)
+        overflow: "auto",
+        border: "1px solid #dee2e6",
+        borderRadius: "8px",
+        position: "relative"
+      }}
+    ></div>
+                <Table bordered hover className="mb-0" style={{ minWidth: "1400px" }}>
+                 <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 10, background: "#f8f9fa" }}>
                  <tr>
                  <th>#</th>
                  {formData.visibleColumns.category && <th>Category</th>}
@@ -1516,170 +1526,175 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
           </nav>
         </div>
       </div>
-        <div className="flex-grow-1 bg-white">
-  {/* Header */}
- <div className="p-4" style={{ background: "#fff", minHeight: "100vh" }}>
-  
- 
-<div className="border-bottom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
+      <div className="flex-grow-1 bg-white">
+        {/* Header */}
+        <div className="p-4" style={{ background: "#fff", minHeight: "100vh" }}>
+          <div className="border-bottom px-4 py-3 mb-4 d-flex justify-content-between align-items-center">
+            {enableItem ? (
+              <div className="container-fluid px-0">
+                <div className="row text-dark fw-bold" style={{ fontSize: "16px" }}>
+                  {/* Column 1 Header */}
+                  <div className="col-md-4 d-flex align-items-center">
+                    Item Settings
+                  </div>
 
-  {/* 3-Column Header Titles */}
-  <div className="container-fluid px-0">
-    <div className="row text-dark fw-bold" style={{ fontSize: "16px" }}>
-      
-      {/* Column 1 Header */}
-      <div className="col-md-4 d-flex align-items-center">
-        Item Settings
-      </div>
+                  {/* Column 2 Header */}
+                  <div className="col-md-4 d-flex justify-content-center">
+                    Additional Item Fields
+                  </div>
 
-      {/* Column 2 Header */}
-      <div className="col-md-4 d-flex justify-content-center">
-        Additional Item Fields
-      </div>
+                  {/* Column 3 Header */}
+                  <div className="col-md-4 d-flex justify-content-end">
+                    Item Custom Fields
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="container-fluid px-0">
+                <div className="row text-dark fw-bold" style={{ fontSize: "16px" }}>
+                  <div className="col-md-4 d-flex align-items-center">
+                    Item Settings
+                  </div>
+                </div>
+              </div>
+            )}
 
-      {/* Column 3 Header */}
-      <div className="col-md-4 d-flex justify-content-end">
-        Item Custom Fields
-      </div>
-
-    </div>
-  </div>
-
-  {/* Close Button */}
-  <Button variant="light" onClick={() => setShowSettingsModal(false)}>
-    <BsX size={22} />
-  </Button>
-</div>
-
-
-
-  <div className="row">
-
-    {/* LEFT COLUMN */}
-    <div className="col-md-4">
-
-      
-
-      {/* Enable Item */}
-      <div className="form-check mb-3">
-        <input className="form-check-input" type="checkbox" id="enable_item" defaultChecked />
-        <label className="form-check-label ms-2" htmlFor="enable_item">
-          Enable Item
-        </label>
-      </div>
-
-      {/* What do you sell? */}
-      <div className="mb-3">
-        <label className="form-label">What do you sell?</label>
-        <select className="form-select">
-          <option>Product/Service</option>
-        </select>
-      </div>
-
-      {/* Checkbox List */}
-      {[
-        "Barcode Scan",
-        "Stock Maintenance",
-        "Show Low Stock Dialog",
-        "Items Unit",
-        "Item Category",
-        "Party Wise Item Rate",
-        "Description",
-        "Item wise Tax",
-        "Item wise Discount",
-        "Update Sale Price from Transaction"
-      ].map((text, idx) => (
-        <div className="form-check mb-3" key={idx}>
-          <input className="form-check-input" type="checkbox" id={`chk_${idx}`} />
-          <label className="form-check-label ms-2" htmlFor={`chk_${idx}`}>
-            {text}
-          </label>
-        </div>
-      ))}
-
-    </div>
-
-    {/* MIDDLE COLUMN */}
-    <div className="col-md-4">
-    
-      
-
-      {/* MRP / Price */}
-      <h6 className="fw-bold mt-4">MRP/Price</h6>
-      <div className="form-check d-flex align-items-center gap-3 mb-3">
-        <input className="form-check-input" type="checkbox" id="mrp" />
-        <label className="form-check-label" htmlFor="mrp">MRP</label>
-        <input type="text" className="form-control" placeholder="MRP" style={{ maxWidth: "140px" }} />
-      </div>
-
-      {/* Serial No Tracking */}
-      <h6 className="fw-bold mt-4">Serial No. Tracking</h6>
-      <div className="form-check d-flex align-items-center gap-3 mb-3">
-        <input className="form-check-input" type="checkbox" id="serial" />
-        <label className="form-check-label" htmlFor="serial">Serial No / IMEI No.</label>
-        <input type="text" className="form-control" placeholder="Serial No." style={{ maxWidth: "140px" }} />
-      </div>
-
-      {/* Batch Tracking */}
-      <h6 className="fw-bold mt-4">Batch Tracking</h6>
-
-      <div className="form-check d-flex align-items-center gap-3 mb-3">
-        <input className="form-check-input" type="checkbox" id="batch_no" />
-        <label className="form-check-label" htmlFor="batch_no">Batch No.</label>
-        <input type="text" className="form-control" placeholder="Batch No." style={{ maxWidth: "140px" }} />
-      </div>
-
-      {/* Expiry Date */}
-      <div className="form-check d-flex align-items-center gap-3 mb-3">
-        <input className="form-check-input" type="checkbox" id="exp" />
-        <label className="form-check-label" htmlFor="exp">Exp Date</label>
-        <input type="text" className="form-control" placeholder="mm/yy" style={{ maxWidth: "140px" }} />
-      </div>
-
-      {/* Mfg Date */}
-      <div className="form-check d-flex align-items-center gap-3 mb-3">
-        <input className="form-check-input" type="checkbox" id="mfg" />
-        <label className="form-check-label" htmlFor="mfg">Mfg Date</label>
-        <input type="text" className="form-control" placeholder="dd/mm/yy" style={{ maxWidth: "140px" }} />
-      </div>
-
-      {/* Model No */}
-      <div className="form-check d-flex align-items-center gap-3 mb-3">
-        <input className="form-check-input" type="checkbox" id="model" />
-        <label className="form-check-label" htmlFor="model">Model No.</label>
-        <input type="text" className="form-control" placeholder="Model No." style={{ maxWidth: "140px" }} />
-      </div>
-
-      {/* Size */}
-      <div className="form-check d-flex align-items-center gap-3 mb-3">
-        <input className="form-check-input" type="checkbox" id="size" />
-        <label className="form-check-label" htmlFor="size">Size</label>
-        <input type="text" className="form-control" placeholder="Size" style={{ maxWidth: "140px" }} />
-      </div>
-
-    </div>
-
-    {/* RIGHT COLUMN */}
-    <div className="col-md-4">
-
-     
-
-      <button className="btn btn-outline-primary">
-        Add Custom Fields &gt;
-      </button>
-
-    </div>
-  </div>
-</div>
-
-
-
-        
-            <div className="p-4">
-  <div className="d-flex align-items-center gap-3">
-   
-    
+            {/* Close Button */}
+            <Button variant="light" onClick={() => setShowSettingsModal(false)}>
+              <BsX size={22} />
+            </Button>
           </div>
+
+          {/* Enable Item Checkbox - ABOVE all columns */}
+          <div className="mb-4">
+            <div className="form-check">
+              <input 
+                className="form-check-input" 
+                type="checkbox" 
+                id="enable_item" 
+                checked={enableItem}
+                onChange={(e) => setEnableItem(e.target.checked)}
+                style={{ width: "20px", height: "20px" }}
+              />
+              <label className="form-check-label ms-3" htmlFor="enable_item" style={{ fontSize: "16px", fontWeight: "500" }}>
+                Enable Item
+              </label>
+            </div>
+          </div>
+
+          {enableItem ? (
+            <div className="row">
+              {/* LEFT COLUMN - Show when enabled */}
+              <div className="col-md-4">
+                {/* What do you sell? */}
+                <div className="mb-3">
+                  <label className="form-label">What do you sell?</label>
+                  <select className="form-select">
+                    <option>Product</option>
+                    <option>Service</option>
+                    <option>Product/Service</option>
+                  </select>
+                </div>
+
+                {/* Checkbox List */}
+                {[
+                  "Barcode Scan",
+                  "Stock Maintenance",
+                  "Show Low Stock Dialog",
+                  "Items Unit",
+                  "Item Category",
+                  "Party Wise Item Rate",
+                  "Description",
+                  "Item wise Tax",
+                  "Item wise Discount",
+                  "Update Sale Price from Transaction",
+                  "Wholesale Price"
+                ].map((text, idx) => (
+                  <div className="form-check mb-3" key={idx}>
+                    <input className="form-check-input" type="checkbox" id={`chk_${idx}`} />
+                    <label className="form-check-label ms-2" htmlFor={`chk_${idx}`}>
+                      {text}
+                    </label>
+                    
+                  </div>
+                  
+                ))}
+              </div>
+              
+              
+              {/* MIDDLE COLUMN - Show when enabled */}
+              <div className="col-md-4">
+                {/* MRP / Price */}
+                <h6 className="fw-bold mt-4">MRP/Price</h6>
+                <div className="form-check d-flex align-items-center gap-3 mb-3">
+                  <input className="form-check-input" type="checkbox" id="mrp" />
+                  <label className="form-check-label" htmlFor="mrp">MRP</label>
+                  <input type="text" className="form-control" placeholder="MRP" style={{ maxWidth: "140px" }} />
+                </div>
+
+                {/* Serial No Tracking */}
+                <h6 className="fw-bold mt-4">Serial No. Tracking</h6>
+                <div className="form-check d-flex align-items-center gap-3 mb-3">
+                  <input className="form-check-input" type="checkbox" id="serial" />
+                  <label className="form-check-label" htmlFor="serial">Serial No / IMEI No.</label>
+                  <input type="text" className="form-control" placeholder="Serial No." style={{ maxWidth: "140px" }} />
+                </div>
+
+                {/* Batch Tracking */}
+                <h6 className="fw-bold mt-4">Batch Tracking</h6>
+
+                <div className="form-check d-flex align-items-center gap-3 mb-3">
+                  <input className="form-check-input" type="checkbox" id="batch_no" />
+                  <label className="form-check-label" htmlFor="batch_no">Batch No.</label>
+                  <input type="text" className="form-control" placeholder="Batch No." style={{ maxWidth: "140px" }} />
+                </div>
+
+                {/* Expiry Date */}
+                <div className="form-check d-flex align-items-center gap-3 mb-3">
+                  <input className="form-check-input" type="checkbox" id="exp" />
+                  <label className="form-check-label" htmlFor="exp">Exp Date</label>
+                  <input type="text" className="form-control" placeholder="mm/yy" style={{ maxWidth: "140px" }} />
+                </div>
+
+                {/* Mfg Date */}
+                <div className="form-check d-flex align-items-center gap-3 mb-3">
+                  <input className="form-check-input" type="checkbox" id="mfg" />
+                  <label className="form-check-label" htmlFor="mfg">Mfg Date</label>
+                  <input type="text" className="form-control" placeholder="dd/mm/yy" style={{ maxWidth: "140px" }} />
+                </div>
+
+                {/* Model No */}
+                <div className="form-check d-flex align-items-center gap-3 mb-3">
+                  <input className="form-check-input" type="checkbox" id="model" />
+                  <label className="form-check-label" htmlFor="model">Model No.</label>
+                  <input type="text" className="form-control" placeholder="Model No." style={{ maxWidth: "140px" }} />
+                </div>
+
+                {/* Size */}
+                <div className="form-check d-flex align-items-center gap-3 mb-3">
+                  <input className="form-check-input" type="checkbox" id="size" />
+                  <label className="form-check-label" htmlFor="size">Size</label>
+                  <input type="text" className="form-control" placeholder="Size" style={{ maxWidth: "140px" }} />
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN - Show when enabled */}
+              <div className="col-md-4">
+                <button className="btn btn-outline-primary">
+                  Add Custom Fields &gt;
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Show when disabled - FULL WIDTH centered message */
+            <div className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: "400px" }}>
+              <div className="text-center">
+                <i className="fas fa-box-open fa-4x text-muted mb-4"></i>
+                <h4 className="text-muted mb-3">Item is Disabled</h4>
+                
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
