@@ -1,4 +1,3 @@
-// src/components/AddItem.jsx
 import React, { useState, useEffect, useRef } from "react";
 import SelectUnitModal from "./SelectUnitModal"
 import {
@@ -124,21 +123,17 @@ const handleSaveUnitMapping = (mapping) => {
     }
   }, [editProduct, activeTab]);
 
-  // Edit mode
-  // Edit mode - FIXED
- // 1. Force correct tab when editing a service
+  
 useEffect(() => {
   if (editProduct?.itemType === "service" || editProduct?.isService) {
-    setType("reduce");        // Service mode
+    setType("reduce");      
   } else if (activeTab === "SERVICE") {
     setType("reduce");
   } else {
-    setType("add");           // Product mode
+    setType("add");           
   }
 }, [editProduct, activeTab]);
 
-// 2. Edit mode – load data properly for both Product & Service
-// REPLACE ONLY THIS useEffect (the one with editProduct)
 useEffect(() => {
   if (!editProduct || !show) return;
 
@@ -155,9 +150,7 @@ useEffect(() => {
     setImagePreview(editProduct.add_image);
     setImageFileName("uploaded-image.jpg");
   }
-
-  // Sale Price – safe parse
-// Sale Price – safe parse + wholesale support
+  
 try {
   const sale = editProduct.sale_price ? JSON.parse(editProduct.sale_price) : {};
   setSalePriceDetails({
@@ -306,10 +299,7 @@ setWholesaleDetails({
     }
   };
 const handleAssignCode = () => {
-    // Generates a large, unique integer (e.g., 1764835200000) using milliseconds since epoch.
-    // This ensures a unique, purely numeric code suitable for an INT/BIGINT column.
     const uniqueIntCode = Date.now().toString(); 
-    // Set the state as a string of digits
     setItemCode(uniqueIntCode); 
 };
   const handleSave = async (closeModal = true, isNew = false) => {
@@ -361,7 +351,6 @@ const sale_price = JSON.stringify(sale_price_obj);
       if (isProduct) {
         const openingQty = parseFloat(stockDetails.opening_qty) || 0;
         const atPrice = parseFloat(stockDetails.at_price) || 0;
-        // Preserve existing stock data + transactions
 let currentStock = {};
 if (editProduct?.stock) {
   try {
@@ -372,7 +361,7 @@ if (editProduct?.stock) {
 }
 
 const enhancedStock = {
-  ...currentStock, // ← keeps transactions, current_qty, current_value, etc.
+  ...currentStock, 
   ...stockDetails,
   opening_qty: openingQty,
   at_price: atPrice,
@@ -406,7 +395,6 @@ const enhancedStock = {
     tax_rate: purchasePriceDetails.tax_rate
   });
 } else {
-  // If user left blank AND it didn't exist before → don't send it
   delete payload.purchase_price;
 }
         if (editProduct)
@@ -536,7 +524,6 @@ const enhancedStock = {
           </div>
         </Modal.Header>
 
-        {/* ... Form fields, tabs, pricing, stock same as your previous code ... */}
         <Modal.Body className="pt-2">
           <Row className="mb-4 g-3">
             <Col md={3}>
@@ -555,13 +542,8 @@ const enhancedStock = {
                 onChange={(e) => setHsn(e.target.value)}
               />
             </Col>
-
-            {/* Unit Dropdown */}
-
-
 <Col md={2}>
   <div className="position-relative">
-    {/* Main Unit Input – shows full base unit name */}
     <div
       className="form-control white-input d-flex align-items-center justify-content-between pe-2"
       style={{
@@ -576,9 +558,7 @@ const enhancedStock = {
       </span>
       <FaChevronDown className="text-primary" />
     </div>
-
-    {/* Edit Unit Button + Short Conversion Text (exactly like Vyapar) */}
-    {unitMapping && (
+ {unitMapping && (
       <div
         className="position-absolute start-50 translate-middle-x text-center"
         style={{ top: "100%", marginTop: "4px", width: "100%" }}
@@ -656,7 +636,6 @@ const enhancedStock = {
           </Row>
 
           <Row className="mb-4 g-3">
-            {/* Category Dropdown */}
             <Col md={4} ref={categoryRef}>
               <div className="position-relative">
                 <div
@@ -707,13 +686,13 @@ const enhancedStock = {
                 value={itemCode}
                 onChange={(e) => setItemCode(e.target.value)}
               />
-              {/* UPDATED: Add onClick handler to assign code */}
+              
               <Button
                 variant="light"
                 size="sm"
                 className="position-absolute end-0 top-50 translate-middle-y me-1 text-primary border p-1"
                 style={{ backgroundColor: "#cce7f3" }}
-                onClick={handleAssignCode} // <-- New handler
+                onClick={handleAssignCode}
               >
                 Assign Code
               </Button>

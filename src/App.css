@@ -350,8 +350,20 @@ ul {
 }
 
 
+.bulk-product-modal .modal-dialog {
+  max-width: 1700px;     /* ← Increase width as much as you want */
+  width: 95vw;           /* Optional: makes it responsive */
+  margin: 1rem auto;
+}
 
-.btn-primary {
-    background-color: var(--bs-primary) !important;
-    border-color: var(--bs-primary) !important;
+.bulk-product-modal .modal-content {
+  height: 90vh;          /* ← Tall like Vyapar */
+  display: flex;
+  flex-direction: column;
+}
+
+.bulk-product-modal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
 }
