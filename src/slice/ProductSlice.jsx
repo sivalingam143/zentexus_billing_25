@@ -6,7 +6,25 @@ import {
   createProductApi,
   updateProductApi,
   deleteProductApi,
+  bulkUpdateProductStatusApi,
 } from "../services/ProductService";
+
+
+export const bulkUpdateProductStatus = createAsyncThunk(
+  "product/bulkUpdateProductStatus",
+  async ({ product_ids, status_code, status_name }, { rejectWithValue }) => {
+    try {
+      const response = await bulkUpdateProductStatusApi({
+        product_ids,
+        status_code,
+        status_name,
+      });
+      return { product_ids, status_code, status_name }; // return what changed
+    } catch (error) {
+      return rejectWithValue(error.message || "Bulk update failed");
+    }
+  }
+);
 
 export const fetchProducts = createAsyncThunk(
   "product/fetchProducts",
@@ -109,8 +127,26 @@ const productSlice = createSlice({
       .addCase(deleteProduct.fulfilled, (state, action) => {
   state.products = state.products.filter(p => p.product_id !== action.payload);
 })
+.addCase(bulkUpdateProductStatus.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(bulkUpdateProductStatus.fulfilled, (state, action) => {
+        const { product_ids, status_code, status_name } = action.payload;
+
+        state.products = state.products.map((product) =>
+          product_ids.includes(product.product_id)
+            ? { ...product, status_code, status_name }
+            : product
+        );
+        state.status = "succeeded";
+      })
+      .addCase(bulkUpdateProductStatus.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload;
+      });
   },
 });
+
 
 export const { clearError } = productSlice.actions;
 export default productSlice.reducer;

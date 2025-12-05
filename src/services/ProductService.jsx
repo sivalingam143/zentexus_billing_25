@@ -49,3 +49,22 @@ export const deleteProductApi = async (product_id) => {
   }
   return data;
 };
+
+
+// BULK STATUS UPDATE
+export const bulkUpdateProductStatusApi = async ({ product_ids, status_code, status_name }) => {
+  const payload = {
+    bulk_status_update: true,
+    product_ids,
+    status_code,
+    status_name,
+  };
+
+  const response = await axiosInstance.post("/products.php", payload);
+  const { data } = response;
+
+  if (data.head?.code !== 200) {
+    throw new Error(data.head?.msg || "Bulk update failed");
+  }
+  return data;
+};

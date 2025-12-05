@@ -11,6 +11,9 @@ import { Button, Table, Card, Dropdown,Modal } from "react-bootstrap";
 import PartyModal from "../creation/PartyModalCreation";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom"; // Added
+              
+
+import { FaFilter } from 'react-icons/fa';
 
 import {
   searchPartiesAndSales,
@@ -500,44 +503,170 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                 />
               </div>
 
-              <Table hover size="sm" className="mt-3">
-                <thead>
-                  <tr>
-                    <th className="text-secondary">Party Name</th>
-                    <th className="text-secondary">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {partiesWithBalance.map((p) => (
-                    <tr
-                      key={p.parties_id}
-                      onClick={() => setSelectedParty(p)}
-                      style={{
-                        cursor: "pointer",
-                        backgroundColor:
-                          selectedParty?.parties_id === p.parties_id ? "#e7f3ff" : "",
-                      }}
-                    >
-                      <td>{p.name}</td>
-                      <td
-                        style={{
-                          color:
-                            p.running_transaction_type === "To Pay"
-                              ? "red"
-                              : p.running_transaction_type === "To Receive"
-                              ? "green"
-                              : "inherit",
-                          fontWeight: "bold"
-                        }}
-                      >
-                        {p.running_transaction_type !== "Nil"
-                          ? `₹${p.running_balance_amount.toFixed(2)}`
-                          : "Nil"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+
+<Table hover size="sm" className="mt-3">
+    <thead>
+        <tr>
+            <th className="text-secondary">
+                <div className="d-flex align-items-center">
+                    Party Name
+                    {/* Dropdown component for the Filter Icon */}
+                    <Dropdown className="ms-1">
+                        <Dropdown.Toggle 
+                            as="span" 
+                            id="dropdown-filter-party-name" 
+                            style={{ cursor: 'pointer', color: 'red' }}
+                        >
+                            {/* NOTE: FaFilter must be imported from 'react-icons/fa' or similar */}
+                            <FaFilter size={14} /> 
+                        </Dropdown.Toggle>
+
+                        {/* Updated Dropdown Menu Content to include Checkboxes */}
+                        <Dropdown.Menu align="start" style={{ width: '180px', padding: '10px' }}>
+                            
+                            {/* Filter Options Group */}
+                            <div className="mb-3">
+                                
+                                {/* Option: All (Selected State) */}
+                                <div 
+                                    className="d-flex justify-content-between align-items-center py-1 px-2 rounded"
+                                    style={{ backgroundColor: '#e7f3ff', cursor: 'pointer' }} // Simulate selected row
+                                >
+                                    <div className="form-check m-0">
+                                        <input 
+                                            className="form-check-input" 
+                                            type="radio" // Using radio to simulate single selection like in the image
+                                            name="partyFilter" 
+                                            id="filterAll" 
+                                            defaultChecked // Simulate being checked/selected
+                                        />
+                                        <label className="form-check-label fw-bold" htmlFor="filterAll">
+                                            All
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                {/* Option: Active */}
+                                <div 
+                                    className="d-flex justify-content-between align-items-center py-1 px-2 rounded"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="form-check m-0">
+                                        <input 
+                                            className="form-check-input" 
+                                            type="radio" 
+                                            name="partyFilter" 
+                                            id="filterActive" 
+                                        />
+                                        <label className="form-check-label" htmlFor="filterActive">
+                                            Active
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                {/* Option: Inactive */}
+                                <div 
+                                    className="d-flex justify-content-between align-items-center py-1 px-2 rounded"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="form-check m-0">
+                                        <input 
+                                            className="form-check-input" 
+                                            type="radio" 
+                                            name="partyFilter" 
+                                            id="filterInactive" 
+                                        />
+                                        <label className="form-check-label" htmlFor="filterInactive">
+                                            Inactive
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Option: To Receive */}
+                                <div 
+                                    className="d-flex justify-content-between align-items-center py-1 px-2 rounded"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="form-check m-0">
+                                        <input 
+                                            className="form-check-input" 
+                                            type="radio" 
+                                            name="partyFilter" 
+                                            id="filterToReceive" 
+                                        />
+                                        <label className="form-check-label" htmlFor="filterToReceive">
+                                            To Receive
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                {/* Option: To Pay */}
+                                <div 
+                                    className="d-flex justify-content-between align-items-center py-1 px-2 rounded"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    <div className="form-check m-0">
+                                        <input 
+                                            className="form-check-input" 
+                                            type="radio" 
+                                            name="partyFilter" 
+                                            id="filterToPay" 
+                                        />
+                                        <label className="form-check-label" htmlFor="filterToPay">
+                                            To Pay
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                            
+                            {/* Clear and Apply Buttons */}
+                            <div className="d-flex justify-content-between pt-2 border-top">
+                                <Button variant="outline-secondary" size="sm">
+                                    Clear
+                                </Button>
+                                <Button variant="danger" size="sm">
+                                    Apply
+                                </Button>
+                            </div>
+                        </Dropdown.Menu>
+                    </Dropdown>
+                </div>
+            </th>
+            <th className="text-secondary">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+    {partiesWithBalance.map((p) => (
+        <tr
+            key={p.parties_id}
+            onClick={() => setSelectedParty(p)}
+            style={{
+                cursor: "pointer",
+                backgroundColor:
+                    selectedParty?.parties_id === p.parties_id ? "#e7f3ff" : "",
+            }}
+        >
+            <td>{p.name}</td>
+            <td
+                style={{
+                    color:
+                        p.running_transaction_type === "To Pay"
+                            ? "red"
+                            : p.running_transaction_type === "To Receive"
+                                ? "green"
+                                : "inherit",
+                    fontWeight: "bold"
+                }}
+            >
+                {p.running_transaction_type !== "Nil"
+                    ? `₹${p.running_balance_amount.toFixed(2)}`
+                    : "Nil"}
+            </td>
+        </tr>
+    ))}
+    </tbody>
+</Table>
             </Card>
 
             <div

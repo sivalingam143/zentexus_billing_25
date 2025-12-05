@@ -6,7 +6,8 @@ import AdjustItem from "../creation/AdjustItemCreation";
 import AddItem from "../creation/ItemModalCreation";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts, deleteProduct } from "../../slice/ProductSlice";
-
+import BulkProductModal from "../creation/BulkProductModal";
+import "../../App.css";
 
 export default function ProductTab() {
   const [showAdjustItem, setShowAdjustItem] = useState(false);
@@ -17,7 +18,7 @@ const [editProduct, setEditProduct] = useState(null);
 
   const dispatch = useDispatch();
   const { products = [], status } = useSelector((state) => state.product);
-
+const [bulkModal, setBulkModal] = useState({ show: false, type: "" });
 
 
 
@@ -73,8 +74,30 @@ useEffect(() => {
     setShowAddItem(true);   // <-- OPEN MODAL CLEAN
   }}
 >
-  + Add Item
+  + Add Item 
+
 </Button>
+<DropdownButton
+  title={<FaEllipsisV />}
+  variant="link"
+  size="sm"
+>
+  <Dropdown.Item onClick={() => setBulkModal({ show: true, type: "inactive" })}>
+    Bulk Inactive
+  </Dropdown.Item>
+  <Dropdown.Item onClick={() => setBulkModal({ show: true, type: "active" })}>
+    Bulk Active
+  </Dropdown.Item>
+  <Dropdown.Item onClick={() => setBulkModal({ show: true, type: "assignCode" })}>
+    Bulk Assign Code
+  </Dropdown.Item>
+  <Dropdown.Item onClick={() => setBulkModal({ show: true, type: "assignUnits" })}>
+    Assign Units
+  </Dropdown.Item>
+  <Dropdown.Item onClick={() => setBulkModal({ show: true, type: "update" })}>
+    Bulk Update Items
+  </Dropdown.Item>
+</DropdownButton>
 
             </div>
 
@@ -346,6 +369,16 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
     });
   }}
   product={selectedProduct}
+/>
+{/* Bulk Action Modal */}
+<BulkProductModal
+  show={bulkModal.show}
+  onHide={() => setBulkModal({ show: false, type: "" })}
+  mode={bulkModal.type} // ← this controls Active/Inactive
+  title={bulkModal.type === "inactive" ? "Bulk Inactive" : "Bulk Active"}
+  actionButtonText={bulkModal.type === "inactive" ? "Mark as Inactive" : "Mark as Active"}
+  actionButtonVariant={bulkModal.type === "inactive" ? "danger" : "success"}
+  isBulkInactive={bulkModal.type === "inactive"}
 />
     </Row>
   );
