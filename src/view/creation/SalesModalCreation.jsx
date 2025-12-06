@@ -67,6 +67,20 @@ const PAYMENT_OPTIONS = [
   { value: "check", label: "Check" },
   { value: "Cash", label: "Cash" },
 ];
+const tableStyles = {
+  table: {
+    minWidth: "1600px", // increased for more columns
+    tableLayout: "fixed", // THIS IS THE MAGIC — forces equal spacing
+  },
+  th: {
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  td: {
+    verticalAlign: "middle",
+  }
+};
 const generateUniqueId = () =>
   `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -1190,7 +1204,7 @@ const SaleCreation = () => {
                 />
               </Col>
             </Row>
-            <Row className="item-table-row mt-4">
+            {/* <Row className="item-table-row mt-4">
               <Col>
                 <Table
                   bordered
@@ -1858,7 +1872,695 @@ const SaleCreation = () => {
                   </tbody>
                 </Table>
               </Col>
-            </Row>
+            </Row> */}
+            <Row className="item-table-row mt-4">
+  <Col>
+    <Table
+      bordered
+      hover
+      className="mb-0"
+      style={{ minWidth: "1600px", tableLayout: "fixed" }}
+    >
+      <thead
+        className="table-light"
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 10,
+          background: "#f8f9fa",
+        }}
+      >
+        <tr>
+          <th style={{ width: "50px" }}>#</th>
+          {formData.visibleColumns.category && <th style={{ width: "180px" }}>Category</th>}
+          <th style={{ width: "300px" }}>Item</th>
+          {formData.visibleColumns.description && (
+            <th style={{ width: "180px" }}>Description</th>
+          )}
+          {formData.visibleColumns.hsn_code && <th style={{ width: "100px" }}>HSN_code</th>}
+          <th style={{ width: "100px" }}>Qty</th>
+          <th style={{ width: "150px" }}>Unit</th>
+          <th style={{ width: "100px" }}>Price</th>
+          <th style={{ width: "100px" }}>Price/unit</th>
+          {formData.visibleColumns.discount && <th style={{ width: "150px" }}>Discount</th>}
+          <th style={{ width: "120px" }}>Tax</th>
+          <th style={{ width: "120px" }}>
+            {!isViewMode ? (
+              <DropdownButton
+                id="amount-column-dropdown"
+                title={
+                  <span style={{ fontSize: "1rem", fontWeight: "bold" }}>
+                    Amount <FaPlus />
+                  </span>
+                }
+                size="sm"
+                align="end"
+                className="p-0 border-0 text-success shadow-none"
+                style={{ background: "transparent", boxShadow: "none" }}
+              >
+                {[
+                  { key: "category", label: "Category" },
+                  { key: "hsn_code", label: "HSN-Code" },
+                  { key: "description", label: "Description" },
+                  { key: "discount", label: "Discount" },
+                ].map((col) => (
+                  <Dropdown.Item
+                    key={col.key}
+                    as="div"
+                    className="d-flex align-items-center px-3 py-2"
+                  >
+                    <Form.Check
+                      type="checkbox"
+                      label={col.label}
+                      checked={formData.visibleColumns[col.key] || false}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          visibleColumns: {
+                            ...prev.visibleColumns,
+                            [col.key]: e.target.checked,
+                          },
+                        }))
+                      }
+                      disabled={isDisabled}
+                    />
+                  </Dropdown.Item>
+                ))}
+                <Dropdown.Divider />
+                <Dropdown.Item
+                  className="text-primary fw-bold d-flex align-items-center gap-2"
+                  onClick={() => setShowSettingsModal(true)}
+                >
+                  <BsGearWideConnected style={{ fontSize: "1.25rem" }} />
+                  More Settings
+                </Dropdown.Item>
+              </DropdownButton>
+            ) : (
+              <span style={{ fontSize: "1rem", fontWeight: "bold" }}>
+                Amount
+              </span>
+            )}
+          </th>
+          <th style={{ width: "80px" }}>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {formData.rows.map((row, index) => (
+          <tr key={row.id}>
+            <td>{index + 1}</td>
+
+            {formData.visibleColumns.category && (
+              <td>
+                {isViewMode ? (
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      border: "1px solid #ced4da",
+                      borderRadius: "6px",
+                      backgroundColor: "#e9ecef",
+                      minHeight: "38px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ color: "#000" }}>
+                      {row.category || "ALL"}
+                    </span>
+                  </div>
+                ) : (
+                  <Select
+                    options={[
+                      { value: "", label: "ALL" },
+                      ...categories.map((cat) => ({
+                        value: cat.category_name,
+                        label: cat.category_name,
+                      })),
+                    ]}
+                    value={{
+                      value: row.category || "",
+                      label: row.category ? row.category : "ALL",
+                    }}
+                    onChange={(option) => {
+                      const selectedCat = option.value;
+                      onRowChange(row.id, "category", selectedCat);
+                    }}
+                    placeholder="Select Category"
+                    isDisabled={isDisabled}
+                    menuPortalTarget={document.body}
+                    styles={{
+                      menuPortal: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                      }),
+                    }}
+                  />
+                )}
+              </td>
+            )}
+
+            <td style={{ position: "relative" }}>
+              {isViewMode ? (
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "6px",
+                    backgroundColor: "#e9ecef",
+                    minHeight: "38px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ color: "#000" }}>
+                    {row.product_name || "No item selected"}
+                  </span>
+                </div>
+              ) : (
+                <div
+                  onClick={() => !isDisabled && setShowProductTable(true)}
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "6px",
+                    backgroundColor: isDisabled ? "#e9ecef" : "white",
+                    cursor: isDisabled ? "not-allowed" : "pointer",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    minHeight: "38px",
+                  }}
+                >
+                  <span style={{ color: row.product_name ? "#000" : "#999" }}>
+                    {row.product_name || "Click to select item..."}
+                  </span>
+                </div>
+              )}
+
+              {showProductTable && !isViewMode && (
+                <div
+                  style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100vw",
+                    height: "100vh",
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 9999,
+                  }}
+                  onClick={() => setShowProductTable(false)}
+                >
+                  <div
+                    style={{
+                      width: "90%",
+                      maxWidth: "1100px",
+                      height: "85vh",
+                      background: "white",
+                      borderRadius: "12px",
+                      overflow: "hidden",
+                      boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="p-2 bg-primary text-white d-flex justify-content-between align-items-center">
+                      <div className="d-flex gap-3">
+                        <Button
+                          variant="light"
+                          size="sm"
+                          className="fw-bold px-4 d-flex align-items-center gap-2"
+                          onClick={() => {
+                            setShowAddItemModal(true);
+                            setShowProductTable(false);
+                          }}
+                        >
+                          Add Item
+                        </Button>
+                      </div>
+                      <Button
+                        variant="light"
+                        size="sm"
+                        onClick={() => setShowProductTable(false)}
+                      >
+                        X Close
+                      </Button>
+                    </div>
+
+                    <div
+                      style={{
+                        height: "calc(85vh - 140px)",
+                        overflowY: "auto",
+                      }}
+                    >
+                      <Table bordered hover className="mb-0">
+                        <thead className="table-light sticky-top">
+                          <tr>
+                            <th>Product Name</th>
+                            <th className="text-end">Sale Price</th>
+                            <th className="text-end">Stock</th>
+                            <th>Location</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {products
+                            .filter((product) => {
+                              if (
+                                !row.category ||
+                                row.category === "" ||
+                                row.category === "ALL"
+                              )
+                                return true;
+
+                              const productCat =
+                                product.category_name || "";
+                              return productCat === row.category;
+                            })
+                            .map((product) => {
+                              let salePrice = "0";
+                              let stock = "0";
+                              let location = "-";
+
+                              try {
+                                const sp = JSON.parse(
+                                  product.sale_price || "{}"
+                                );
+                                salePrice = sp.price || "0";
+                              } catch (e) { }
+                              try {
+                                const st = JSON.parse(
+                                  product.stock || "{}"
+                                );
+                                stock = st.opening_qty || "0";
+                                location = st.location || "-";
+                              } catch (e) { }
+
+                              return (
+                                <tr
+                                  key={product.product_id}
+                                  style={{ cursor: "pointer" }}
+                                  className="hover-row"
+                                  onClick={() => {
+                                    onRowChange(
+                                      row.id,
+                                      "product_name",
+                                      product.product_name
+                                    );
+                                    onRowChange(
+                                      row.id,
+                                      "product_id",
+                                      product.product_id
+                                    );
+                                    onRowChange(
+                                      row.id,
+                                      "hsn_code",
+                                      product.hsn_code || ""
+                                    );
+                                    onRowChange(
+                                      row.id,
+                                      "price",
+                                      salePrice
+                                    );
+                                    onRowChange(row.id, "qty", " ");
+
+                                    const cat =
+                                      product.category_name || "";
+                                    onRowChange(
+                                      row.id,
+                                      "category",
+                                      cat
+                                    );
+                                    const unitValue =
+                                      product.unit_value || "";
+                                    onRowChange(
+                                      row.id,
+                                      "unit",
+                                      unitValue
+                                    );
+
+                                    setShowProductTable(false);
+                                  }}
+                                >
+                                  <td>
+                                    <strong>{product.product_name}</strong>
+                                  </td>
+                                  <td className="text-end text-success fw-bold">
+                                    ₹{salePrice}
+                                  </td>
+                                  <td className="text-center">
+                                    {stock}
+                                  </td>
+                                  <td className="text-center">
+                                    {location}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+
+                          {products.filter((p) => {
+                            if (
+                              !row.category ||
+                              row.category === "" ||
+                              row.category === "ALL"
+                            )
+                              return true;
+                            const cat = p.category_name || "";
+                            return cat === row.category;
+                          }).length === 0 && (
+                              <tr>
+                                <td
+                                  colSpan="4"
+                                  className="text-center py-5 text-muted"
+                                >
+                                  <h5>
+                                    No products found in "
+                                    {row.category}" category
+                                  </h5>
+                                  <small>
+                                    Available categories: stationary,
+                                    groceries
+                                  </small>
+                                </td>
+                              </tr>
+                            )}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </td>
+
+            {formData.visibleColumns.description && (
+              <td>
+                {isViewMode ? (
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      border: "1px solid #ced4da",
+                      borderRadius: "6px",
+                      backgroundColor: "#e9ecef",
+                      minHeight: "38px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ color: "#000" }}>
+                      {row.Description || "N/A"}
+                    </span>
+                  </div>
+                ) : (
+                  <TextArea
+                    value={row.Description || ""}
+                    onChange={(e) =>
+                      onRowChange(row.id, "Description", e.target.value)
+                    }
+                    readOnly={isDisabled}
+                    placeholder="Enter item description"
+                    rows={2}
+                  />
+                )}
+              </td>
+            )}
+            
+            {formData.visibleColumns.hsn_code && (
+              <td>
+                {isViewMode ? (
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      border: "1px solid #ced4da",
+                      borderRadius: "6px",
+                      backgroundColor: "#e9ecef",
+                      minHeight: "38px",
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ color: "#000" }}>
+                      {String(row.hsn_code || "").trim() || "N/A"}
+                    </span>
+                  </div>
+                ) : (
+                  <TextArea
+                    type="text"
+                    value={String(row.hsn_code || "").trim()}
+                    onChange={(e) =>
+                      onRowChange(row.id, "hsn_code", e.target.value)
+                    }
+                    readOnly={isDisabled}
+                  />
+                )}
+              </td>
+            )}
+
+            <td>
+              <TextInputform
+                expanse="number"
+                value={row.qty}
+                onChange={(e) =>
+                  onRowChange(row.id, "qty", e.target.value)
+                }
+                readOnly={isDisabled}
+              />
+            </td>
+            <td>
+              {isViewMode ? (
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "6px",
+                    backgroundColor: "#e9ecef",
+                    minHeight: "38px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ color: "#000" }}>
+                    {row.unit || "NONE"}
+                  </span>
+                </div>
+              ) : (
+                <Select
+                  value={
+                    unitOptions.find(
+                      (opt) => opt.value === row.unit
+                    ) || unitOptions[0]
+                  }
+                  options={unitOptions}
+                  onChange={(selectedOption) =>
+                    onRowChange(row.id, "unit", selectedOption.value)
+                  }
+                  isDisabled={isDisabled}
+                  menuPortalTarget={document.body}
+                  styles={{
+                    menuPortal: (base) => ({
+                      ...base,
+                      zIndex: 9999,
+                    }),
+                  }}
+                />
+              )}
+            </td>
+            <td>
+              <TextInputform
+                expanse="number"
+                value={row.price}
+                onChange={(e) =>
+                  onRowChange(row.id, "price", e.target.value)
+                }
+                readOnly={isDisabled}
+              />
+            </td>
+            <td>
+              {isViewMode ? (
+                <div
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #ced4da",
+                    borderRadius: "6px",
+                    backgroundColor: "#e9ecef",
+                    minHeight: "38px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ color: "#000" }}>
+                    {row.priceUnitType || "Without Tax"}
+                  </span>
+                </div>
+              ) : (
+                <DropDown
+                  value={row.priceUnitType}
+                  onChange={(v) =>
+                    onRowChange(row.id, "priceUnitType", v)
+                  }
+                  options={priceUnitTypeOptions}
+                  disabled={isDisabled}
+                />
+              )}
+            </td>
+
+            {formData.visibleColumns.discount && (
+              <td>
+                <InputGroup size="sm">
+                  <FormControl
+                    expanse="number"
+                    placeholder="%"
+                    value={row.discountPercent}
+                    onChange={(e) =>
+                      onRowChange(
+                        row.id,
+                        "discountPercent",
+                        e.target.value
+                      )
+                    }
+                    readOnly={isDisabled}
+                  />
+                  <FormControl
+                    value={row.discountAmount}
+                    readOnly
+                  />
+                </InputGroup>
+              </td>
+            )}
+
+            <td>
+              {isViewMode ? (
+                <div>
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      border: "1px solid #ced4da",
+                      borderRadius: "6px",
+                      backgroundColor: "#e9ecef",
+                      minHeight: "38px",
+                      display: "flex",
+                      alignItems: "center",
+                      marginBottom: "5px",
+                    }}
+                  >
+                    <span style={{ color: "#000" }}>
+                      {row.taxPercent}%
+                    </span>
+                  </div>
+                  <TextInputform
+                    readOnly
+                    value={row.taxAmount || "0.00"}
+                    style={{ marginTop: "5px" }}
+                    className="text-center"
+                  />
+                </div>
+              ) : (
+                <>
+                  <Select
+                    value={
+                      TAX_OPTIONS.find(
+                        (opt) => String(opt.value) === String(row.taxPercent)
+                      ) || TAX_OPTIONS[0]
+                    }
+                    onChange={(v) =>
+                      onRowChange(row.id, "taxPercent", v.value)
+                    }
+                    options={TAX_OPTIONS}
+                    isDisabled={isDisabled}
+                    menuPortalTarget={document.body}
+                    styles={{
+                      menuPortal: (base) => ({
+                        ...base,
+                        zIndex: 9999,
+                      }),
+                    }}
+                  />
+                  <TextInputform
+                    readOnly
+                    value={row.taxAmount || "0.00"}
+                    style={{ marginTop: "5px" }}
+                    className="text-center"
+                  />
+                </>
+              )}
+            </td>
+            <td>
+              <TextInputform readOnly value={row.amount} />
+            </td>
+            <td>
+              {!isViewMode && (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => deleteRow(row.id)}
+                >
+                  <FaTimes />
+                </Button>
+              )}
+            </td>
+          </tr>
+        ))}
+
+        {!isViewMode && (
+          <tr>
+            <td colSpan={
+              1 + // #
+              (formData.visibleColumns.category ? 1 : 0) +
+              1 + // Item
+              (formData.visibleColumns.description ? 1 : 0) +
+              (formData.visibleColumns.hsn_code ? 1 : 0) +
+              1 + // Qty
+              1 + // Unit
+              1 + // Price
+              1 + // Price/unit
+              (formData.visibleColumns.discount ? 1 : 0) +
+              1 + // Tax
+              1 + // Amount
+              1 // Actions
+            }>
+              <Button size="sm" onClick={addRow}>
+                <FaPlus /> ADD ROW
+              </Button>
+            </td>
+          </tr>
+        )}
+
+        {/* FIXED TOTAL ROW */}
+        <tr>
+          {/* "TOTAL" label - spans columns up to Qty */}
+          <td colSpan={
+            1 + // #
+            (formData.visibleColumns.category ? 1 : 0) +
+            1 + // Item
+            (formData.visibleColumns.description ? 1 : 0) +
+            (formData.visibleColumns.hsn_code ? 1 : 0)
+          }>
+            <strong>TOTAL</strong>
+          </td>
+
+          {/* Qty total */}
+          <td className="fw-bold text-center">{totalQty}</td>
+
+          {/* Empty columns for Unit, Price, Price/unit */}
+          <td></td> {/* Unit */}
+          <td></td> {/* Price */}
+          <td></td> {/* Price/unit */}
+
+          {/* Empty Discount column if shown */}
+          {formData.visibleColumns.discount && <td></td>}
+
+          {/* Tax total */}
+          <td className="fw-bold text-center">{totalTax.toFixed(2)}</td>
+
+          {/* Amount total */}
+          <td className="fw-bold text-end">{totalAmountRaw.toFixed(2)}</td>
+
+          {/* Empty Actions column */}
+          <td></td>
+        </tr>
+      </tbody>
+    </Table>
+  </Col>
+</Row>
 
             <Row className="additional-actions mt-3 align-items-center">
               <Col xs={3}>
