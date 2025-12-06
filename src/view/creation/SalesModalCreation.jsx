@@ -735,12 +735,60 @@ const priceUnitTypeOptions = PRICE_UNIT_TYPES.map((pt) => ({value: pt, label: pt
             <Row className="mb-3">
               <Col md={9}>
                 <Row className="mb-3">
-                  {!isViewMode && (
+                  {/* {!isViewMode && (
                   <div className="mb-3">
                   <label className="me-2">Credit</label>
                   <input type="checkbox" checked={credit} onChange={toggleCredit}/>
                   <label className="me-2">Cash</label>
-                  </div>)}
+                  </div>)} */}
+                  {!isViewMode && (
+  <div className="d-flex align-items-center gap-4 mb-3">
+    {/* Credit Label */}
+    <span className={`fw-medium ${credit ? "text-primary" : "text-muted"}`}>
+      Credit
+    </span>
+
+    {/* Small & Clean Toggle Switch */}
+    <label className="position-relative d-inline-block" style={{ cursor: "pointer" }}>
+      <input
+        type="checkbox"
+        checked={credit}
+        onChange={toggleCredit}
+        style={{ opacity: 0, width: 0, height: 0, position: "absolute" }}
+      />
+      <span
+        style={{
+          display: "block",
+          width: "44px",
+          height: "24px",
+          backgroundColor: credit ? "#0d6efd" : "#ced4da",
+          borderRadius: "12px",
+          position: "relative",
+          transition: "background-color 0.25s ease",
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            top: "3px",
+            left: credit ? "22px" : "3px",
+            width: "18px",
+            height: "18px",
+            backgroundColor: "white",
+            borderRadius: "50%",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.3)",
+            transition: "left 0.25s ease",
+          }}
+        />
+      </span>
+    </label>
+
+    {/* Cash Label – Now fully visible */}
+    <span className={`fw-medium ${!credit ? "text-success" : "text-muted"}`}>
+      Cash
+    </span>
+  </div>
+)}
                   <Col md={3}>
                   <label>Customer Name</label>
                   <div className="d-flex gap-2">
