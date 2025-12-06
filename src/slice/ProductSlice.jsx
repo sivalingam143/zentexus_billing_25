@@ -8,7 +8,8 @@ import {
   deleteProductApi,
   bulkUpdateProductStatusApi,
   bulkAssignProductCodeApi,
-  bulkAssignUnitsApi
+  bulkAssignUnitsApi,
+  bulkUpdateItemsApi,
 } from "../services/ProductService";
 
 
@@ -55,6 +56,18 @@ export const bulkAssignProductCode = createAsyncThunk(
   }
 );
 
+export const bulkUpdateItems = createAsyncThunk(
+  "product/bulkUpdateItems",
+  async (payload, { rejectWithValue }) => {
+    try {
+      await bulkUpdateItemsApi(payload);
+      // We rely on the fetchProducts call after closing the modal for fresh data
+      return payload; 
+    } catch (error) {
+      return rejectWithValue(error.message || "Bulk update failed");
+    }
+  }
+);
 
 
 export const fetchProducts = createAsyncThunk(
@@ -189,6 +202,46 @@ const productSlice = createSlice({
       : p
   );
 })
+
+// src/slice/productSlice.js
+
+// ... (other addCase blocks)
+// FIX: Bulk Update Items (Logic condensed and moved inline as requested)
+        .addCase(bulkUpdateItems.fulfilled, (state, action) => {
+            const { product_ids, ...payloadFields } = action.payload; 
+
+            const fieldsToUpdate = {};
+            for (const key in payloadFields) {
+                const value = payloadFields[key];
+                
+                // Skip control flags, null, and undefined values
+                if (key === 'bulk_update_items' || value === null || value === undefined) {
+                    continue;
+                }
+
+                // 1. Handle HSN Code (convert to number)
+                if (key === 'hsn_code' && value !== '') {
+                    fieldsToUpdate[key] = parseInt(value, 10);
+                } 
+                // 2. Sanitize price strings (empty string to "{}")
+                else if ((key === 'sale_price' || key === 'purchase_price') && value === '') {
+                    fieldsToUpdate[key] = "{}";
+                } 
+                // 3. All other valid fields (category_id, tax_rate, etc.)
+                else {
+                    fieldsToUpdate[key] = value;
+                }
+            }
+
+            // The simple mapping part
+            state.products = state.products.map((product) => {
+                if (product_ids.includes(product.product_id)) {
+                    return { ...product, ...fieldsToUpdate }; 
+                }
+                return product;
+            });
+            state.status = "succeeded";
+        })
   },
 });
 

@@ -204,9 +204,10 @@ try {
     try {
       const p = JSON.parse(editProduct.purchase_price);
       setPurchasePriceDetails({
-        price: p.price || "",
-        tax_type: p.tax_type || "Without Tax",
-        tax_rate: p.tax_rate || "None"
+  price: p.price || "",
+  tax_type: p.tax_type || "Without Tax",
+  tax_rate: editProduct.tax_rate || "None"   // This line fixes edit modal
+
       });
     } catch (e) {}
   }

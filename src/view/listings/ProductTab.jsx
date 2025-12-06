@@ -7,9 +7,11 @@ import AddItem from "../creation/ItemModalCreation";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts, deleteProduct } from "../../slice/ProductSlice";
 import BulkProductModal from "../creation/BulkProductModal";
+import BulkUpdateModal from "../creation/BulkUpdateModal";
 import "../../App.css";
 
 export default function ProductTab() {
+  const $ = (json) => { try { return JSON.parse(json) } catch { return {} } };
   const [showAdjustItem, setShowAdjustItem] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -98,9 +100,9 @@ useEffect(() => {
   <Dropdown.Item onClick={() => setBulkModal({ show: true, type: "assignUnits" })}>
     Assign Units
   </Dropdown.Item>
-  <Dropdown.Item onClick={() => setBulkModal({ show: true, type: "update" })}>
-    Bulk Update Items
-  </Dropdown.Item>
+<Dropdown.Item onClick={() => setBulkModal({ show: false, type: "update" })}>
+  Bulk Update Items
+</Dropdown.Item>
 </DropdownButton>
 
             </div>
@@ -123,9 +125,9 @@ useEffect(() => {
                     </tr>
                   ) : (
                     activeProducts.map((product) => { // <-- Use activeProducts here
-                      const salePrice = product.sale_price ? JSON.parse(product.sale_price) : {};
-                      const purchasePrice = product.purchase_price ? JSON.parse(product.purchase_price) : {};
-                      const stock = product.stock ? JSON.parse(product.stock) : {};
+                      const salePrice = product.sale_price ? $(product.sale_price) : {};
+                      const purchasePrice = product.purchase_price ? $(product.purchase_price) : {};
+                      const stock = product.stock ? $(product.stock) : {};
               const qty = parseFloat(stock.current_qty ?? stock.opening_qty ?? 0);
 
                       return (
@@ -186,9 +188,9 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
             <h5 className="fw-bold mb-1">{selectedProduct.product_name}</h5>
 
             {(() => {
-              const sale = selectedProduct.sale_price ? JSON.parse(selectedProduct.sale_price) : {};
-              const purchase = selectedProduct.purchase_price ? JSON.parse(selectedProduct.purchase_price) : {};
-              const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
+              const sale = selectedProduct.sale_price ? $(selectedProduct.sale_price) : {};
+              const purchase = selectedProduct.purchase_price ? $(selectedProduct.purchase_price) : {};
+              const stock = selectedProduct.stock ? $(selectedProduct.stock) : {};
 
               const openingQty = parseFloat(stock.opening_qty) || 0;
               const atPrice = parseFloat(stock.at_price) || 0;
@@ -218,7 +220,7 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
             </Button>
 
            {(() => {
-  const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
+  const stock = selectedProduct.stock ? $(selectedProduct.stock) : {};
   const qty = parseFloat(stock.current_qty ?? stock.opening_qty ?? 0);
   const value = parseFloat(stock.current_value ?? 0);
 
@@ -272,7 +274,7 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
           {(() => {
             if (!selectedProduct) return null;
 
-            const stock = selectedProduct.stock ? JSON.parse(selectedProduct.stock) : {};
+            const stock = selectedProduct.stock ? $(selectedProduct.stock) : {};
             let transactions = [...(stock.transactions || [])];
 
             // Opening stock first
@@ -385,6 +387,11 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
   actionButtonText={bulkModal.type === "inactive" ? "Mark as Inactive" : "Mark as Active"}
   actionButtonVariant={bulkModal.type === "inactive" ? "danger" : "success"}
   isBulkInactive={bulkModal.type === "inactive"}
+/>
+
+<BulkUpdateModal
+  show={bulkModal.type === "update"}
+  onHide={() => setBulkModal({ show: false, type: "" })}
 />
     </Row>
   );

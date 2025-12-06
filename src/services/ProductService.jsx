@@ -104,3 +104,22 @@ export const bulkAssignUnitsApi = async ({ product_ids, unit_value,unit_id }) =>
   }
   return data;
 };
+
+// ... (existing service imports and functions)
+
+// NEW: BULK UPDATE ITEMS (Category, Tax, Discount, Code)
+export const bulkUpdateItemsApi = async (payload) => {
+  // payload should include: product_ids, category_id, tax_type, tax_rate, discount_type, discount_value, product_code
+  const finalPayload = {
+    bulk_update_items: true, // Backend identifier
+    ...payload,
+  };
+
+  const response = await axiosInstance.post(API_ENDPOINT, finalPayload);
+  const { data } = response;
+
+  if (data.head?.code !== 200) {
+    throw new Error(data.head?.msg || "Bulk item update failed");
+  }
+  return data;
+};
