@@ -2164,7 +2164,7 @@ const SaleCreation = () => {
                     value={(
                       Number(formData.total || 0) -
                       Number(formData.received_amount || 0)
-                    ).toFixed(2)}
+                    )}
                     style={{
                       width: "160px",
                       textAlign: "center",
