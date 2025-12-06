@@ -49,7 +49,7 @@ const navigate = useNavigate();
                     borderRadius: "20px",
                     minWidth: "110px",
                   }}
-                  onClick={() => navigate("/dashboardsale")}
+                  onClick={() => navigate("/sale/create")}
                 >
                   +Add Sale
                 </Button>
