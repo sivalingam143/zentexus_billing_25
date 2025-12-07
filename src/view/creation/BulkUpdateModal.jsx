@@ -328,8 +328,8 @@ const handleUpdate = () => {
         hasChanges = true;
     }
     // Send tax_rate to backend
-
-
+    // ADD THIS → Tax Rate (exactly like your current payload expects)
+ 
     // 3. Sale Price JSON (Requires parsing and comparison)
     // Pull original values out of the JSON string
    // 3. Sale Price JSON – ONLY THIS MATTERS
@@ -351,12 +351,15 @@ if (newSaleJSON !== (original?.sale_price ?? '{}')) {
 }
 
     // 4. Purchase Price JSON
+       // 4. Purchase Price JSON — INCLUDING tax_rate inside it
     const origPurchase = original?.purchase_price ? $(original.purchase_price) : {};
     
     const newPurchaseObject = {
-        price: edited.purchase_price ?? origPurchase.price ?? "0",
+        price: edited.purchase_price ?? origPurchase.price ?? "",
         tax_type: edited.purchase_tax_type ?? origPurchase.tax_type ?? "Excluded",
+        tax_rate: edited.tax_rate ?? origPurchase.tax_rate ?? "None",  // ← THIS LINE ADDED
     };
+
     const newPurchaseJSON = JSON.stringify(newPurchaseObject);
 
     if (newPurchaseJSON !== (original?.purchase_price ?? '{}')) {
