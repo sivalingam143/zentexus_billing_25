@@ -3,7 +3,10 @@ import { Container, Row, Col, Card, Button, Dropdown } from "react-bootstrap";
 import { FaArrowDown, FaArrowUp } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useNavigate } from "react-router-dom";
+import AddMoreModal from "../creation/AddMoreModal"; 
 const DashBoard = () => {
+const [showAddMore, setShowAddMore] = useState(false);
+const [showQuickAdd, setShowQuickAdd] = useState(false);
 const [isEditing, setIsEditing] = useState(false);
 const [businessName, setBusinessName] = useState("");
 const navigate = useNavigate();
@@ -70,7 +73,7 @@ const navigate = useNavigate();
                     borderRadius: "20px",
                     minWidth: "110px",
                     color: "white"
-                  }}
+                  }}onClick={() => setShowAddMore(true)}
                 >
                   +Add More
                 </Button>
@@ -318,6 +321,10 @@ const navigate = useNavigate();
           </Col>
         </Row>
       </Container>
+      <AddMoreModal 
+        show={showAddMore} 
+        onHide={() => setShowAddMore(false)} 
+      />
     </div>
   );
 };

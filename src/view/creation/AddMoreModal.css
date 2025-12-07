@@ -1,0 +1,131 @@
+/* AddMoreModal.css - EXACT MATCH GUARANTEED */
+.add-more-modal .modal-content {
+  width: 950px !important;
+  max-width: none !important;
+  border: 1px solid #d6d8db;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  overflow: hidden;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0 auto;
+}
+
+.add-more-modal .modal-body { padding: 0; }
+
+/* Header - SALE | PURCHASE | OTHERS */
+.header-row {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.header-col {
+  flex: 1;
+  padding: 13px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #2d2d2d;
+  letter-spacing: 0.2px;
+}
+
+/* Main 3 Columns */
+.columns {
+  display: flex;
+  background: #ffffff;
+}
+
+/* Each Column */
+.column {
+  flex: 1;
+  border-right: 1px solid #e9ecef;
+  min-width: 250px;
+}
+.column:last-child { border-right: none; }
+
+/* Item Row */
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.18s ease;
+}
+
+.item:hover {
+  background: #f5f7fa;
+}
+
+/* First item in each column - Blue & Underlined */
+.item.first-item {
+  color: #007bff !important;
+  font-weight: 500;
+}
+
+.item.first-item .label {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+/* Label with Blue Bullet */
+.label {
+  font-size: 14px;
+  color: #212529;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.label::before {
+  content: "●";
+  color: #007bff;
+  font-size: 8px;
+  position: relative;
+  top: -0.5px;
+}
+
+/* Shortcut Text */
+.shortcut {
+  font-size: 12px;
+  color: #6c757d;
+  font-family: "Courier New", monospace;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Cr Note / Dr Note - Small Gray */
+.subnote {
+  padding: 3px 20px 9px 39px;
+  font-size: 11.8px;
+  color: #888 !important;
+  font-weight: 400;
+}
+
+/* Footer - EXACT Yellow */
+.footer {
+  background: #fff8e1;
+  border-top: 1px solid #ffe58f;
+  padding: 11px 20px;
+  font-size: 12.5px;
+  color: #856404;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+}
+
+.footer kbd {
+  background: #ffffff;
+  border: 1px solid #d4b106;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #856404;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  min-width: 42px;
+  text-align: center;
+}
