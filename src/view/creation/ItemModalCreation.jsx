@@ -28,7 +28,29 @@ import {
 import "bootstrap/dist/css/bootstrap.min.css";
 import "react-datepicker/dist/react-datepicker.css";
 import "../../App.css";
+const TAX_RATES = [
+  "None",
+  "IGST@0%",
+  "IGST@0.25%",
+  "IGST@3%",
+  "IGST@5%",
+  "IGST@12%",
+  "IGST@18%",
+  "IGST@28%",
+  "CGST@0% + SGST@0%",
+  "CGST@0.125% + SGST@0.125%",
+  "CGST@1.5% + SGST@1.5%",
+  "CGST@2.5% + SGST@2.5%",
+  "CGST@6% + SGST@6%",
+  "CGST@9% + SGST@9%",
+  "CGST@14% + SGST@14%",
+  "Exempt",
+];
+const taxTypeToLabel = (value) =>
+  value === "Included" ? "With Tax" : "Without Tax";
 
+const labelToTaxType = (label) =>
+  label === "With Tax" ? "Included" : "Excluded";
 const ImageModal = ({ show, onHide, imageSrc }) => (
   <Modal show={show} onHide={onHide} centered size="lg">
     <Modal.Header closeButton>
@@ -92,6 +114,7 @@ const handleSaveUnitMapping = (mapping) => {
     tax_type: "Without Tax",
     tax_rate: "None",
   });
+  
   const [stockDetails, setStockDetails] = useState({
     opening_qty: "",
     at_price: "",
@@ -133,6 +156,13 @@ useEffect(() => {
     setType("add");           
   }
 }, [editProduct, activeTab]);
+useEffect(() => {
+  if (!show) return;
+
+  if (!editProduct) {
+    resetForm(); // ✅ only for ADD
+  }
+}, [show, editProduct]);
 
 useEffect(() => {
   if (!editProduct || !show) return;
@@ -206,7 +236,7 @@ try {
       setPurchasePriceDetails({
   price: p.price || "",
   tax_type: p.tax_type || "Without Tax",
-  tax_rate: editProduct.tax_rate || "None"   // This line fixes edit modal
+  tax_rate: p.tax_rate || "None"  // This line fixes edit modal
 
       });
     } catch (e) {}
@@ -397,7 +427,7 @@ const enhancedStock = {
           ...commonData,
           purchase_price: JSON.stringify({
             price: purchasePriceDetails.price || "0",
-            tax_type: purchasePriceDetails.tax_type,
+            tax_type: labelToTaxType(purchasePriceDetails.tax_type),
             tax_rate: purchasePriceDetails.tax_rate,
           }),
           stock: JSON.stringify(enhancedStock),
@@ -894,19 +924,21 @@ const enhancedStock = {
                       >
                         <h6 className="mb-3">Taxes</h6>
                         <Form.Select
-                          className="white-input"
-                          value={purchasePriceDetails.tax_rate}
-                          onChange={(e) =>
-                            setPurchasePriceDetails({
-                              ...purchasePriceDetails,
-                              tax_rate: e.target.value,
-                            })
-                          }
-                        >
-                          <option>Tax Rate</option>
-                          <option>None</option>
-                          <option>IGST @0.25%</option>
-                        </Form.Select>
+  className="white-input"
+  value={purchasePriceDetails.tax_rate || ""}
+  onChange={(e) =>
+    setPurchasePriceDetails({
+      ...purchasePriceDetails,
+      tax_rate: e.target.value,
+    })
+  }
+>
+  <option value="">Tax Rate</option>
+  {TAX_RATES.map(rate => (
+    <option key={rate} value={rate}>{rate}</option>
+  ))}
+</Form.Select>
+
                       </Card>
                     </Col>
                   </Row>

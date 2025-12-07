@@ -163,7 +163,21 @@ const productSlice = createSlice({
           (p) => p.item_code === updated.edit_item_code || p.item_code === updated.item_code
         );
         if (index !== -1) {
-          state.products[index] = { ...state.products[index], ...updated };
+ state.products[index] = {
+  ...state.products[index],
+  ...updated,
+
+  purchase_price:
+    updated.purchase_price !== undefined
+      ? updated.purchase_price
+      : state.products[index].purchase_price,
+       tax_rate:
+    updated.tax_rate !== undefined
+      ? updated.tax_rate
+      : state.products[index].tax_rate,
+
+};
+
         }
       })
 
@@ -224,9 +238,13 @@ const productSlice = createSlice({
                     fieldsToUpdate[key] = parseInt(value, 10);
                 } 
                 // 2. Sanitize price strings (empty string to "{}")
-                else if ((key === 'sale_price' || key === 'purchase_price') && value === '') {
-                    fieldsToUpdate[key] = "{}";
-                } 
+               else if (key === 'sale_price' && value === '') {
+  fieldsToUpdate.sale_price = "{}";
+}
+
+else if (key === 'purchase_price' && value === '') {
+  fieldsToUpdate.purchase_price = "{}";
+}
                 // 3. All other valid fields (category_id, tax_rate, etc.)
                 else {
                     fieldsToUpdate[key] = value;
@@ -236,7 +254,26 @@ const productSlice = createSlice({
             // The simple mapping part
             state.products = state.products.map((product) => {
                 if (product_ids.includes(product.product_id)) {
-                    return { ...product, ...fieldsToUpdate }; 
+                    return {
+  ...product,
+  ...fieldsToUpdate,
+
+  sale_price:
+    fieldsToUpdate.sale_price !== undefined
+      ? fieldsToUpdate.sale_price || "{}"
+      : product.sale_price,
+
+  purchase_price:
+    fieldsToUpdate.purchase_price !== undefined
+      ? fieldsToUpdate.purchase_price || "{}"
+      : product.purchase_price,
+
+  stock:
+    fieldsToUpdate.stock !== undefined
+      ? fieldsToUpdate.stock || "{}"
+      : product.stock,
+};
+
                 }
                 return product;
             });

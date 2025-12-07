@@ -1,6 +1,4 @@
 
-
-
 // src/components/modals/BulkUpdateModal.jsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -17,6 +15,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { bulkUpdateItems, fetchProducts } from "../../slice/ProductSlice";
 import { fetchCategories } from "../../slice/CategorySlice";
 const $ = (json) => { try { return JSON.parse(json) } catch { return {} } };
+
+
+
 const TAX_RATES = [
   "None",
   "IGST@0%", "IGST@0.25%", "IGST@3%", "IGST@5%", "IGST@12%", "IGST@18%", "IGST@28%",
@@ -26,26 +27,28 @@ const TAX_RATES = [
 ];
 
 // Memoized Row Component - THIS FIXES INPUT/CHECKBOX/DROPDOWN ISSUES
-const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggleSelect, handleFieldChange, categories, categoryStatus }) => {
+const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggleSelect, handleFieldChange, categories, categoryStatus, activeSection      }) => {
   const vals = editValues[product.product_id] || {};
   const sale = product.sale_price ? $(product.sale_price) : {};
   const purchase = product.purchase_price ? $(product.purchase_price) : {};
 
   const isSelected = selectedItems.includes(product.product_id);
-
+ // "Pricing", "Stock", "Item Info"
   return (
-    <tr>
-      <td>
-        <Form.Check
-          type="checkbox"
-          checked={isSelected}
-          onChange={() => toggleSelect(product.product_id)}
-        />
-      </td>
-      <td>{idx + 1}</td>
-      <td >{product.product_name}</td>
+   <tr>
+  <td>
+    <Form.Check
+      type="checkbox"
+      checked={isSelected}
+      onChange={() => toggleSelect(product.product_id)}
+    />
+  </td>
+  <td>{idx + 1}</td>
 
-      {/* CATEGORY */}
+  {activeSection === "Pricing" && (
+    <>
+      <td>{product.product_name}</td>
+
       <td>
         {categoryStatus === "loading" ? (
           <Spinner animation="border" size="sm" />
@@ -75,7 +78,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         )}
       </td>
 
-      {/* HSN */}
       <td>
         <Form.Control
           size="sm"
@@ -85,7 +87,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         />
       </td>
 
-      {/* Purchase Price */}
       <td>
         <Form.Control
           size="sm"
@@ -95,7 +96,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         />
       </td>
 
-      {/* Purchase Tax Type */}
       <td>
         <DropdownButton
           title={vals.purchase_tax_type || purchase.tax_type || "Excluded"}
@@ -113,7 +113,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         </DropdownButton>
       </td>
 
-      {/* Sale Price */}
       <td>
         <Form.Control
           size="sm"
@@ -123,7 +122,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         />
       </td>
 
-      {/* Sale Tax Type */}
       <td>
         <DropdownButton
           title={vals.sale_tax_type || sale.tax_type || "Excluded"}
@@ -141,7 +139,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         </DropdownButton>
       </td>
 
-      {/* Discount */}
       <td>
         <Form.Control
           size="sm"
@@ -151,7 +148,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         />
       </td>
 
-      {/* Discount Type */}
       <td>
         <DropdownButton
           title={vals.discount_type || sale.discount_type || "Percentage"}
@@ -169,7 +165,6 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
         </DropdownButton>
       </td>
 
-      {/* Tax Rate */}
       <td>
         <DropdownButton
           title={vals.tax_rate || product.tax_rate || "None"}
@@ -186,9 +181,130 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
           ))}
         </DropdownButton>
       </td>
-    </tr>
+    </>
+  )}
+
+
+{activeSection === "Stock" && (
+  <>
+    <td>{product.product_name}</td>
+
+    <td>
+      <Form.Control
+        size="sm"
+        type="number"
+        value={vals.opening_qty ?? product.opening_qty ?? ""}
+        onChange={(e) =>
+          handleFieldChange(product.product_id, "opening_qty", e.target.value)
+        }
+      />
+    </td>
+
+    <td>
+      <Form.Control
+        size="sm"
+        type="number"
+        value={vals.opening_rate ?? product.opening_rate ?? ""}
+        onChange={(e) =>
+          handleFieldChange(product.product_id, "opening_rate", e.target.value)
+        }
+      />
+    </td>
+
+    <td>
+      <Form.Control
+        size="sm"
+        type="date"
+        value={vals.opening_date ?? product.opening_date ?? ""}
+        onChange={(e) =>
+          handleFieldChange(product.product_id, "opening_date", e.target.value)
+        }
+      />
+    </td>
+
+    <td>
+      <Form.Control
+        size="sm"
+        type="number"
+        value={vals.min_stock ?? product.min_stock ?? ""}
+        onChange={(e) =>
+          handleFieldChange(product.product_id, "min_stock", e.target.value)
+        }
+      />
+    </td>
+
+    <td>
+      <Form.Control
+        size="sm"
+        type="text"
+        value={vals.location ?? product.location ?? ""}
+        onChange={(e) =>
+          handleFieldChange(product.product_id, "location", e.target.value)
+        }
+      />
+    </td>
+  </>
+)}
+
+
+{activeSection === "Item Info" && (
+  <>
+    <td>{product.product_name}</td>
+
+    <td>
+      {categoryStatus === "loading" ? (
+        <Spinner size="sm" />
+      ) : (
+        <DropdownButton
+          title={vals.category_name || product.category_name || "Select"}
+          size="sm"
+          variant="outline-secondary"
+        >
+          {categories.map((cat) => (
+            <Dropdown.Item
+              key={cat.category_id}
+              onClick={() =>
+                handleFieldChange(
+                  product.product_id,
+                  "category_id",
+                  cat.category_id,
+                  "category_name",
+                  cat.category_name
+                )
+              }
+            >
+              {cat.category_name}
+            </Dropdown.Item>
+          ))}
+        </DropdownButton>
+      )}
+    </td>
+
+    <td>
+      <Form.Control
+        size="sm"
+        value={vals.hsn_code ?? product.hsn_code ?? ""}
+        onChange={(e) =>
+          handleFieldChange(product.product_id, "hsn_code", e.target.value)
+        }
+      />
+    </td>
+
+    <td>
+      <Form.Control
+        size="sm"
+        value={vals.item_code ?? product.item_code ?? ""}
+        onChange={(e) =>
+          handleFieldChange(product.product_id, "item_code", e.target.value)
+        }
+      />
+    </td>
+  </>
+)}
+
+  </tr>
   );
-});
+  });
 
 const BulkUpdateModal = ({ show, onHide }) => {
   const dispatch = useDispatch();
@@ -203,6 +319,8 @@ const BulkUpdateModal = ({ show, onHide }) => {
   const [selectAll, setSelectAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editValues, setEditValues] = useState({});
+  const [activeSection, setActiveSection] = useState("Pricing");
+
 
   // Fetch categories
   useEffect(() => {
@@ -239,6 +357,13 @@ const BulkUpdateModal = ({ show, onHide }) => {
 
       purchase_price: purchase.price || "",
       purchase_tax_type: purchase.tax_type || "Excluded",
+      opening_qty: p.opening_qty || "",
+opening_rate: p.opening_rate || "",
+opening_date: p.opening_date || "",
+min_stock: p.min_stock || "",
+location: p.location || "",
+item_code: p.item_code || "",
+
     };
   });
   setEditValues(initial);
@@ -310,6 +435,16 @@ const handleUpdate = () => {
     
     let hasChanges = false;
 
+    // STOCK FIELDS
+["opening_qty","opening_rate","opening_date","min_stock","location","item_code"]
+.forEach((field) => {
+  if (edited[field] !== undefined && edited[field] !== original[field]) {
+    payload[field] = edited[field];
+    hasChanges = true;
+  }
+});
+
+
     // --- Simple change detection for each field ---
 
     // 1. HSN Code (Number)
@@ -367,13 +502,7 @@ if (newSaleJSON !== (original?.sale_price ?? '{}')) {
         hasChanges = true;
     }
 
-    // 5. Tax Rate/Type (Simple strings, extracted from Sale Price above, but can be added here if needed separately)
-    // Note: If your backend expects tax_type/tax_rate as separate fields *outside* of the sale_price JSON, 
-    // you would add explicit checks here. Based on your PHP, they look like separate fields, 
-    // but your BulkUpdateModal JSX seems to embed them in sale_price/purchase_price.
-    // For consistency with the JSON structure used above, we'll assume the JSON strings are sufficient.
     
-    // --- End of change detection ---
 
     if (!hasChanges) {
         alert("No changes detected. Please edit a field before updating.");
@@ -414,11 +543,30 @@ if (newSaleJSON !== (original?.sale_price ?? '{}')) {
             />
           </InputGroup>
 
-          <div className="d-flex gap-2">
-            <Button variant="primary" size="sm">Pricing</Button>
-            <Button variant="outline-secondary" size="sm" disabled>Stock</Button>
-            <Button variant="outline-secondary" size="sm" disabled>Item Information</Button>
-          </div>
+         <div className="d-flex gap-2">
+  <Button
+    variant={activeSection === "Pricing" ? "primary" : "outline-secondary"}
+    size="sm"
+    onClick={() => setActiveSection("Pricing")}
+  >
+    Pricing
+  </Button>
+  <Button
+    variant={activeSection === "Stock" ? "primary" : "outline-secondary"}
+    size="sm"
+    onClick={() => setActiveSection("Stock")}
+  >
+    Stock
+  </Button>
+  <Button
+    variant={activeSection === "Item Info" ? "primary" : "outline-secondary"}
+    size="sm"
+    onClick={() => setActiveSection("Item Info")}
+  >
+    Item Information
+  </Button>
+</div>
+
         </div>
 
         <div className="d-flex justify-content-between align-items-center mb-2">
@@ -433,27 +581,52 @@ if (newSaleJSON !== (original?.sale_price ?? '{}')) {
         <div style={{ maxHeight: "1000px", overflow: "auto" }}>
           <Table bordered hover size="sm">
             <thead className="table-light sticky-top">
-              <tr>
-                <th style={{ width: "40px" }}>
-                  <Form.Check
-                    type="checkbox"
-                    checked={selectAll}
-                    onChange={(e) => setSelectAll(e.target.checked)}
-                  />
-                </th>
-                <th>#</th>
-                <th>ITEM NAME *</th>
-                <th>CATEGORY</th>
-                <th>ITEM HSN</th>
-                <th>PURCHASE PRICE</th>
-                <th>TAX TYPE</th>
-                <th>SALE PRICE</th>
-                <th>TAX TYPE</th>
-                <th>DISCOUNT</th>
-                <th>DISCOUNT TYPE</th>
-                <th>TAX RATE</th>
-              </tr>
-            </thead>
+  <tr>
+    <th style={{ width: 40 }}>
+      <Form.Check
+        checked={selectAll}
+        onChange={(e) => setSelectAll(e.target.checked)}
+      />
+    </th>
+    <th>#</th>
+
+    {activeSection === "Pricing" && (
+      <>
+        <th>ITEM NAME</th>
+        <th>CATEGORY</th>
+        <th>ITEM HSN</th>
+        <th>PURCHASE PRICE</th>
+        <th>TAX TYPE</th>
+        <th>SALE PRICE</th>
+        <th>TAX TYPE</th>
+        <th>DISCOUNT</th>
+        <th>DISCOUNT TYPE</th>
+        <th>TAX RATE</th>
+      </>
+    )}
+
+    {activeSection === "Stock" && (
+      <>
+        <th>ITEM NAME</th>
+        <th>OPENING QTY</th>
+        <th>AT PRICE</th>
+        <th>AS OF DATE</th>
+        <th>MIN STOCK</th>
+        <th>LOCATION</th>
+      </>
+    )}
+
+    {activeSection === "Item Info" && (
+      <>
+        <th>ITEM NAME</th>
+        <th>CATEGORY</th>
+        <th>ITEM HSN</th>
+        <th>ITEM CODE</th>
+      </>
+    )}
+  </tr>
+</thead>
+
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
@@ -473,6 +646,7 @@ if (newSaleJSON !== (original?.sale_price ?? '{}')) {
                     handleFieldChange={handleFieldChange}
                     categories={categories}
                     categoryStatus={categoryStatus}
+                      activeSection={activeSection}
                   />
                 ))
               )}
