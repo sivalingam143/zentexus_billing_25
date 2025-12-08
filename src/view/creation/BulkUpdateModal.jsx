@@ -252,25 +252,56 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
   <>
     <td>{product.product_name}</td>
 
+    {/* Category Dropdown */}
+    <td>
+      {categoryStatus === "loading" ? (
+        <Spinner animation="border" size="sm" />
+      ) : (
+        <DropdownButton
+          title={vals.category_name || product.category_name || "Select Category"}
+          size="sm"
+          variant="outline-secondary"
+        >
+          {categories.map((cat) => (
+            <Dropdown.Item
+              key={cat.category_id}
+              onClick={() =>
+                handleFieldChange(
+                  product.product_id,
+                  "category_id",
+                  cat.category_id,
+                  "category_name",
+                  cat.category_name
+                )
+              }
+            >
+              {cat.category_name}
+            </Dropdown.Item>
+          ))}
+        </DropdownButton>
+      )}
+    </td>
+
+    {/* HSN Code */}
     <td>
       <Form.Control
         size="sm"
+        type="text"
         value={vals.hsn_code ?? product.hsn_code ?? ""}
-        onChange={(e) =>
-          handleFieldChange(product.product_id, "hsn_code", e.target.value)
-        }
+        onChange={(e) => handleFieldChange(product.product_id, "hsn_code", e.target.value)}
       />
     </td>
 
-    <td>
-      <Form.Control
-        size="sm"
-        value={vals.item_code ?? product.item_code ?? ""}
-        onChange={(e) =>
-          handleFieldChange(product.product_id, "item_code", e.target.value)
-        }
-      />
-    </td>
+    {/* Item Code */}
+   {/* Item Code */}
+<td>
+  <Form.Control
+    size="sm"
+    type="text"
+    value={vals.item_code ?? product.product_code ?? ""}
+    onChange={(e) => handleFieldChange(product.product_id, "item_code", e.target.value)}  // ← FIXED: was "product_code"
+  />
+</td>
   </>
 )}
 
@@ -335,7 +366,7 @@ at_price: p.at_price || "",
 opening_date: p.opening_date || "",
 min_stock: p.min_stock || "",
 location: p.location || "",
-item_code: p.item_code || "",
+item_code: p.product_code || "",  // ← Use product_code from DB
 
     };
   });
@@ -454,7 +485,10 @@ if (Object.keys(stockPayload).length > 0) {
         payload.hsn_code = hsnValue;
         hasChanges = true;
     }
-
+if (edited.item_code !== undefined && edited.item_code !== (original?.product_code ?? "")) {
+  payload.product_code = edited.item_code;
+  hasChanges = true;
+}
     // 2. Category ID (String)
     const categoryIdValue = edited.category_id ?? original?.category_id ?? "";
     if (categoryIdValue !== (original?.category_id ?? "")) {

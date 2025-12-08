@@ -34,7 +34,7 @@ export default function MoveCategoryModal({
     if (selectedItems.length === filtered.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(filtered.map((p) => p.id));
+      setSelectedItems(filtered.map((p) => p.product_id));
     }
   };
 
@@ -109,11 +109,11 @@ export default function MoveCategoryModal({
                   : 0;
 
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.product_id}>
                     <td>
                       <Form.Check
-                        checked={selectedItems.includes(p.id)}
-                        onChange={() => toggleItem(p.id)}
+                        checked={selectedItems.includes(p.product_id)}
+                        onChange={() => toggleItem(p.product_id)}
                       />
                     </td>
                     <td>{p.product_name}</td>
