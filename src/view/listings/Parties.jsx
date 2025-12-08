@@ -39,7 +39,8 @@ const Initialstate = {
   limitType: "no",
   creditlimit: "",
   date: new Date(),
-  transactionType: "to pay",
+  // transactionType: "to pay",
+  transactionType: "to receive",
   additionalFields: [
     { id: 1, name: "Additional Field 1", isChecked: false, value: "" },
     { id: 2, name: "Additional Field 2", isChecked: false, value: "" },
@@ -140,6 +141,7 @@ function Parties() {
         formData.limitType === "custom"
           ? parseFloat(formData.creditlimit) || 0
           : 0,
+      // transactionType: formData.transactionType,
       transactionType: formData.transactionType,
       additional_field: additionalFieldsPayload,
     };

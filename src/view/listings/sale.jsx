@@ -515,6 +515,34 @@ const Sale = () => {
   const [selectedFirm, setSelectedFirm] = useState("All Firms");
   const [firmOpen, setFirmOpen] = useState(false);
 
+  // Multiple Tabs State
+  const [tabs, setTabs] = useState([
+    { id: 1, title: "Sale#1", active: true }
+  ]);
+  const [nextTabId, setNextTabId] = useState(2);
+
+  const addNewTab = () => {
+    const newTab = { id: nextTabId, title: `Sale#${nextTabId}`, active: true };
+    setTabs(prev => [
+      ...prev.map(t => ({ ...t, active: false })), // old tabs inactive
+      newTab
+    ]);
+    setNextTabId(nextTabId + 1);
+  };
+
+  const closeTab = (id) => {
+    if (tabs.length === 1) return;
+    const filtered = tabs.filter(t => t.id !== id);
+    if (filtered.length > 0 && !filtered.some(t => t.active)) {
+      filtered[filtered.length - 1].active = true;
+    }
+    setTabs(filtered);
+  };
+
+  const switchTab = (id) => {
+    setTabs(prev => prev.map(t => ({ ...t, active: t.id === id })));
+  };
+
   // Fetch sales on search change
   useEffect(() => {
     dispatch(searchSales(searchTerm));
