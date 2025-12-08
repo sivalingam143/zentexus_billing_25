@@ -11,7 +11,7 @@ import { Button, Table, Card, Dropdown,Modal } from "react-bootstrap";
 import PartyModal from "../creation/PartyModalCreation";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom"; // Added
-import {toast} from "react-toastify"         
+              
 
 import { FaFilter } from 'react-icons/fa';
 
@@ -39,8 +39,7 @@ const Initialstate = {
   limitType: "no",
   creditlimit: "",
   date: new Date(),
-  // transactionType: "to pay",
-  transactionType: "to receive",
+  transactionType: "to pay",
   additionalFields: [
     { id: 1, name: "Additional Field 1", isChecked: false, value: "" },
     { id: 2, name: "Additional Field 2", isChecked: false, value: "" },
@@ -141,7 +140,6 @@ function Parties() {
         formData.limitType === "custom"
           ? parseFloat(formData.creditlimit) || 0
           : 0,
-      // transactionType: formData.transactionType,
       transactionType: formData.transactionType,
       additional_field: additionalFieldsPayload,
     };
@@ -166,7 +164,6 @@ function Parties() {
       }
       success = true;
     } catch (error) {
-      toast.error(error?.message || "Party name already exists");
       console.error("Submission failed:", error);
     }
 
@@ -185,7 +182,6 @@ function Parties() {
       await dispatch(addNewParty(dataToSend)).unwrap();
       success = true;
     } catch (error) {
-      toast.error(error?.message || "Party name already exists");
       console.error("Save & New failed:", error);
     }
 

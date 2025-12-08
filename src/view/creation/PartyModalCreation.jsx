@@ -234,7 +234,7 @@ function PartyModal({
                   value={formData.amount || ""}
                   onChange={handleInputChange}
                 />
-                {/* <Form.Check
+                <Form.Check
                   inline
                   type="radio"
                   name="transactionType"
@@ -242,17 +242,8 @@ function PartyModal({
                   label="To Pay"
                   checked={formData.transactionType === "to pay"}
                   onChange={handleInputChange}
-                /> */}
+                />
                 <Form.Check
-  inline
-  type="radio"
-  name="transactionType"
-  value="to pay"  // ← Should be "to pay" (lowercase)
-  label="To Pay"
-  checked={formData.transactionType === "to pay"}
-  onChange={handleInputChange}
-/>
-                {/* <Form.Check
                   inline
                   type="radio"
                   name="transactionType"
@@ -260,16 +251,7 @@ function PartyModal({
                   label="To Receive"
                   checked={formData.transactionType === "to receive"}
                   onChange={handleInputChange}
-                /> */}
-                <Form.Check
-  inline
-  type="radio"
-  name="transactionType"
-  value="to receive"  // ← Should be "to receive" (lowercase)
-  label="To Receive"
-  checked={formData.transactionType === "to receive"}
-  onChange={handleInputChange}
-/>
+                />
               </Form.Group>
             </Col>
 

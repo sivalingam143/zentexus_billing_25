@@ -35,6 +35,7 @@ export default function CategoryTab() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
   const [showMoveModal, setShowMoveModal] = useState(false);
+  
   useEffect(() => {
     if (catStatus === "idle") dispatch(fetchCategories());
     if (prodStatus === "idle") dispatch(fetchProducts());

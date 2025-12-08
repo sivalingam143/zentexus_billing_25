@@ -15,6 +15,8 @@ export default function MoveCategoryModal({
   const [search, setSearch] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);
   const [loading, setLoading] = useState(false);
+const [removeExisting, setRemoveExisting] = useState(false);
+
 
   const availableProducts = allProducts.filter(
     (p) => String(p.category_id || "") !== String(targetCategoryId)
@@ -64,6 +66,54 @@ export default function MoveCategoryModal({
       setLoading(false);
     }
   };
+
+const handleMove = async () => {
+  if (!selectedItems.length) return;
+
+  setLoading(true);
+  try {
+    const tasks = selectedItems.map((pid) => {
+      const product = allProducts.find(p => p.product_id === pid);
+
+      // ✅ IF unchecked → COPY (create new product)
+      if (!removeExisting) {
+        const { product_id, category_id, ...rest } = product;
+
+        return axiosInstance.post("products.php", {
+          ...rest,
+          category_id: targetCategoryId, // ✅ copied product goes here
+        });
+      }
+
+      // ✅ IF checked → MOVE (update existing)
+      return axiosInstance.post("products.php", {
+        edit_product_id: pid,
+        category_id: targetCategoryId,
+      });
+    });
+
+    await Promise.all(tasks);
+
+    toast.success(
+      removeExisting
+        ? "Items moved successfully"
+        : "Items copied successfully"
+    );
+
+    if (onMoveSuccess) onMoveSuccess();
+    onHide();
+  } catch (err) {
+    console.error(err);
+    toast.error("Failed to process items");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+
+
 
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
@@ -132,19 +182,32 @@ export default function MoveCategoryModal({
         )}
       </Modal.Body>
 
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onHide}>
-          Cancel
-        </Button>
+      <Modal.Footer className="d-flex justify-content-between align-items-center">
 
-        <Button
-          variant="danger"
-          onClick={moveProductsToCategory}
-          disabled={loading || selectedItems.length === 0}
-        >
-          {loading ? "Moving..." : "Move to this category"}
-        </Button>
-      </Modal.Footer>
+  {/* LEFT SIDE */}
+  <Form.Check
+    type="checkbox"
+    label="Remove from existing category"
+    checked={removeExisting}
+    onChange={(e) => setRemoveExisting(e.target.checked)}
+  />
+
+  {/* RIGHT SIDE */}
+  <div>
+    <Button variant="secondary" className="me-2" onClick={onHide}>
+      Cancel
+    </Button>
+
+    <Button
+      variant="danger"
+      onClick={handleMove}
+      disabled={loading || selectedItems.length === 0}
+    >
+      {loading ? "Processing..." : "Move to this category"}
+    </Button>
+  </div>
+</Modal.Footer>
+
     </Modal>
   );
 }
