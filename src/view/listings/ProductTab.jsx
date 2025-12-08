@@ -54,6 +54,8 @@ useEffect(() => {
   }
 }, [activeProducts, selectedProduct]);
 
+
+
   // Re-fetch products when modal closes (in case new item was added)
   const handleCloseAddItem = () => {
     setShowAddItem(false);
@@ -391,7 +393,10 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
 
 <BulkUpdateModal
   show={bulkModal.type === "update"}
-  onHide={() => setBulkModal({ show: false, type: "" })}
+  onHide={() => {
+    setBulkModal({ show: false, type: "" });
+    dispatch(fetchProducts()); // This forces left panel to show new current_qty/value
+  }}
 />
     </Row>
   );

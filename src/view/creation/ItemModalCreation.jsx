@@ -488,6 +488,7 @@ const enhancedStock = {
     else dispatch(deleteService(editProduct.service_id));
     onHide();
   };
+// const stock = p.stock ? $(p.stock) : {};
 
   return (
     <>

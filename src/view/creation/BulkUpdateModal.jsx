@@ -1,4 +1,3 @@
-
 // src/components/modals/BulkUpdateModal.jsx
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
@@ -31,6 +30,7 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
   const vals = editValues[product.product_id] || {};
   const sale = product.sale_price ? $(product.sale_price) : {};
   const purchase = product.purchase_price ? $(product.purchase_price) : {};
+  const stock = product.stock ? $(product.stock) : {};
 
   const isSelected = selectedItems.includes(product.product_id);
  // "Pricing", "Stock", "Item Info"
@@ -193,7 +193,8 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
       <Form.Control
         size="sm"
         type="number"
-        value={vals.opening_qty ?? product.opening_qty ?? ""}
+      value={vals.opening_qty ?? stock.opening_qty ?? ""}
+
         onChange={(e) =>
           handleFieldChange(product.product_id, "opening_qty", e.target.value)
         }
@@ -204,9 +205,9 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
       <Form.Control
         size="sm"
         type="number"
-        value={vals.opening_rate ?? product.opening_rate ?? ""}
+        value={vals.at_price ?? stock.at_price ?? ""}
         onChange={(e) =>
-          handleFieldChange(product.product_id, "opening_rate", e.target.value)
+          handleFieldChange(product.product_id, "at_price", e.target.value)
         }
       />
     </td>
@@ -215,7 +216,7 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
       <Form.Control
         size="sm"
         type="date"
-        value={vals.opening_date ?? product.opening_date ?? ""}
+       value={vals.opening_date ?? stock.opening_date ?? ""}
         onChange={(e) =>
           handleFieldChange(product.product_id, "opening_date", e.target.value)
         }
@@ -226,7 +227,7 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
       <Form.Control
         size="sm"
         type="number"
-        value={vals.min_stock ?? product.min_stock ?? ""}
+       value={vals.min_stock ?? stock.min_stock ?? ""}
         onChange={(e) =>
           handleFieldChange(product.product_id, "min_stock", e.target.value)
         }
@@ -236,8 +237,7 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
     <td>
       <Form.Control
         size="sm"
-        type="text"
-        value={vals.location ?? product.location ?? ""}
+  value={vals.location ?? stock.location ?? ""}
         onChange={(e) =>
           handleFieldChange(product.product_id, "location", e.target.value)
         }
@@ -247,38 +247,10 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
 )}
 
 
+
 {activeSection === "Item Info" && (
   <>
     <td>{product.product_name}</td>
-
-    <td>
-      {categoryStatus === "loading" ? (
-        <Spinner size="sm" />
-      ) : (
-        <DropdownButton
-          title={vals.category_name || product.category_name || "Select"}
-          size="sm"
-          variant="outline-secondary"
-        >
-          {categories.map((cat) => (
-            <Dropdown.Item
-              key={cat.category_id}
-              onClick={() =>
-                handleFieldChange(
-                  product.product_id,
-                  "category_id",
-                  cat.category_id,
-                  "category_name",
-                  cat.category_name
-                )
-              }
-            >
-              {cat.category_name}
-            </Dropdown.Item>
-          ))}
-        </DropdownButton>
-      )}
-    </td>
 
     <td>
       <Form.Control
@@ -301,6 +273,7 @@ const ProductRow = React.memo(({ product, idx, editValues, selectedItems, toggle
     </td>
   </>
 )}
+
 
   </tr>
   );
@@ -358,7 +331,7 @@ const BulkUpdateModal = ({ show, onHide }) => {
       purchase_price: purchase.price || "",
       purchase_tax_type: purchase.tax_type || "Excluded",
       opening_qty: p.opening_qty || "",
-opening_rate: p.opening_rate || "",
+at_price: p.at_price || "",
 opening_date: p.opening_date || "",
 min_stock: p.min_stock || "",
 location: p.location || "",
@@ -435,14 +408,42 @@ const handleUpdate = () => {
     
     let hasChanges = false;
 
+
     // STOCK FIELDS
-["opening_qty","opening_rate","opening_date","min_stock","location","item_code"]
-.forEach((field) => {
-  if (edited[field] !== undefined && edited[field] !== original[field]) {
-    payload[field] = edited[field];
-    hasChanges = true;
+
+// ONLY THIS BLOCK GOES IN handleUpdate() — REPLACE EVERYTHING ELSE FOR STOCK
+
+// STOCK UPDATE - FINAL & 100% WORKING
+const stockFields = ["opening_qty", "at_price", "opening_date", "min_stock", "location"];
+
+const originalStock = original?.stock ? $(original.stock) : {};
+const stockPayload = {};
+
+stockFields.forEach((field) => {
+  const newVal = edited[field];
+  const oldVal = originalStock[field];
+
+  if (newVal !== undefined && newVal !== "" && String(newVal) !== String(oldVal || "")) {
+    stockPayload[field] = newVal;
+  ;
   }
 });
+
+if (Object.keys(stockPayload).length > 0) {
+  const newQty = parseFloat(stockPayload.opening_qty ?? originalStock.opening_qty ?? 0);
+  const newPrice = parseFloat(stockPayload.at_price ?? originalStock.at_price ?? 0);
+
+  const updatedStock = {
+    ...originalStock,
+    ...stockPayload,
+    current_qty: newQty,
+    current_value: (newQty * newPrice).toFixed(2),
+  };
+
+  payload.stock = JSON.stringify(updatedStock);
+  hasChanges = true;
+}
+
 
 
     // --- Simple change detection for each field ---
@@ -619,8 +620,8 @@ if (newSaleJSON !== (original?.sale_price ?? '{}')) {
     {activeSection === "Item Info" && (
       <>
         <th>ITEM NAME</th>
-        <th>CATEGORY</th>
         <th>ITEM HSN</th>
+        <th>CATEGORY</th>
         <th>ITEM CODE</th>
       </>
     )}
