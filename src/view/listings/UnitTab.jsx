@@ -12,25 +12,18 @@ import { fetchUnits, deleteUnit } from "../../slice/UnitSlice";
 
 export default function UnitsTab() {
   const dispatch = useDispatch();
-const [conversions, setConversions] = React.useState([]);
+// REMOVED: const [conversions, setConversions] = React.useState([]); 
   const { units, status } = useSelector((state) => state.unit);
-const [selectedBaseUnit, setSelectedBaseUnit] = React.useState(null);
+  const [selectedBaseUnitName, setSelectedBaseUnitName] = React.useState(null); // Renamed to clearly indicate it's the name
   const [showUnitModal, setShowUnitModal] = React.useState(false);
   const [showConvoModal, setShowConvoModal] = React.useState(false);
   const [selectedUnit, setSelectedUnit] = React.useState(null);
 
-// Load from localStorage when page opens
-useEffect(() => {
-  const saved = localStorage.getItem("unit_conversions");
-  if (saved) {
-    setConversions(JSON.parse(saved));
-  }
-}, []);
+// REMOVED: Load from localStorage when page opens
+// REMOVED: useEffect(() => { ... }, []);
 
-// Save to localStorage whenever conversions update
-useEffect(() => {
-  localStorage.setItem("unit_conversions", JSON.stringify(conversions));
-}, [conversions]);
+// REMOVED: Save to localStorage whenever conversions update
+// REMOVED: useEffect(() => { ... }, [conversions]);
 
   const fetchAllUnits = useCallback(() => {
     dispatch(fetchUnits());
@@ -44,8 +37,21 @@ useEffect(() => {
   ? [...units].sort((a, b) => a.unit_name.localeCompare(b.unit_name))
   : [];
 
- const unitRows = unitsList.map((unit) => (
-  <tr key={unit.unit_id || unit.id} onClick={() => setSelectedBaseUnit(unit.unit_name)}>
+  // Helper to find the currently selected unit object
+  const selectedUnitObject = unitsList.find(u => u.unit_name === selectedBaseUnitName);
+
+  // Helper to get all conversion strings for the selected unit (we assume only one conversion string is stored in the `conversion` column)
+  const getConversionsForSelectedUnit = () => {
+    if (selectedUnitObject && selectedUnitObject.conversion) {
+      // The conversion column contains the display text, so we wrap it in an array for mapping/display
+      return [{ displayText: selectedUnitObject.conversion }];
+    }
+    return [];
+  };
+
+  const unitRows = unitsList.map((unit) => (
+    // Updated onClick to use the unit's name
+    <tr key={unit.unit_id || unit.id} onClick={() => setSelectedBaseUnitName(unit.unit_name)}>
     <td>{unit.unit_name}</td>
     <td>{unit.short_name || "-"}</td>
     <td className="text-center">
@@ -70,12 +76,15 @@ useEffect(() => {
           onClick={(e) => {
             e.stopPropagation();
 
-            const isMapped = conversions.some(
-              c => c.baseUnit === unit.unit_name || c.secondaryUnit === unit.unit_name
-            );
+            // Unit deletion check needs to be updated. Since the conversion is now a single string on the unit record, 
+            // the check should be: if the unit has a non-empty conversion string, it cannot be deleted.
+            // NOTE: The backend only checks if the unit is deleted/exists. The *mapping* check must happen here.
+            
+            // Check if the current unit has a conversion string. If it's not empty, it's considered "mapped"
+            const isMapped = !!unit.conversion && unit.conversion.trim().length > 0;
 
             if (isMapped) {
-              toast.error("Mapped unit cannot be deleted");
+              toast.error("Mapped unit cannot be deleted (Conversion must be cleared first)");
               return;
             }
 
@@ -152,10 +161,10 @@ useEffect(() => {
 
         {/* Optional header card (you can remove if not needed) */}
        {/* Header showing selected unit */}
-{selectedBaseUnit ? (
+{selectedBaseUnitName ? (
   <Card className="mb-3">
     <Card.Body>
-      <h6 className="fw-bold text-primary">{selectedBaseUnit.toUpperCase()}</h6>
+      <h6 className="fw-bold text-primary">{selectedBaseUnitName.toUpperCase()}</h6>
     </Card.Body>
   </Card>
 ) : unitsList.length > 0 ? (
@@ -179,29 +188,14 @@ useEffect(() => {
               </div>
             </div>
                 {/* Filtered Conversions - Only show for selected unit */}
-            {selectedBaseUnit ? (
-              conversions
-                .filter(c => c.baseUnit === selectedBaseUnit)
-                .map((c, i) => (
+            {selectedBaseUnitName ? (
+              getConversionsForSelectedUnit().length > 0 ? (
+                getConversionsForSelectedUnit().map((c, i) => (
                   <div key={i} className="border-bottom py-3 px-1">
-                    <div className="d-flex justify-content-between align-items-center">
-                     
-                      <div className="text-muted small">CONVERSION</div>
-                    </div>
-                    <div className="mt-2 fw-medium">
-                      {c.displayText}
-                    </div>
+                    <div className="text-muted small">CONVERSION</div>
+                    <div className="mt-2 fw-medium">{c.displayText}</div>
                   </div>
-                )).length > 0 ? (
-                conversions
-                  .filter(c => c.baseUnit === selectedBaseUnit)
-                  .map((c, i) => (
-                    <div key={i} className="border-bottom py-3 px-1">
-                      <div className="text-muted small">CONVERSION</div>
-                      <div className="mt-2 fw-medium">{c.displayText}</div>
-                    </div>
-                  ))
-                 
+                ))
               ) : (
                 <div className="flex-grow-1 d-flex justify-content-center align-items-center text-muted">
                   No conversion added yet
@@ -227,14 +221,15 @@ useEffect(() => {
         unitToEdit={selectedUnit}
         units={unitsList}
       />
-<AddConvo
-  show={showConvoModal}
-  onHide={() => setShowConvoModal(false)}
-  units={unitsList}
-  onSave={(data) => {
-    setConversions(prev => [...prev, data]);
-  }}
-/>
+      <AddConvo
+        show={showConvoModal}
+        onHide={() => setShowConvoModal(false)}
+        units={unitsList}
+        // REMOVED: onSave prop is no longer needed/used, as saving happens via Redux dispatch inside UnitConversion.jsx
+        // onSave={(data) => {
+        //   setConversions(prev => [...prev, data]);
+        // }}
+      />
     </>
   );
 }

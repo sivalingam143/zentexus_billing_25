@@ -198,29 +198,29 @@ className={`cursor-pointer ${selectedProduct?.product_id === product.product_id 
               const atPrice = parseFloat(stock.at_price) || 0;
               const currentQty = stock.current_qty ?? openingQty;
               const currentValue = stock.current_value ?? (openingQty * atPrice);
-
+const saleTaxLabel = sale.tax_type === "With Tax" ? "(incl)" : "(excl)";
+const isPurchasePriceIncluded = purchase.tax_type === "Included" || purchase.tax_type === "With Tax";
+              const purchaseTaxLabel = isPurchasePriceIncluded ? "(incl)" : "(excl)";
               return (
                 <>
                   <div className="small text-muted">
                     SALE PRICE: <strong className="text-success">
-                      ₹ {parseFloat(sale.price || 0).toFixed(2)} (excl)
+                      ₹ {parseFloat(sale.price || 0).toFixed(2)} {saleTaxLabel}
                     </strong>
                   </div>
                   <div className="small text-muted">
                     PURCHASE PRICE: <strong className="text-success">
-                      ₹ {parseFloat(purchase.price || 0).toFixed(2)} (excl)
+                      ₹ {parseFloat(purchase.price || 0).toFixed(2)} {purchaseTaxLabel}
                     </strong>
                   </div>
                 </>
               );
             })()}
           </div>
-
           <div className="text-end ">
             <Button variant="primary" className="mb-3 px-4 py-3 bg-primary text-white" onClick={() => setShowAdjustItem(true)}>
               ADJUST ITEM
             </Button>
-
            {(() => {
   const stock = selectedProduct.stock ? $(selectedProduct.stock) : {};
   const qty = parseFloat(stock.current_qty ?? stock.opening_qty ?? 0);

@@ -1,68 +1,114 @@
 // AddConvo.jsx
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
 import { FaChevronDown } from "react-icons/fa";
 import { toast } from "react-toastify";
+import { useDispatch } from "react-redux"; // Import useDispatch
+import { saveUnitConversion } from "../../slice/UnitSlice"; // Import the new thunk
 
-function AddConvo({ show, onHide, units = [], onSave }) {
-  const [baseUnit, setBaseUnit] = useState("None");
-  const [secondaryUnit, setSecondaryUnit] = useState("None");
+// Units prop now needs the full unit object to get unit_id
+function AddConvo({ show, onHide, units = [], onSave }) { 
+  const dispatch = useDispatch();
+  const [baseUnitName, setBaseUnitName] = useState("None");
+  const [secondaryUnitName, setSecondaryUnitName] = useState("None");
   const [rate, setRate] = useState("");
   const [showBaseDropdown, setShowBaseDropdown] = useState(false);
   const [showSecondaryDropdown, setShowSecondaryDropdown] = useState(false);
-// Add this useEffect right after your state declarations
-useEffect(() => {
-  if (show) {
-    setBaseUnit("None");
-    setSecondaryUnit("None");
-    setRate("");
-  }
-}, [show]);
+  
+  // State for the full unit objects to get the unit_id
+  const [selectedBaseUnit, setSelectedBaseUnit] = useState(null); 
+  const [selectedSecondaryUnit, setSelectedSecondaryUnit] = useState(null); 
+
+  useEffect(() => {
+    if (show) {
+      setBaseUnitName("None");
+      setSecondaryUnitName("None");
+      setRate("");
+      setSelectedBaseUnit(null);
+      setSelectedSecondaryUnit(null);
+    }
+  }, [show]);
+
+  // Helper to find unit object by name
+  const findUnitByName = (name) => units.find(u => u.unit_name === name);
+
+  // Helper to extract short code
   const getShortCode = (name) => {
     if (!name || name === "None") return "";
-    const match = name.match(/\(([^)]+)\)/);
-    if (match) return match[1];
-    return name.split(" ")[0].toUpperCase();
+    const unit = findUnitByName(name);
+    return unit ? (unit.short_name || unit.unit_name.split(" ")[0].toUpperCase()) : name.split(" ")[0].toUpperCase();
   };
 
   const resetForm = () => {
-    setBaseUnit("None");
-    setSecondaryUnit("None");
+    setBaseUnitName("None");
+    setSecondaryUnitName("None");
     setRate("");
+    setSelectedBaseUnit(null);
+    setSelectedSecondaryUnit(null);
   };
 
-  const handleSave = (andNew = false) => {
+  // NEW: Function to construct the conversion text string for the DB
+  const generateConversionText = (baseUnit, secondaryUnit, rate, units) => {
+    const base = units.find(u => u.unit_name === baseUnit);
+    const secondary = units.find(u => u.unit_name === secondaryUnit);
+
+    const baseShort = base?.short_name || base?.unit_name;
+    const secondaryShort = secondary?.short_name || secondary?.unit_name;
+    
+    if (secondaryUnit === "None") {
+      return baseShort;
+    }
+    
+    // Format: "1 [Base Short Name] = [Rate] [Secondary Short Name]"
+    return `1 ${baseShort} = ${rate} ${secondaryShort}`;
+  }
+
+  const handleSave = async (andNew = false) => {
     // Validation
-    if (baseUnit === "None") {
+    if (baseUnitName === "None") {
       toast.error("Please select Base Unit");
       return;
     }
-    if (baseUnit === secondaryUnit && secondaryUnit !== "None") {
+    if (baseUnitName === secondaryUnitName && secondaryUnitName !== "None") {
       toast.error("Base Unit and Secondary Unit cannot be the same!");
       return;
     }
-    if (secondaryUnit !== "None" && (!rate || Number(rate) <= 0)) {
+    if (secondaryUnitName !== "None" && (!rate || Number(rate) <= 0)) {
       toast.error("Please enter a valid rate");
       return;
     }
+    
+    const baseUnitObject = selectedBaseUnit;
+    
+    if (!baseUnitObject) {
+      toast.error("Could not find Base Unit ID for saving.");
+      return;
+    }
 
-    const conversionData = {
-      baseUnit,
-      secondaryUnit: secondaryUnit === "None" ? null : secondaryUnit,
-      rate: secondaryUnit !== "None" ? Number(rate) : null,
-      displayText:
-        secondaryUnit !== "None"
-          ? `1 ${getShortCode(baseUnit)} = ${rate} ${getShortCode(secondaryUnit)}`
-          : getShortCode(baseUnit) || baseUnit,
-    };
-
-    onSave(conversionData); // This will be handled by parent to add to transaction table
-    toast.success("Conversation added successfully!");
-
-    if (andNew) {
-      resetForm();
-    } else {
-      onHide();
+    // 1. Generate the conversion string
+    const conversion_text = generateConversionText(baseUnitName, secondaryUnitName, rate, units);
+    
+    // 2. Dispatch the thunk to save to the DB
+    try {
+      await dispatch(
+        saveUnitConversion({
+          unit_id: baseUnitObject.unit_id || baseUnitObject.id,
+          conversion_text,
+        })
+      ).unwrap(); 
+      
+      toast.success("Conversion saved successfully!");
+      
+      // onSave is no longer needed since we dispatch to Redux
+      // onSave({ baseUnit: baseUnitName, secondaryUnit: secondaryUnitName, rate: Number(rate), displayText: conversion_text }); 
+      
+      if (andNew) {
+        resetForm();
+      } else {
+        onHide();
+      }
+    } catch (error) {
+      toast.error(`Error saving conversion: ${error}`);
     }
   };
 
@@ -95,8 +141,8 @@ useEffect(() => {
                   style={{ cursor: "pointer", height: 48 }}
                   onClick={() => setShowBaseDropdown(!showBaseDropdown)}
                 >
-                  <span className={baseUnit === "None" ? "text-muted" : ""}>
-                    {baseUnit === "None" ? "Base Unit" : baseUnit}
+                  <span className={baseUnitName === "None" ? "text-muted" : ""}>
+                    {baseUnitName === "None" ? "Base Unit" : baseUnitName}
                   </span>
                   <FaChevronDown />
                 </div>
@@ -107,11 +153,12 @@ useEffect(() => {
                   >
                     {units.map((u) => (
                       <div
-                        key={u.unit_id}
+                        key={u.unit_id || u.id}
                         className="px-3 py-2"
                         style={{ cursor: "pointer" }}
                         onClick={() => {
-                          setBaseUnit(u.unit_name);
+                          setBaseUnitName(u.unit_name);
+                          setSelectedBaseUnit(u); // Set the full unit object
                           setShowBaseDropdown(false);
                         }}
                       >
@@ -147,8 +194,8 @@ useEffect(() => {
                   style={{ cursor: "pointer", height: 48 }}
                   onClick={() => setShowSecondaryDropdown(!showSecondaryDropdown)}
                 >
-                  <span className={secondaryUnit === "None" ? "text-muted" : ""}>
-                    {secondaryUnit === "None" ? "Secondary Unit" : secondaryUnit}
+                  <span className={secondaryUnitName === "None" ? "text-muted" : ""}>
+                    {secondaryUnitName === "None" ? "Secondary Unit" : secondaryUnitName}
                   </span>
                   <FaChevronDown />
                 </div>
@@ -161,20 +208,21 @@ useEffect(() => {
                       className="px-3 py-2"
                       style={{ cursor: "pointer" }}
                       onClick={() => {
-                        setSecondaryUnit("None");
+                        setSecondaryUnitName("None");
+                        setSelectedSecondaryUnit(null);
                         setShowSecondaryDropdown(false);
-                        // setRate("");
                       }}
                     >
                       None
                     </div>
                     {units.map((u) => (
                       <div
-                        key={u.unit_id}
+                        key={u.unit_id || u.id}
                         className="px-3 py-2"
                         style={{ cursor: "pointer" }}
                         onClick={() => {
-                          setSecondaryUnit(u.unit_name);
+                          setSecondaryUnitName(u.unit_name);
+                          setSelectedSecondaryUnit(u); // Set the full unit object
                           setShowSecondaryDropdown(false);
                         }}
                       >

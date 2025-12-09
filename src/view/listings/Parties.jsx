@@ -67,7 +67,23 @@ function Parties() {
       setSelectedParty(parties[0]);
     }
   }, [parties]);
+useEffect(() => {
+    // Only run if a party is currently selected
+    if (selectedParty) {
+      // Find the *latest* version of the selected party in the partiesWithBalance list
+      // This list is derived from the updated Redux state.
+      const latestFullParty = partiesWithBalance.find(
+        (p) => p.parties_id === selectedParty.parties_id
+      );
 
+      // If the latest version is found and its reference is different, update the selectedParty state
+      if (latestFullParty && latestFullParty !== selectedParty) {
+          setSelectedParty(latestFullParty);
+      }
+    }
+    // Dependency includes partiesWithBalance to ensure it runs when Redux parties are updated
+    // and the calculated balances change.
+  }, [selectedParty]);
   const handleOpenModal = (party = null) => {
     if (party) {
       setIsEdit(true);
@@ -135,7 +151,7 @@ function Parties() {
       state_of_supply: formData.state_of_supply,
       billing_address: formData.billing_address,
       shipping_address: formData.shipping_address,
-      amount: parseFloat(formData.amount) || 0,
+     amount: formData.amount || '0',
       creditlimit:
         formData.limitType === "custom"
           ? parseFloat(formData.creditlimit) || 0
@@ -230,7 +246,7 @@ function Parties() {
       state_of_supply: selectedParty.state_of_supply || "",
       billing_address: selectedParty.billing_address || "",
       shipping_address: selectedParty.shipping_address || "",
-      amount: 0,
+      amount: "0",
       creditlimit: selectedParty.creditlimit || 0,
       transactionType: selectedParty.transaction_type,
       additional_field: selectedParty.additional_field || "[]",
@@ -754,24 +770,46 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                               });
                             }
 
+                            // sales
+                            //   .filter(s => s.parties_id === selectedParty.parties_id && s.delete_at == 0)
+                            //   .forEach(s => {
+                            //     const unpaid = parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0);
+                            //     if (unpaid > 0) {
+                            //       rows.push({
+                            //         // FIX: Using s.sale_id for the ID to ensure correct routing/deletion ID is passed
+                            //         id: s.sale_id || s.id,
+                            //         // Including all sale properties for robustness in TransactionMenu
+                            //         ...s,
+                            //         type: "Sale",
+                            //         color: "green",
+                            //         number: s.invoice_no || s.id,
+                            //         date: s.invoice_date || s.date,
+                            //         total: parseFloat(s.total || 0),
+                            //         balance: unpaid,
+                            //       });
+                            //     }
+                            //   });
+
                             sales
                               .filter(s => s.parties_id === selectedParty.parties_id && s.delete_at == 0)
                               .forEach(s => {
-                                const unpaid = parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0);
-                                if (unpaid > 0) {
-                                  rows.push({
-                                    // FIX: Using s.sale_id for the ID to ensure correct routing/deletion ID is passed
+                                // MISTAKE CORRECTION: Calculate the UNPAID amount (Balance Due) 
+                                // using the 'total' and 'received_amount' fields.
+                                const unpaid = parseFloat(s.total || 0) - parseFloat(s.received_amount || 0); 
+                                
+                                // Display all sales, including fully paid ones (balance = 0).
+                                // NOTE: The 'unpaid' value is the Balance of the Sale you are asking for.
+                                rows.push({
                                     id: s.sale_id || s.id,
-                                    // Including all sale properties for robustness in TransactionMenu
                                     ...s,
                                     type: "Sale",
-                                    color: "green",
+                                    // Set color based on balance due
+                                    color: unpaid > 0 ? "green" : "inherit", 
                                     number: s.invoice_no || s.id,
                                     date: s.invoice_date || s.date,
                                     total: parseFloat(s.total || 0),
-                                    balance: unpaid,
-                                  });
-                                }
+                                    balance: unpaid, // Assigning the calculated balance due
+                                });
                               });
 
                             return rows.length > 0 ? rows.map((t, i) => (
