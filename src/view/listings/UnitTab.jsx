@@ -40,14 +40,19 @@ export default function UnitsTab() {
   // Helper to find the currently selected unit object
   const selectedUnitObject = unitsList.find(u => u.unit_name === selectedBaseUnitName);
 
-  // Helper to get all conversion strings for the selected unit (we assume only one conversion string is stored in the `conversion` column)
-  const getConversionsForSelectedUnit = () => {
-    if (selectedUnitObject && selectedUnitObject.conversion) {
-      // The conversion column contains the display text, so we wrap it in an array for mapping/display
-      return [{ displayText: selectedUnitObject.conversion }];
-    }
-    return [];
-  };
+ const getConversionsForSelectedUnit = () => {
+  if (!selectedUnitObject?.conversion) return [];
+
+  let list = selectedUnitObject.conversion;
+  try {
+    if (typeof list === "string") list = JSON.parse(list);
+  } catch (e) {
+    list = list ? [list] : []; // fallback if not valid JSON
+  }
+
+  if (!Array.isArray(list)) list = [list];
+  return list.map(text => ({ displayText: text }));
+};
 
   const unitRows = unitsList.map((unit) => (
     // Updated onClick to use the unit's name

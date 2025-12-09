@@ -127,18 +127,17 @@ const unitSlice = createSlice({
         state.error = action.payload;
       })
 .addCase(saveUnitConversion.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        // Update the 'conversion' field for the specific unit in state
-        const index = state.units.findIndex((u) => u.unit_id === action.payload.unit_id);
-        if (index !== -1) {
-          state.units[index].conversion = action.payload.conversion_text;
-        }
-        state.unitResponse = action.payload.response;
-      })
-      .addCase(saveUnitConversion.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload;
-      })
+  const { unit_id, conversion_text } = action.payload;
+  const unit = state.units.find(u => u.unit_id === unit_id);
+  if (unit) {
+    let arr = unit.conversion || [];
+    if (typeof arr === "string") {
+      try { arr = JSON.parse(arr); } catch { arr = arr ? [arr] : []; }
+    }
+    arr.push(conversion_text);
+    unit.conversion = arr; // keep as array in Redux
+  }
+})
       .addCase(deleteUnit.pending, (state) => {
         state.status = "loading";
       })
