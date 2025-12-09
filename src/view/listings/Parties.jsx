@@ -754,24 +754,46 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                               });
                             }
 
+                            // sales
+                            //   .filter(s => s.parties_id === selectedParty.parties_id && s.delete_at == 0)
+                            //   .forEach(s => {
+                            //     const unpaid = parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0);
+                            //     if (unpaid > 0) {
+                            //       rows.push({
+                            //         // FIX: Using s.sale_id for the ID to ensure correct routing/deletion ID is passed
+                            //         id: s.sale_id || s.id,
+                            //         // Including all sale properties for robustness in TransactionMenu
+                            //         ...s,
+                            //         type: "Sale",
+                            //         color: "green",
+                            //         number: s.invoice_no || s.id,
+                            //         date: s.invoice_date || s.date,
+                            //         total: parseFloat(s.total || 0),
+                            //         balance: unpaid,
+                            //       });
+                            //     }
+                            //   });
+
                             sales
                               .filter(s => s.parties_id === selectedParty.parties_id && s.delete_at == 0)
                               .forEach(s => {
-                                const unpaid = parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0);
-                                if (unpaid > 0) {
-                                  rows.push({
-                                    // FIX: Using s.sale_id for the ID to ensure correct routing/deletion ID is passed
+                                // MISTAKE CORRECTION: Calculate the UNPAID amount (Balance Due) 
+                                // using the 'total' and 'received_amount' fields.
+                                const unpaid = parseFloat(s.total || 0) - parseFloat(s.received_amount || 0); 
+                                
+                                // Display all sales, including fully paid ones (balance = 0).
+                                // NOTE: The 'unpaid' value is the Balance of the Sale you are asking for.
+                                rows.push({
                                     id: s.sale_id || s.id,
-                                    // Including all sale properties for robustness in TransactionMenu
                                     ...s,
                                     type: "Sale",
-                                    color: "green",
+                                    // Set color based on balance due
+                                    color: unpaid > 0 ? "green" : "inherit", 
                                     number: s.invoice_no || s.id,
                                     date: s.invoice_date || s.date,
                                     total: parseFloat(s.total || 0),
-                                    balance: unpaid,
-                                  });
-                                }
+                                    balance: unpaid, // Assigning the calculated balance due
+                                });
                               });
 
                             return rows.length > 0 ? rows.map((t, i) => (
