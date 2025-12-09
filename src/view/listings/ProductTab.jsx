@@ -217,12 +217,10 @@ const isPurchasePriceIncluded = purchase.tax_type === "Included" || purchase.tax
               );
             })()}
           </div>
-
           <div className="text-end ">
             <Button variant="primary" className="mb-3 px-4 py-3 bg-primary text-white" onClick={() => setShowAdjustItem(true)}>
               ADJUST ITEM
             </Button>
-
            {(() => {
   const stock = selectedProduct.stock ? $(selectedProduct.stock) : {};
   const qty = parseFloat(stock.current_qty ?? stock.opening_qty ?? 0);

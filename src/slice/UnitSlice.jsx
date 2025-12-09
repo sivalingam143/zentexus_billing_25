@@ -5,7 +5,22 @@ import {
   createUnitApi,
   updateUnitApi,
   deleteUnitApi,
+  saveUnitConversionApi,
 } from "../services/UnitService";
+
+
+export const saveUnitConversion = createAsyncThunk(
+  "unit/saveUnitConversion",
+  async ({ unit_id, conversion_text }, { rejectWithValue }) => {
+    try {
+      const response = await saveUnitConversionApi(unit_id, conversion_text);
+      return { unit_id, conversion_text, response };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 
 export const fetchUnits = createAsyncThunk(
   "unit/fetchUnits",
@@ -111,7 +126,19 @@ const unitSlice = createSlice({
         state.status = "failed";
         state.error = action.payload;
       })
-
+.addCase(saveUnitConversion.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        // Update the 'conversion' field for the specific unit in state
+        const index = state.units.findIndex((u) => u.unit_id === action.payload.unit_id);
+        if (index !== -1) {
+          state.units[index].conversion = action.payload.conversion_text;
+        }
+        state.unitResponse = action.payload.response;
+      })
+      .addCase(saveUnitConversion.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload;
+      })
       .addCase(deleteUnit.pending, (state) => {
         state.status = "loading";
       })

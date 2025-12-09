@@ -60,3 +60,18 @@ export const deleteUnitApi = async (unit_id) => {
 
   return data;
 };
+export const saveUnitConversionApi = async (unit_id, conversion_text) => {
+  const payload = {
+    save_conversion_unit_id: unit_id,
+    conversion_text: conversion_text,
+  };
+
+  const response = await axiosInstance.post(API_ENDPOINT, payload);
+  const { data } = response;
+
+  if (data.head?.code !== 200) {
+    throw new Error(data.head?.msg || "Failed to save unit conversion");
+  }
+
+  return data;
+};
