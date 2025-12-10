@@ -42,19 +42,38 @@ export default function CategoryTab() {
   }, [catStatus, prodStatus, dispatch]);
 
   // Items for selected category
-  const getItemsForCategory = () => {
-    if (!selectedCategory) {
-      return products.filter((p) => !p.category_id || p.category_id === "");
+const getItemsForCategory = () => {
+  // UNCATEGORIZED
+  if (!selectedCategory) {
+    return products.filter((p) => {
+      if (!p.category_id) return true;
+
+      try {
+        const ids = JSON.parse(p.category_id);
+        return ids.length === 0;
+      } catch {
+        return p.category_id === "";
+      }
+    });
+  }
+
+  // SELECTED CATEGORY
+  return products.filter((p) => {
+    if (!p.category_id) return false;
+
+    try {
+      const ids = JSON.parse(p.category_id).map(String);
+      return ids.includes(String(selectedCategory.category_id));
+    } catch {
+      return String(p.category_id) === String(selectedCategory.category_id);
     }
-    return products.filter(
-      (p) => String(p.category_id) === String(selectedCategory.category_id)
-    );
-  };
+  });
+};
 
   const itemsToShow = getItemsForCategory().filter((item) =>
     item.product_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
+  
   const loading = catStatus === "loading" || prodStatus === "loading";
 const handleDelete = async (category) => {
   if (!window.confirm(`Delete "${category.category_name}" category?`)) {
@@ -131,7 +150,20 @@ const handleMoveClick = () => {
                   onClick={() => setSelectedCategory(null)}
                 >
                   <td>Items not in any Category</td>
-                  <td>{products.filter((p) => !p.category_id).length}</td>
+                  {/* <td>{products.filter((p) => !p.category_id).length}</td>
+                   */}
+                   <td>
+  {products.filter((p) => {
+    if (!p.category_id) return true;
+    try {
+      const ids = JSON.parse(p.category_id);
+      return ids.length === 0;
+    } catch {
+      return false;
+    }
+  }).length}
+</td>
+
                   <td></td>
                 </tr>
 
@@ -144,9 +176,17 @@ const handleMoveClick = () => {
                   </tr>
                 ) : (
                   categories.map((cat) => {
-                    const count = products.filter(
-                      (p) => String(p.category_id) === String(cat.category_id)
-                    ).length;
+                 const count = products.filter((p) => {
+  if (!p.category_id) return false;
+
+  try {
+    const ids = JSON.parse(p.category_id).map(String);
+    return ids.includes(String(cat.category_id));
+  } catch {
+    return String(p.category_id) === String(cat.category_id);
+  }
+}).length;
+
                     return (
                       <tr
                         key={cat.category_id}
@@ -301,13 +341,14 @@ const handleMoveClick = () => {
         }}
         categoryToEdit={categoryToEdit}
       />
-      <MoveCategoryModal
+   <MoveCategoryModal
         show={showMoveModal}
         onHide={() => setShowMoveModal(false)}
         allProducts={products}
+        categories={categories} // <--- ENSURE THIS LINE IS PRESENT
         targetCategoryId={selectedCategory?.category_id}
         onMoveSuccess={() => {
-          dispatch(fetchProducts()); // ✔ refresh after move
+          dispatch(fetchProducts()); 
         }}
       />
     </>

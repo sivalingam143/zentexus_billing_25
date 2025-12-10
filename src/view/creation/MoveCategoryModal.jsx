@@ -1,5 +1,7 @@
+
 // src/components/modals/MoveCategoryModal.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 import { Modal, Button, Form, InputGroup, Table } from "react-bootstrap";
 import { FaSearch } from "react-icons/fa";
 import axiosInstance from "../../config/API";
@@ -9,17 +11,38 @@ export default function MoveCategoryModal({
   show,
   onHide,
   allProducts,
+  categories, 
   targetCategoryId,
   onMoveSuccess,
 }) {
   const [search, setSearch] = useState("");
   const [selectedItems, setSelectedItems] = useState([]);
   const [loading, setLoading] = useState(false);
-const [removeExisting, setRemoveExisting] = useState(false);
+  const [removeExisting, setRemoveExisting] = useState(false);
+useEffect(() => {
+  if (show) {
+    // Reset modal state every time it opens
+    setSearch("");
+    setSelectedItems([]);
+    setRemoveExisting(false);
+    setLoading(false);
+  }
+}, [show, targetCategoryId]);
 
+  // Define targetCategory here for use in JSX and handleMove
+  const targetCategory = categories.find(c => String(c.category_id) === String(targetCategoryId));
 
+  // Filter products that are not currently in the target category list
   const availableProducts = allProducts.filter(
-    (p) => String(p.category_id || "") !== String(targetCategoryId)
+    (p) => {
+        if (!p.category_id) return true;
+        try {
+            const currentIds = JSON.parse(p.category_id).map(String);
+            return !currentIds.includes(String(targetCategoryId));
+        } catch (e) {
+            return String(p.category_id) !== String(targetCategoryId);
+        }
+    }
   );
 
   const filtered = availableProducts.filter((p) =>
@@ -40,55 +63,67 @@ const [removeExisting, setRemoveExisting] = useState(false);
     }
   };
 
-  const moveProductsToCategory = async () => {
-    if (!selectedItems.length) return;
-
-    setLoading(true);
-
-    try {
-      const tasks = selectedItems.map((pid) =>
-        axiosInstance.post("products.php", {
-          edit_product_id: pid,          // Product ID (primary key `id`)
-          category_id: targetCategoryId, // Target Category ID (used by products.php to update both category_id and fetch/update category_name)
-        })
-      );
-      await Promise.all(tasks);
-
-      toast.success(`${selectedItems.length} product(s) moved successfully!`);
-
-      if (onMoveSuccess) onMoveSuccess();  // ✔ required to refresh UI
-
-      onHide();
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to move product(s)");
-    } finally {
-      setLoading(false);
-    }
-  };
-
 const handleMove = async () => {
   if (!selectedItems.length) return;
+  if (!targetCategoryId || !targetCategory) {
+    toast.error("Please select a valid target category.");
+    return;
+  }
+
+  const targetCategoryName = targetCategory.category_name;
 
   setLoading(true);
   try {
     const tasks = selectedItems.map((pid) => {
       const product = allProducts.find(p => p.product_id === pid);
+      if (!product) return Promise.resolve();
 
-      // ✅ IF unchecked → COPY (create new product)
-      if (!removeExisting) {
-        const { product_id, category_id, ...rest } = product;
+      const targetIdString = String(targetCategoryId);
 
-        return axiosInstance.post("products.php", {
-          ...rest,
-          category_id: targetCategoryId, // ✅ copied product goes here
-        });
+      // Parse existing IDs
+      const existingCategoryIds = product.category_id
+        ? (() => {
+            try {
+              return JSON.parse(product.category_id).map(String);
+            } catch {
+              return [String(product.category_id)];
+            }
+          })()
+        : [];
+
+      // Parse existing Names
+      const existingCategoryNames = product.category_name
+        ? (() => {
+            try {
+              return JSON.parse(product.category_name);
+            } catch {
+              return [product.category_name];
+            }
+          })()
+        : [];
+
+      let finalCategoryIds = [];
+      let finalCategoryNames = [];
+
+      // ✅ CHECKBOX ON → MOVE
+      if (removeExisting) {
+        finalCategoryIds = [targetIdString];
+        finalCategoryNames = [targetCategoryName];
+      }
+      // ✅ CHECKBOX OFF → COPY
+      else {
+        if (existingCategoryIds.includes(targetIdString)) {
+          return Promise.resolve();
+        }
+
+        finalCategoryIds = [...existingCategoryIds, targetIdString];
+        finalCategoryNames = [...existingCategoryNames, targetCategoryName];
       }
 
-      // ✅ IF checked → MOVE (update existing)
       return axiosInstance.post("products.php", {
         edit_product_id: pid,
-        category_id: targetCategoryId,
+        category_id: JSON.stringify(finalCategoryIds),
+        category_name: JSON.stringify(finalCategoryNames),
       });
     });
 
@@ -103,7 +138,7 @@ const handleMove = async () => {
     if (onMoveSuccess) onMoveSuccess();
     onHide();
   } catch (err) {
-    console.error(err);
+    console.error("Category update error:", err);
     toast.error("Failed to process items");
   } finally {
     setLoading(false);
@@ -112,13 +147,10 @@ const handleMove = async () => {
 
 
 
-
-
-
   return (
     <Modal show={show} onHide={onHide} size="lg" centered>
       <Modal.Header closeButton>
-        <Modal.Title>Select Items</Modal.Title>
+        <Modal.Title>Assign Items to Multiple Categories</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
@@ -148,6 +180,7 @@ const handleMove = async () => {
                   />
                 </th>
                 <th>Item Name</th>
+                <th>Current Categories</th>
                 <th>Quantity</th>
               </tr>
             </thead>
@@ -157,6 +190,17 @@ const handleMove = async () => {
                 const qty = p.stock
                   ? JSON.parse(p.stock).opening_qty || 0
                   : 0;
+                  
+                // Display current categories for context
+                const currentNames = p.category_name
+                    ? (() => {
+                        try {
+                            return JSON.parse(p.category_name).join(", ");
+                        } catch {
+                            return p.category_name || "None";
+                        }
+                    })()
+                    : "None";
 
                 return (
                   <tr key={p.product_id}>
@@ -167,6 +211,7 @@ const handleMove = async () => {
                       />
                     </td>
                     <td>{p.product_name}</td>
+                    <td>{currentNames}</td>
                     <td>{qty}</td>
                   </tr>
                 );
@@ -177,33 +222,38 @@ const handleMove = async () => {
 
         {filtered.length === 0 && (
           <div className="text-center text-muted py-3">
-            No items available to move
+            No items available to assign to this category
           </div>
         )}
       </Modal.Body>
 
       <Modal.Footer className="d-flex justify-content-between align-items-center">
 
-  {/* LEFT SIDE */}
-  <Form.Check
-    type="checkbox"
-    label="Remove from existing category"
-    checked={removeExisting}
-    onChange={(e) => setRemoveExisting(e.target.checked)}
-  />
 
-  {/* RIGHT SIDE */}
+
   <div>
+    <Form.Check
+    
+  type="checkbox"
+  label="Remove from existing category"
+  checked={removeExisting}
+  onChange={(e) => setRemoveExisting(e.target.checked)}
+/>
+</div>
+<div   className="text-end">
     <Button variant="secondary" className="me-2" onClick={onHide}>
       Cancel
     </Button>
 
     <Button
       variant="danger"
+     
       onClick={handleMove}
-      disabled={loading || selectedItems.length === 0}
+      disabled={loading || selectedItems.length === 0 || !targetCategoryId}
     >
-      {loading ? "Processing..." : "Move to this category"}
+      {loading 
+        ? "Processing..." 
+        : "Move to Category"}
     </Button>
   </div>
 </Modal.Footer>
