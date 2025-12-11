@@ -40,6 +40,11 @@ const MenuItems = [
     
   },
   {
+    path:"/estimate",
+    text: "Estimate/Quotation",
+  
+  },
+  {
     path:"/purchaseandexpanse",
     text:"Purchase and Expanse",
     icon: <MdOutlineShoppingCart/>,

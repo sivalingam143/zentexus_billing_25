@@ -11,6 +11,8 @@ import Updates from "../view/listings/updates";
 import DashBoard from "../view/listings/DashBoard";
 import DashboardSale from "../view/creation/SalesModalCreation";
 import DashboardPurchase from "../view/creation/PurchaseModalCreation";
+import EstimateCreation from "../view/creation/EstimateCreationModal";
+import Estimate from "../view/listings/Estimate";
 
 const routes = [
   {
@@ -44,6 +46,22 @@ const routes = [
   {
     path: "/sale/view/:id",
     component: DashboardSale,
+  },
+ {
+    path: "/estimate",
+    component: Estimate,
+  },
+  {
+    path: "/estimate/create",
+    component: EstimateCreation,
+  },
+  {
+    path: "/estimate/edit/:id",
+    component: EstimateCreation,
+  },
+  {
+    path: "/estimate/view/:id",
+    component: EstimateCreation,
   },
   {
     path: "/purchase",

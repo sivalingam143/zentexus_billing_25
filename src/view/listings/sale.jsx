@@ -969,25 +969,22 @@ const Sale = () => {
                         zIndex: 999,
                       }}>
                         {["Sale Invoices", "Estimate/Quotation", "Proforma Invoice", "Payment-In", "sale Order", "Delivery Challan", "sale Return", "Purchase Bill", "Payment-Out", "Expenses", "Purchase Order", "Purchase Return"].map((x) => (
-                           <div 
-                              key={x} 
-                              onClick={() => {
-                                setOpen(false);
-                                if (x === "Estimate/Quotation") {
-                                  setActiveView("estimate");  // Switch to Estimate view
-                                } else if (x === "Sale Invoices") {
-                                  setActiveView("sale"); // Switch back to Sale view
-                                }
-                              }}
-                              style={{ 
-                                padding: "8px 12px", 
-                                cursor: "pointer",
-                                // Optional: Highlight active view in dropdown
-                                fontWeight: (x === "Estimate/Quotation" && activeView === "estimate") || (x === "Sale Invoices" && activeView === "sale") ? "bold" : "normal"
-                              }}
-                            > 
-                              {x}
-                            </div>
+                            <div 
+    key={x} 
+    onClick={() => {
+      setOpen(false);
+      // Add navigation based on the item clicked
+      if (x === "Sale Invoices") {
+        navigate("/Sale");
+      } else if (x === "Estimate/Quotation") {
+        navigate("/estimate");
+      }
+      // Add other navigations as needed
+    }} 
+    style={{ padding: "8px 12px", cursor: "pointer" }}
+  >
+    {x}
+  </div>
                         ))}
                       </div>
                     )}
