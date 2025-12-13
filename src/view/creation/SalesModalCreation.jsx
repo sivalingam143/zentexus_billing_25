@@ -105,6 +105,7 @@ const INITIAL_ROW = {
 const SaleCreation = ({ tabNumber = 1 }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+ 
   
   // ============== TAB FUNCTIONALITY START ==============
   // Multiple Tabs State
@@ -166,7 +167,8 @@ const SaleCreation = ({ tabNumber = 1 }) => {
   ]);
   const [isManualRoundOff, setIsManualRoundOff] = useState(false);
   const saleToEdit = id ? sales.find((s) => s.sale_id == id) : null;
-
+   const fromEstimate = location.state?.fromEstimate;
+   const estimateData = location.state?.estimateData;
   const [formData, setFormData] = useState({
     parties_id: "",
     name: "",
@@ -456,6 +458,81 @@ const SaleCreation = ({ tabNumber = 1 }) => {
       }));
     }
   }, [saleToEdit]);
+   // Add this useEffect - ithu thaan missing piece!
+useEffect(() => {
+  if (fromEstimate && estimateData) {
+    // Auto-fill all fields from estimate
+    setFormData(prev => ({
+      ...prev,
+      from_estimate_id: estimateData.estimate_id,
+      parties_id: estimateData.parties_id || "",
+      name: estimateData.name || "",
+      phone: estimateData.phone || "",
+      billing_address: estimateData.billing_address || "",
+      shipping_address: estimateData.shipping_address || "",
+      invoice_date: estimateData.estimate_date || new Date().toISOString().split("T")[0],
+      state_of_supply: estimateData.state_of_supply || "",
+      payment_type: estimateData.payment_type || "",
+      description: estimateData.description || "",
+      total: estimateData.total || "0.00",
+      received_amount: estimateData.received_amount || "0.00",
+      rount_off: estimateData.round_off || 0,
+      round_off_amount: estimateData.round_off_amount || "0.00",
+
+      // Products - JSON string-a parse pannu
+      rows: estimateData.products && estimateData.products !== "[]" && estimateData.products !== "null"
+        ? JSON.parse(estimateData.products).map(item => ({
+            ...INITIAL_ROW,
+            id: generateUniqueId(),
+            product_id: item.product_id || "",
+            product_name: item.product_name || "",
+            category: item.category || "",
+            Description: item.Description || "",
+            hsn_code: item.hsn_code || "",
+            qty: item.qty || "",
+            unit: item.unit || "NONE",
+            priceUnitType: item.priceUnitType || "Without Tax",
+            price: item.price || "",
+            discountPercent: item.discountPercent || "",
+            discountAmount: item.discountAmount || "0.00",
+            taxPercent: item.taxPercent || 0,
+            taxAmount: item.taxAmount || "0.00",
+            amount: item.amount || "0.00",
+          }))
+        : [INITIAL_ROW],
+    }));
+
+    // Party select dropdown-la show panna
+    if (estimateData.name) {
+      setSelectedPartyOption({
+        value: estimateData.parties_id || estimateData.name,
+        label: estimateData.name ,
+      });
+    }
+
+    // Image iruntha
+    if (estimateData.add_image) {
+      setImagePreview(estimateData.add_image);
+      setHasUserUploadedImage(true);
+    }
+
+    // Documents iruntha
+    if (estimateData.documents && estimateData.documents !== "[]" && estimateData.documents !== "null") {
+      try {
+        setAttachedDocs(JSON.parse(estimateData.documents));
+      } catch (e) {
+        console.log("Documents parse error:", e);
+      }
+    }
+
+    // Success notification
+    NotifyData(`Estimate #${estimateData.estimate_no} loaded for conversion to Sale`, "success");
+
+    // Clean state to prevent re-fill on refresh
+    navigate(location.pathname, { replace: true, state: {} });
+  }
+}, [fromEstimate, estimateData, navigate, location.pathname]);
+  // =====================================================================
 
   // Generate invoice number in create mode
   useEffect(() => {
@@ -680,6 +757,18 @@ const SaleCreation = ({ tabNumber = 1 }) => {
       
       NotifyData(errorMessage || "Failed to create party", "error");
     }
+  };
+  const handleConvertToSale = () => {
+    
+
+    const currentEstimateData = formData; 
+
+    navigate("/sale/create", {
+      state: {
+        fromEstimate: true,
+        estimateData: currentEstimateData,  
+      },
+    });
   };
 
   const handleImageChange = (e) => {
@@ -1218,6 +1307,21 @@ const SaleCreation = ({ tabNumber = 1 }) => {
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+  const handleSaveSale = async () => {
+  if (isCreateMode || fromEstimate) {
+    // Prepare data – products JSON string ஆக்கு
+    const payload = {
+      ...formData,
+      products: JSON.stringify(formData.rows),
+      documents: JSON.stringify(attachedDocs),
+      from_estimate_id: formData.from_estimate_id || location.state?.estimateData?.estimate_id, // இது இருக்கணும்!
+    };
+
+    dispatch(createSale(payload)); // Redux use பண்ணுறேனா இது
+    // அல்லது
+    // await axiosInstance.post("/sales.php", payload);
+  }
+};
 
   const handleSave = async () => {
     console.log("444");
@@ -2579,13 +2683,10 @@ const SaleCreation = ({ tabNumber = 1 }) => {
                   Back
                 </Button>
                 {!isViewMode && (
-                  <Button
-                    variant="outline-primary"
-                    onClick={handleSave}
-                    size="lg"
-                  >
-                    {isEditMode ? "Update Sale" : "Save Sale"}
-                  </Button>
+                  
+                  <Button variant="danger" onClick={handleSaveSale}>  Save Sale</Button>
+  
+
                 )}
               </Col>
             </Row>

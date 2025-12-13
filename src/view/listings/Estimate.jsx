@@ -1,557 +1,4 @@
 
-
-
-// import React, { useEffect, useState, useMemo } from "react";
-// import { useDispatch, useSelector } from "react-redux";
-// import { Container, Row, Col, Button } from "react-bootstrap";
-// import { FaSearch, FaChartBar, FaFileExcel, FaPrint } from "react-icons/fa";
-// import { useNavigate } from "react-router-dom";
-// import { searchSales, deleteSale } from "../../slice/saleSlice";
-// import { TextInputform } from "../../components/Forms";
-// import TableUI from "../../components/TableUI";
-// import { ActionButton } from "../../components/Buttons";
-// import { MdOutlineDelete } from "react-icons/md";
-// import { TbCircleLetterI } from "react-icons/tb";
-// import { HiOutlineDotsVertical } from "react-icons/hi";
-// import NotifyData from "../../components/NotifyData";
-// import { FiPrinter, FiShare2 } from "react-icons/fi";
-// import { FaWhatsapp, FaChevronDown, FaRegCalendarAlt } from "react-icons/fa";
-// import { SiGmail } from "react-icons/si";
-// import { MdSms } from "react-icons/md";
-
-// // IMPORT THE ESTIMATE CREATION COMPONENT
-// import EstimateCreation from "../creation/EstimateCreationModal"; // Adjust the path as needed
-
-// // ADD THIS IMPORT - date-fns for filtering
-// import {
-//   isToday,
-//   isYesterday,
-//   startOfWeek,
-//   endOfWeek,
-//   startOfMonth,
-//   endOfMonth,
-//   startOfYear,
-//   endOfYear,
-//   isWithinInterval,
-//   parseISO,
-// } from "date-fns";
-
-// const Estimate = () => {
-//   const [showCreateForm, setShowCreateForm] = useState(false);
-//   const dispatch = useDispatch();
-//   const navigate = useNavigate();
-//   const { sales = [] } = useSelector((state) => state.sale);
-//   const [open, setOpen] = useState(false);
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [businessName, setBusinessName] = useState("");
-//   const [isEditing, setIsEditing] = useState(false);
-//   const [openShareId, setOpenShareId] = useState(null);
-//   const [statusFilter, setStatusFilter] = useState("All");
-//   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-
-//   // Date filter states
-//   const [selectedPeriod, setSelectedPeriod] = useState("This Year");
-//   const [periodOpen, setPeriodOpen] = useState(false);
-//   const [selectedFirm, setSelectedFirm] = useState("All Firms");
-//   const [firmOpen, setFirmOpen] = useState(false);
-
-//   // Fetch sales on search change
-//   useEffect(() => {
-//     dispatch(searchSales(searchTerm));
-//   }, [dispatch, searchTerm]);
-
-//   // Get status from data (for status filter)
-//   const getStatusFromData = (item) => {
-//     const balance = Number(item.balance_due || 0);
-//     const received = Number(item.received_amount || 0);
-//     const isCancelled = !!item.is_cancelled;
-
-//     if (isCancelled) return "Cancelled";
-//     if (balance === 0) return "Paid";
-//     if (received === 0 && balance > 0) return "Unpaid";
-//     if (received > 0 && balance > 0) return "Partially Paid";
-//     return "Unpaid";
-//   };
-
-//   // MAIN FILTERING LOGIC - Status + Date Period
-//   const filteredSales = useMemo(() => {
-//     let filtered = [...sales];
-
-//     // Apply Status Filter
-//     if (statusFilter !== "All") {
-//       filtered = filtered.filter((item) => getStatusFromData(item) === statusFilter);
-//     }
-
-//     // Apply Date Period Filter
-//     if (selectedPeriod === "All Time" || !selectedPeriod) return filtered;
-
-//     return filtered.filter((item) => {
-//       if (!item.estimate_date) return false;
-//       const estimateDate = parseISO(item.estimate_date);
-//       const now = new Date();
-
-//       switch (selectedPeriod) {
-//         case "Today":
-//           return isToday(estimateDate);
-//         case "Yesterday":
-//           return isYesterday(estimateDate);
-//         case "This Week":
-//           return isWithinInterval(estimateDate, {
-//             start: startOfWeek(now),
-//             end: endOfWeek(now),
-//           });
-//         case "This Month":
-//           return isWithinInterval(estimateDate, {
-//             start: startOfMonth(now),
-//             end: endOfMonth(now),
-//           });
-//         case "This Year":
-//           return isWithinInterval(estimateDate, {
-//             start: startOfYear(now),
-//             end: endOfYear(now),
-//           });
-//         case "Last Year":
-//           const lastYear = new Date(now.getFullYear() - 1, 0, 1);
-//           return isWithinInterval(estimateDate, {
-//             start: startOfYear(lastYear),
-//             end: endOfYear(lastYear),
-//           });
-//         default:
-//           return true;
-//       }
-//     });
-//   }, [sales, statusFilter, selectedPeriod]);
-
-
-//   const totals = useMemo(() => {
-//     const totalSales = filteredSales.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
-//     const totalReceived = filteredSales.reduce((sum, s) => sum + parseFloat(s.received_amount || 0), 0);
-//     const totalBalance = filteredSales.reduce((sum, s) => sum + parseFloat(s.balance_due || 0), 0);
-
-//     return {
-//       totalSales: totalSales.toFixed(2),
-//       totalReceived: totalReceived.toFixed(2),
-//       totalBalance: totalBalance.toFixed(2),
-//     };
-//   }, [filteredSales]);
- 
-// const comparisonTotals = useMemo(() => {
-//   if (selectedPeriod !== "This Year") return null;
-
-//   const lastYearStart = new Date(new Date().getFullYear() - 1, 0, 1);
-//   const lastYearEnd = new Date(new Date().getFullYear() - 1, 11, 31);
-
-//   const lastYearEstimates = sales.filter((item) => {
-//     if (!item.estimate_date) return false;
-//     const date = parseISO(item.estimate_date);
-//     return date >= lastYearStart && date <= lastYearEnd;
-//   });
-
-//   return lastYearEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
-// }, [sales, selectedPeriod]);
-// const percentageChange = comparisonTotals !== null && comparisonTotals > 0
-//   ? ((parseFloat(totals.totalQuotations) - comparisonTotals) / comparisonTotals) * 100
-//   : totals.totalQuotations > 0 ? 100 : 0; // 100% up if no previous data
-
-//   const statusDisplay = (item) => {
-//     const status = getStatusFromData(item);
-//     const colorMap = {
-//       Paid: "#27ae60",
-//       Unpaid: "#e74c3c",
-//       "Partially Paid": "#f39c12",
-//       Cancelled: "#0be0f0ff",
-//     };
-//     return <span style={{ color: colorMap[status], fontWeight: "600" }}>{status}</span>;
-//   };
-
-//   // Navigation
-//   // const handleCreate = () => navigate("/estimate/create");
-//   // const handleEdit = (sale) => navigate(`/estimate/edit/${sale.sale_id}`);
-//   // const handleView = (sale) => navigate(`/estimate/view/${sale.sale_id}`);
-//  const handleCreate = () => navigate("/estimate/create");
-// const handleEdit = (estimate) => navigate(`/estimate/edit/${estimate.estimate_id}`);
-// const handleView = (estimate) => navigate(`/estimate/view/${estimate.estimate_id}`);
-
-//   const handleDelete = async (saleId) => {
-//     if (!window.confirm("Are you sure you want to delete this sale?")) return;
-//     try {
-//       await dispatch(deleteSale(saleId)).unwrap();
-//       NotifyData("Sale Deleted Successfully", "success");
-//     } catch {
-//       NotifyData("Sale Deletion Failed", "error");
-//     }
-//   };
-
-//   // Table headers
-//   const EstimateHead = [
-//     "Date",
-//     "Estimate No",
-//     "Party Name",
-//     "Transaction",
-//     "Payment Type",
-//     "Amount",
-//     "Balance",
-//     <div key="status" style={{ position: "relative", display: "inline-block" }} onClick={(e) => e.stopPropagation()}>
-//       <span
-//         style={{ cursor: "pointer", fontWeight: "bold", color: "#212529" }}
-//         onClick={(e) => {
-//           const dropdown = e.currentTarget.nextElementSibling;
-//           dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
-//         }}
-//       >
-//         Status<FaChevronDown style={{ marginLeft: "8px", fontSize: "16px", color: "#212529" }} />
-//       </span>
-
-//       <div style={{
-//         display: "none",
-//         position: "absolute",
-//         top: "100%",
-//         left: "50%",
-//         transform: "translateX(-50%)",
-//         background: "white",
-//         border: "1px solid #ddd",
-//         borderRadius: "10px",
-//         boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-//         zIndex: 9999,
-//         minWidth: "160px",
-//         marginTop: "8px",
-//         overflow: "hidden"
-//       }}>
-//         {["All", "Paid", "Unpaid", "Partially Paid", "Cancelled"].map((status) => (
-//           <div
-//             key={status}
-//             onClick={() => setStatusFilter(status)}
-//             style={{
-//               padding: "12px 18px",
-//               cursor: "pointer",
-//               backgroundColor: statusFilter === status ? "#3498db" : "white",
-//               color: statusFilter === status ? "white" : "#2c3e50",
-//               fontWeight: statusFilter === status ? "bold" : "500",
-//               transition: "all 0.2s"
-//             }}
-//             onMouseEnter={(e) => statusFilter !== status && (e.currentTarget.style.backgroundColor = "#f8f9fa")}
-//             onMouseLeave={(e) => statusFilter !== status && (e.currentTarget.style.backgroundColor = "white")}
-//           >
-//             {status}
-//           </div>
-//         ))}
-//       </div>
-//     </div>,
-//   ];
-
-//   // Close dropdown on outside click
-//   useEffect(() => {
-//     const close = () => {
-//       document.querySelectorAll('div[style*="z-index: 9999"]').forEach(d => d.style.display = "none");
-//     };
-//     document.addEventListener("click", close);
-//     return () => document.removeEventListener("click", close);
-//   }, []);
-
-//   const EstimateData = filteredSales.length > 0
-//     ? filteredSales.map((item) => {
-//         const total = Number(item.total || 0).toFixed(2);
-//         const balance = Number(item.balance_due || 0).toFixed(2);
-
-//         const balanceDisplay = balance > 0 ? (
-//           <span style={{ color: "#d63031", fontWeight: "bold" }}>₹ {balance}</span>
-//         ) : (
-//           <span style={{ color: "#27ae60" }}>₹ 0.00</span>
-//         );
-
-//         return {
-//           icon: <TbCircleLetterI />,
-//           values: [
-//             item.estimate_date || "-",
-//             item.estimate_no || "-",
-//             item.name || "-",
-//             "Sales",
-//             item.payment_type || "Cash",
-//             `₹ ${total}`,
-//             balanceDisplay,
-//             statusDisplay(item),
-
-//             <div
-//               key={item.sale_id}
-//               style={{
-//                 position: "relative",
-//                 display: "flex",
-//                 alignItems: "center",
-//                 gap: "12px",
-//               }}
-//             >
-//               <FiPrinter size={20} style={{ cursor: "pointer" }} onClick={() => window.print()} />
-
-//               <FiShare2
-//                 size={20}
-//                 style={{ cursor: "pointer" }}
-//                 onClick={() => setOpenShareId(openShareId === item.sale_id ? null : item.sale_id)}
-//               />
-
-//               {openShareId === item.sale_id && (
-//                 <div
-//                   style={{
-//                     position: "absolute",
-//                     top: "30px",
-//                     left: "0",
-//                     display: "flex",
-//                     gap: "12px",
-//                     padding: "10px",
-//                     background: "white",
-//                     borderRadius: "10px",
-//                     boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-//                     zIndex: 999,
-//                   }}
-//                 >
-//                   <FaWhatsapp
-//                     size={24}
-//                     color="green"
-//                     style={{ cursor: "pointer" }}
-//                     onClick={() =>
-//                       window.open(
-//                         `https://wa.me/?text=Estimate ${item.estimate_no}%0ATotal: ₹${total}%0ABalance Due: ₹${balance}`,
-//                         "_blank"
-//                       )
-//                     }
-//                   />
-//                   <SiGmail
-//                     size={24}
-//                     color="#D44638"
-//                     style={{ cursor: "pointer" }}
-//                     onClick={() =>
-//                       (window.location.href = `mailto:?subject=Estimate ${item.estimate_no}&body=Total: ₹${total}%0ABalance Due: ₹${balance}`)
-//                     }
-//                   />
-//                   <MdSms
-//                     size={26}
-//                     color="#1E90FF"
-//                     style={{ cursor: "pointer" }}
-//                     onClick={() =>
-//                       (window.location.href = `sms:?body=Estimate${item.estimate_no}%0ATotal: ₹${total}, Balance: ₹${balance}`)
-//                     }
-//                   />
-//                 </div>
-//               )}
-
-//               <ActionButton
-//                 options={[
-//                   { label: "View", icon: <TbCircleLetterI />, onClick: () => handleView(item) },
-//                   { label: "Edit", icon: <TbCircleLetterI />, onClick: () => handleEdit(item) },
-//                   { label: "Delete", icon: <MdOutlineDelete />, onClick: () => handleDelete(item.sale_id) },
-//                 ]}
-//                 label={<HiOutlineDotsVertical />}
-//               />
-//             </div>,
-//           ],
-//         };
-//       })
-//     : [];
-
- 
-
-//   return (
-//     <div id="main" style={{ backgroundColor: "#DEE2E6", minHeight: "100vh" }}>
-//       <Container fluid className="py-5">
-//         <Row>
-//           <Col xl={12}>
-//             <div className="d-flex align-items-center">
-//                           <span style={{ color: "red", fontWeight: "bold", fontSize: "1.5rem" }}>•</span>
-//                           {isEditing ? (
-//                             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "8px" }}>
-//                               <input
-//                                 type="text"
-//                                 value={businessName}
-//                                 onChange={(e) => setBusinessName(e.target.value)}
-//                                 placeholder="Enter Business Name"
-//                                 autoFocus
-//                                 style={{ border: "1px solid #ccc", borderRadius: "6px", padding: "5px 10px", fontSize: "1rem", width: "250px" }}
-//                                 onKeyDown={(e) => e.key === "Enter" && setIsEditing(false)}
-//                               />
-//                               <Button variant="info" onClick={() => setIsEditing(false)}>
-//                                 Save
-//                               </Button>
-//                             </div>
-//                           ) : (
-//                             <span className="ms-2 text-muted" style={{ cursor: "pointer" }} onClick={() => setIsEditing(true)}>
-//                               {businessName || "Enter Business Name"}
-//                             </span>
-//                           )}
-//                           <div className="ms-auto d-flex align-items-center gap-2">
-//                             <Button variant="danger" onClick={handleCreate}>+Add Sale</Button>
-//                             <Button variant="success" onClick={handleCreate}>+Add Purchase</Button>
-//                             <Button variant="info">+Add More</Button>
-//                             <Button variant="light">:</Button>
-//                           </div>
-//                         </div>
-//             {/* Header - This is the Estimate/Quotation Dropdown */}
-//             <Row className="align-items-center mb-4">
-//               <Col>
-//                 <h5 style={{ cursor: "pointer" }}>
-//                   Estimate / Quotation<FaChevronDown />
-//                 </h5>
-
-//                 {open && (
-//                   <div style={{
-//                     position: "absolute",
-//                     background: "white",
-//                     border: "1px solid #ddd",
-//                     borderRadius: "6px",
-//                     padding: "5px 0",
-//                     width: "180px",
-//                     zIndex: 999,
-//                   }}>
-//                     {["Sale Invoices", "Estimate/Quotation", "Proforma Invoice", "Payment-In", "sale Order", "Delivery Challan", "sale Return", "Purchase Bill", "Payment-Out", "Expenses", "Purchase Order", "Purchase Return"].map((x) => (
-//                       <div key={x} onClick={() => setOpen(false)} style={{ padding: "8px 12px", cursor: "pointer" }}>
-//                         {x}
-//                       </div>
-//                     ))}
-//                   </div>
-//                 )}
-//               </Col>
-//               <Col className="text-end">
-//                 <Button
-//                   variant="danger"
-//                   className="btn-sm px-3 py-1 shadow rounded-pill fw-bold"
-//                   style={{
-//                   fontSize: "0.85rem",}}
-//                    onClick={() => navigate("/estimate/create")}> + Add Estimate
-//                 </Button>
-
-//               </Col>
-//             </Row>
-
-//             {/* Filter Card */}
-//             <Row className="mb-3">
-//               <Col lg={12} className="p-3 pb-3 d-flex align-items-center flex-wrap gap-3 bg-white rounded shadow-sm border">
-//                 <span className="text-muted fw-medium">Filter by :</span>
-
-//                 {/* Period Dropdown */}
-//                 <div className="position-relative">
-//                   <button
-//                     onClick={() => setPeriodOpen(!periodOpen)}
-//                     className="btn rounded-pill border-0 shadow-sm d-flex align-items-center gap-2"
-//                     style={{
-//                       backgroundColor: "#e3f2fd",
-//                       color: "#1565c0",
-//                       fontWeight: "500",
-//                       padding: "8px 20px",
-//                     }}
-//                   >
-//                     {selectedPeriod} <FaChevronDown className={`transition-transform ${periodOpen ? 'rotate-180' : ''}`} size={12} />
-//                   </button>
-
-//                   {periodOpen && (
-//                     <div className="position-absolute top-100 start-0 mt-2 bg-white rounded-3 shadow-lg border" style={{ zIndex: 1000, minWidth: "200px" }}>
-//                       {["All Time", "Today", "Yesterday", "This Week", "This Month", "This Year", "Last Year", "Custom Range"].map((item) => (
-//                         <div
-//                           key={item}
-//                           onClick={() => {
-//                             setSelectedPeriod(item);
-//                             setPeriodOpen(false);
-//                           }}
-//                           className="px-4 py-2 hover-bg-light cursor-pointer"
-//                           style={{ cursor: "pointer" }}
-//                         >
-//                           {item === selectedPeriod ? <strong>{item}</strong> : item}
-//                         </div>
-//                       ))}
-//                     </div>
-//                   )}
-//                 </div>
-
-//                 {/* Date Range Display */}
-//                 <div
-//                   className="d-flex align-items-center gap-3 px-4 py-2 rounded-pill shadow-sm"
-//                   style={{
-//                     backgroundColor: "#e3f2fd",
-//                     color: "#1565c0",
-//                     fontWeight: "500",
-//                   }}
-//                 >
-//                   01/01/2025 <span className="text-muted">To</span> 31/12/2025
-//                 </div>
-
-//                 {/* Firm Dropdown */}
-//                 <div className="position-relative">
-//                   <button
-//                     onClick={() => setFirmOpen(!firmOpen)}
-//                     className="btn rounded-pill border-0 shadow-sm d-flex align-items-center gap-2"
-//                     style={{
-//                       backgroundColor: "#e3f2fd",
-//                       color: "#1565c0",
-//                       fontWeight: "500",
-//                       padding: "8px 24px",
-//                     }}
-//                   >
-//                     {selectedFirm} <FaChevronDown className={`transition-transform ${firmOpen ? 'rotate-180' : ''}`} size={12} />
-//                   </button>
-
-//                   {firmOpen && (
-//                     <div className="position-absolute top-100 start-0 mt-2 bg-white rounded-3 shadow-lg border" style={{ zIndex: 1000, minWidth: "220px" }}>
-//                       {["All Firms", "My Company Pvt Ltd", "ABC Traders", "XYZ Enterprises", "Global Exports"].map((firm) => (
-//                         <div
-//                           key={firm}
-//                           onClick={() => {
-//                             setSelectedFirm(firm);
-//                             setFirmOpen(false);
-//                           }}
-//                           className="px-4 py-2 hover-bg-light cursor-pointer"
-//                           style={{ cursor: "pointer" }}
-//                         >
-//                           {firm === selectedFirm ? <strong>{firm}</strong> : firm}
-//                         </div>
-//                       ))}
-//                     </div>
-//                   )}
-//                 </div>
-//               </Col>
-//             </Row>
-
-//             {/* Totals Card */}
-//             <Row className="mb-3">
-//               <Col>
-//                 <div className="p-3 bg-white rounded shadow-sm border" style={{ width: "500px" }}>
-//                   <h5>Total quotations: <strong style={{ fontSize: "1.8rem" }}>₹{totals.totalEstimates}</strong></h5>
-//                   <small className="opacity-75"><span style={{ color: "#45eb45ff" }}>100% up</span> vs last month</small>
-//                   <div className="text-muted mt-2">
-//                     Converted: <strong>₹ {totals.totalEstimates}</strong> | 
-//                     Open: <strong style={{ color: "#e74c3c" }}>₹ 0.00</strong>
-//                   </div>
-//                 </div>
-//               </Col>
-//             </Row>
-            
-
-//             {/* Table */}
-//             {/* <div className="d-flex justify-content-center align-items-center"
-//   style={{ minHeight: "60vh" }}
-// >
-//  <Button
-//   variant="danger"
-//   size="sm"
-//   className="px-5 py-3 shadow-lg rounded-pill fw-bold"
-//   style={{
-//     fontSize: "1.2rem",
-//     letterSpacing: "0.5px",
-//   }}
-//   onClick={() => navigate("/estimate/create")}  // ✅ This navigates to /estimate/create
-// >
-//   + Add Estimate
-// </Button>
-// </div> */}
-// <Col lg={12} xs={12}>
-//                   <TableUI headers={EstimateHead} body={EstimateData} className="table-end" />
-//                 </Col>
-//           </Col>
-//         </Row>
-//       </Container>
-//     </div>
-//   );
-// };
-
-// export default Estimate;
-
-
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Container, Row, Col, Button, Table } from "react-bootstrap";
@@ -602,7 +49,7 @@ const Estimate = () => {
   const [openShareId, setOpenShareId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-
+  
   // Date filter states
   const [selectedPeriod, setSelectedPeriod] = useState("This Year");
   const [periodOpen, setPeriodOpen] = useState(false);
@@ -772,6 +219,22 @@ const Estimate = () => {
       NotifyData("Estimate Deletion Failed", "error");
     }
   };
+const handleConvertToSale = (item) => {
+  navigate("/sale/create", {
+    state: {
+      fromEstimate: true,
+      estimateData: item,
+    },
+  });
+};
+
+  // Handle Convert to Order
+  const handleConvertToOrder = (estimate) => {
+    NotifyData(`Converting estimate ${estimate.estimate_no} to order`, "info");
+    setOpenShareId(null);
+    // Add your conversion logic here
+    // Example: navigate(`/order/create?estimateId=${estimate.estimate_id}`);
+  };
 
   // Table headers
   const EstimateHead = [
@@ -849,7 +312,7 @@ const Estimate = () => {
     return filteredEstimates.map((item) => {
       const total = Number(item.total || 0).toFixed(2);
       const balance = Number(item.balance_due || 0).toFixed(2);
-
+      const isConverted = item.converted_to_sale === 1 || item.converted_to_sale === "1";
       const balanceDisplay = balance > 0 ? (
         <span style={{ color: "#d63031", fontWeight: "bold" }}>₹ {balance}</span>
       ) : (
@@ -876,58 +339,76 @@ const Estimate = () => {
               gap: "12px",
             }}
           >
-            <FiPrinter size={20} style={{ cursor: "pointer" }} onClick={() => window.print()} />
-
-            <FiShare2
-              size={20}
-              style={{ cursor: "pointer" }}
-              onClick={() => setOpenShareId(openShareId === item.estimate_id ? null : item.estimate_id)}
-            />
-
-            {openShareId === item.estimate_id && (
-              <div
+            {/* Convert Dropdown */}
+            <div className="position-relative">
+              {/* <button
+                className="btn btn-sm border rounded-pill d-flex align-items-center gap-1"
                 style={{
-                  position: "absolute",
-                  top: "30px",
-                  left: "0",
-                  display: "flex",
-                  gap: "12px",
-                  padding: "10px",
-                  background: "white",
-                  borderRadius: "10px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                  zIndex: 999,
+                  backgroundColor: "#f8f9fa",
+                  color: "#495057",
+                  padding: "4px 10px",
+                  fontSize: "0.8rem",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenShareId(openShareId === item.estimate_id ? null : item.estimate_id);
                 }}
               >
-                <FaWhatsapp
-                  size={24}
-                  color="green"
-                  style={{ cursor: "pointer" }}
-                  onClick={() =>
-                    window.open(
-                      `https://wa.me/?text=Estimate ${item.estimate_no}%0ATotal: ₹${total}%0ABalance Due: ₹${balance}`,
-                      "_blank"
-                    )
-                  }
-                />
-                <SiGmail
-                  size={24}
-                  color="#D44638"
-                  style={{ cursor: "pointer" }}
-                  onClick={() =>
-                    (window.location.href = `mailto:?subject=Estimate ${item.estimate_no}&body=Total: ₹${total}%0ABalance Due: ₹${balance}`)
-                  }
-                />
-                <MdSms
-                  size={26}
-                  color="#1E90FF"
-                  style={{ cursor: "pointer" }}
-                  onClick={() =>
-                    (window.location.href = `sms:?body=Estimate ${item.estimate_no}%0ATotal: ₹${total}, Balance: ₹${balance}`)
-                  }
-                />
-              </div>
-            )}
+                Select <FaChevronDown size={10} />
+              </button> */}
+              <button
+  disabled={isConverted}
+  className={`btn btn-sm ${isConverted ? 'btn-secondary' : 'btn-primary'} rounded-pill`}
+  onClick={() => !isConverted && handleConvertToSale(item)}
+>
+  {isConverted ? 'Converted' : 'Select'} <FaChevronDown />
+</button>
+
+              {openShareId === item.estimate_id && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    marginTop: "5px",
+                    background: "white",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                    zIndex: 1000,
+                    minWidth: "160px",
+                    border: "1px solid #dee2e6",
+                  }}
+                >
+                  <div
+                    onClick={() => handleConvertToSale(item)}
+                    style={{
+                      padding: "10px 15px",
+                      cursor: "pointer",
+                      borderBottom: "1px solid #f1f3f4",
+                      color: "#2c3e50",
+                      fontWeight: "500",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                  >
+                    Convert to Sale
+                  </div>
+                  <div
+                    onClick={() => handleConvertToOrder(item)}
+                    style={{
+                      padding: "10px 15px",
+                      cursor: "pointer",
+                      color: "#2c3e50",
+                      fontWeight: "500",
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                  >
+                    Convert to Order
+                  </div>
+                </div>
+              )}
+            </div>
 
             <ActionButton
               options={[
@@ -1166,66 +647,69 @@ const Estimate = () => {
                         <td>{balanceDisplay}</td>
                         <td>{statusDisplay(item)}</td>
                         <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <FiPrinter 
-                              size={20} 
-                              style={{ cursor: "pointer" }} 
-                              onClick={() => window.print()} 
-                              title="Print"
-                            />
-                            <FiShare2
-                              size={20}
-                              style={{ cursor: "pointer" }}
-                              onClick={() => setOpenShareId(openShareId === item.estimate_id ? null : item.estimate_id)}
-                              title="Share"
-                            />
-                            
-                            {openShareId === item.estimate_id && (
-                              <div
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative", }}>
+                            {/* Convert Dropdown */}
+                            <div className="position-relative">
+                              <button
+                                className="btn btn-sm border rounded-pill d-flex align-items-center gap-2"
                                 style={{
-                                  position: "absolute",
-                                  transform: "translateY(10px)",
-                                  display: "flex",
-                                  gap: "12px",
-                                  padding: "10px",
-                                  background: "white",
-                                  borderRadius: "10px",
-                                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                  zIndex: 999,
+                                  backgroundColor: "#f8f9fa",
+                                  color: "#495057",
+                                  padding: "4px 12px",
+                                  fontSize: "0.85rem",
+                                  
                                 }}
+                                onClick={() => setOpenShareId(openShareId === item.estimate_id ? null : item.estimate_id)}
                               >
-                                <FaWhatsapp
-                                  size={20}
-                                  color="green"
-                                  style={{ cursor: "pointer" }}
-                                  onClick={() =>
-                                    window.open(
-                                      `https://wa.me/?text=Estimate ${item.estimate_no}%0ATotal: ₹${total}%0ABalance Due: ₹${balance}`,
-                                      "_blank"
-                                    )
-                                  }
-                                  title="Share via WhatsApp"
-                                />
-                                <SiGmail
-                                  size={20}
-                                  color="#D44638"
-                                  style={{ cursor: "pointer" }}
-                                  onClick={() =>
-                                    (window.location.href = `mailto:?subject=Estimate ${item.estimate_no}&body=Total: ₹${total}%0ABalance Due: ₹${balance}`)
-                                  }
-                                  title="Share via Email"
-                                />
-                                <MdSms
-                                  size={22}
-                                  color="#1E90FF"
-                                  style={{ cursor: "pointer" }}
-                                  onClick={() =>
-                                    (window.location.href = `sms:?body=Estimate ${item.estimate_no}%0ATotal: ₹${total}, Balance: ₹${balance}`)
-                                  }
-                                  title="Share via SMS"
-                                />
-                              </div>
-                            )}
+                                Select <FaChevronDown size={10} />
+                              </button>
+
+                              {openShareId === item.estimate_id && (
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    top: "100%",
+                                    left: 0,
+                                    marginTop: "5px",
+                                    background: "white",
+                                    borderRadius: "8px",
+                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                                    zIndex: 1000,
+                                    minWidth: "160px",
+                                    border: "1px solid #dee2e6",
+                                  }}
+                                >
+                                  <div
+                                    onClick={() => handleConvertToSale(item)}
+                                    style={{
+                                      padding: "10px 15px",
+                                      cursor: "pointer",
+                                      borderBottom: "1px solid #f1f3f4",
+                                      color: "#2c3e50",
+                                      fontWeight: "500",
+                                      
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                  >
+                                    Convert to Sale
+                                  </div>
+                                  <div
+                                    onClick={() => handleConvertToOrder(item)}
+                                    style={{
+                                      padding: "10px 15px",
+                                      cursor: "pointer",
+                                      color: "#2c3e50",
+                                      fontWeight: "500",
+                                    }}
+                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                  >
+                                    Convert to Order
+                                  </div>
+                                </div>
+                              )}
+                            </div>
 
                             <ActionButton
                               options={[

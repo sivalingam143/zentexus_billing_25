@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -1318,6 +1316,7 @@ const EstimateCreation = ({ tabNumber = 1 }) => {
       NotifyData(err?.message || "Failed to save estimate", "error");
     }
   };
+  
 
   const handleBack = () => navigate("/estimate");
   const title = isViewMode
@@ -1338,7 +1337,7 @@ const EstimateCreation = ({ tabNumber = 1 }) => {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p className="mt-3">Loading data...</p>
+          
         </div>
       </div>
     );
