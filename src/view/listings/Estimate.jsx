@@ -603,13 +603,13 @@ const handleConvertToSale = (item) => {
 
                   <div className="text-muted mt-3">
                    <div className="d-flex justify-content-between">
-  <span>Converted:</span>
-  <strong style={{ color: "#27ae60" }}>₹{totals.totalConverted}</strong>
-</div>
-                    <div className="d-flex justify-content-between">
-  <span>Open:</span>
-  <strong style={{ color: "#e74c3c" }}>₹{totals.totalOpen}</strong>
-</div>
+                     <span>Converted:</span>
+                    <strong style={{ color: "#27ae60" }}>₹{totals.totalConverted}</strong>
+                   </div>
+                   <div className="d-flex justify-content-between">
+                   <span>Open:</span>
+                   <strong style={{ color: "#e74c3c" }}>₹{totals.totalOpen}</strong>
+                   </div>
                   </div>
                 </div>
               </Col>
