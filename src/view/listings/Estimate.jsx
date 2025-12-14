@@ -137,36 +137,36 @@ const Estimate = () => {
   }, [estimates, statusFilter, selectedPeriod]);
 
   // Calculate totals from FILTERED data - FIXED
-  const totals = useMemo(() => {
-    if (!filteredEstimates || !Array.isArray(filteredEstimates)) {
-      return {
-        totalQuotations: "0.00",
-        totalReceived: "0.00",
-        totalBalance: "0.00",
-        totalConverted: "0.00",
-        totalOpen: "0.00",
-      };
-    }
-    
-    const totalQuotations = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
-    const totalReceived = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.received_amount || 0), 0);
-    const totalBalance = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.balance_due || 0), 0);
+const totals = useMemo(() => {
+  if (!filteredEstimates || !Array.isArray(filteredEstimates)) {
+    return { /* default */ };
+  }
 
-    // Count estimates by status
-    const paidEstimates = filteredEstimates.filter(item => getStatusFromData(item) === "Paid");
-    const openEstimates = filteredEstimates.filter(item => getStatusFromData(item) !== "Paid" && getStatusFromData(item) !== "Cancelled");
+  const totalQuotations = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  const totalReceived = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.received_amount || 0), 0);
+  const totalBalance = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.balance_due || 0), 0);
 
-    const totalConverted = paidEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
-    const totalOpen = openEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  // மாற்றம் இங்கே: converted_to_sale = 1 ஆனவை Converted ஆக கருதவும்
+  const convertedEstimates = filteredEstimates.filter(item => 
+    item.converted_to_sale === 1 || item.converted_to_sale === "1"
+  );
 
-    return {
-      totalQuotations: totalQuotations.toFixed(2),
-      totalReceived: totalReceived.toFixed(2),
-      totalBalance: totalBalance.toFixed(2),
-      totalConverted: totalConverted.toFixed(2),
-      totalOpen: totalOpen.toFixed(2),
-    };
-  }, [filteredEstimates]);
+  const openEstimates = filteredEstimates.filter(item => 
+    (item.converted_to_sale !== 1 && item.converted_to_sale !== "1") &&
+    getStatusFromData(item) !== "Cancelled"
+  );
+
+  const totalConverted = convertedEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  const totalOpen = openEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+
+  return {
+    totalQuotations: totalQuotations.toFixed(2),
+    totalReceived: totalReceived.toFixed(2),
+    totalBalance: totalBalance.toFixed(2),
+    totalConverted: totalConverted.toFixed(2),
+    totalOpen: totalOpen.toFixed(2),
+  };
+}, [filteredEstimates]);
 
   // Calculate percentage change vs last year
   const comparisonTotals = useMemo(() => {
@@ -602,14 +602,14 @@ const handleConvertToSale = (item) => {
                   </small>
 
                   <div className="text-muted mt-3">
+                   <div className="d-flex justify-content-between">
+  <span>Converted:</span>
+  <strong style={{ color: "#27ae60" }}>₹{totals.totalConverted}</strong>
+</div>
                     <div className="d-flex justify-content-between">
-                      <span>Converted:</span>
-                      <strong style={{ color: "#27ae60" }}>₹0</strong>
-                    </div>
-                    <div className="d-flex justify-content-between">
-                      <span>Open:</span>
-                      <strong style={{ color: "#e74c3c" }}>₹ {totals.totalQuotations}</strong>
-                    </div>
+  <span>Open:</span>
+  <strong style={{ color: "#e74c3c" }}>₹{totals.totalOpen}</strong>
+</div>
                   </div>
                 </div>
               </Col>
