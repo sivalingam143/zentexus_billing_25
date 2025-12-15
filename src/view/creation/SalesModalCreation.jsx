@@ -2684,7 +2684,7 @@ useEffect(() => {
                 </Button>
                 {!isViewMode && (
                   
-                  <Button variant="danger" onClick={handleSaveSale}>  Save Sale</Button>
+                  <Button variant="danger" onClick={handleSave}>  Save Sale</Button>
   
 
                 )}
