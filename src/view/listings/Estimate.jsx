@@ -16,7 +16,7 @@ import { FiPrinter, FiShare2 } from "react-icons/fi";
 import { FaWhatsapp, FaChevronDown, FaRegCalendarAlt } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
 import { MdSms } from "react-icons/md";
-
+import { Form, InputGroup } from "react-bootstrap";
 // IMPORT THE ESTIMATE CREATION COMPONENT
 import EstimateCreation from "../creation/EstimateCreationModal";
 
@@ -49,6 +49,8 @@ const Estimate = () => {
   const [openShareId, setOpenShareId] = useState(null);
   const [statusFilter, setStatusFilter] = useState("All");
   const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [customFromDate, setCustomFromDate] = useState("");
+  const [customToDate, setCustomToDate] = useState("");
   
   // Date filter states
   const [selectedPeriod, setSelectedPeriod] = useState("This Year");
@@ -146,7 +148,7 @@ const totals = useMemo(() => {
   const totalReceived = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.received_amount || 0), 0);
   const totalBalance = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.balance_due || 0), 0);
 
-  // மாற்றம் இங்கே: converted_to_sale = 1 ஆனவை Converted ஆக கருதவும்
+ 
   const convertedEstimates = filteredEstimates.filter(item => 
     item.converted_to_sale === 1 || item.converted_to_sale === "1"
   );
@@ -440,7 +442,7 @@ const handleConvertToSale = (item) => {
                 </span>
               )}
               <div className="ms-auto d-flex align-items-center gap-2">
-                 <Button variant="danger" onClick={handleCreate}>+Add Sale</Button>
+                 <Button variant="danger" onClick={() => navigate("/sale/create")}>+Add Sale</Button>
                  <Button variant="success" onClick={handleCreate}>+Add Purchase</Button>
                   <Button variant="info">+Add More</Button>
                   <Button variant="light">:</Button>
@@ -558,16 +560,52 @@ const handleConvertToSale = (item) => {
                 </div>
 
                 {/* Date Range Display */}
-                <div
-                  className="d-flex align-items-center gap-3 px-4 py-2 rounded-pill shadow-sm"
-                  style={{
-                    backgroundColor: "#e3f2fd",
-                    color: "#1565c0",
-                    fontWeight: "500",
-                  }}
-                >
-                  01/01/2025 <span className="text-muted">To</span> 31/12/2025
-                </div>
+                {/* Custom Date Range Picker */}
+<div className="d-flex align-items-center gap-2">
+  <InputGroup size="sm" className="w-auto">
+    <Form.Control
+      type="date"
+      value={customFromDate}
+      onChange={(e) => setCustomFromDate(e.target.value)}
+      className="border-0"
+      style={{ backgroundColor: "#e3f2fd", color: "#1565c0", minWidth: "160px" }}
+    />
+    <InputGroup.Text className="bg-transparent border-0 text-primary">
+      
+    </InputGroup.Text>
+  </InputGroup>
+
+  <span className="text-muted mx-2">To</span>
+
+  <InputGroup size="sm" className="w-auto">
+    <Form.Control
+      type="date"
+      value={customToDate}
+      min={customFromDate}
+      onChange={(e) => setCustomToDate(e.target.value)}
+      className="border-0"
+      style={{ backgroundColor: "#e3f2fd", color: "#1565c0", minWidth: "160px" }}
+    />
+    <InputGroup.Text className="bg-transparent border-0 text-primary">
+      
+    </InputGroup.Text>
+  </InputGroup>
+
+  {(customFromDate || customToDate) && (
+    <Button
+      variant="outline-secondary"
+      size="sm"
+      className="ms-2 rounded-circle"
+      style={{ width: "32px", height: "32px", padding: 0 }}
+      onClick={() => {
+        setCustomFromDate("");
+        setCustomToDate("");
+      }}
+    >
+      ×
+    </Button>
+  )}
+</div>
 
                 {/* Firm Dropdown */}
                 <div className="position-relative">

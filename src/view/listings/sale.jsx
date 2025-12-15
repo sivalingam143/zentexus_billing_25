@@ -19,7 +19,7 @@ import { SiGmail } from "react-icons/si";
 import { MdSms } from "react-icons/md";
 import Estimate from "./Estimate";
 import "./sale.css";
-
+import { Form, InputGroup } from "react-bootstrap";
 // ADD THIS IMPORT - date-fns for filtering
 import {
   isToday,
@@ -51,6 +51,8 @@ const Sale = () => {
   const [periodOpen, setPeriodOpen] = useState(false);
   const [selectedFirm, setSelectedFirm] = useState("All Firms");
   const [firmOpen, setFirmOpen] = useState(false);
+  const [customFromDate, setCustomFromDate] = useState("");
+  const [customToDate, setCustomToDate] = useState("");
 
   // Multiple Tabs State (Kept for compatibility, though not used in conditional rendering logic below)
   const [tabs, setTabs] = useState([
@@ -99,20 +101,28 @@ const Sale = () => {
   };
 
   // MAIN FILTERING LOGIC - Status + Date Period (Kept unchanged)
-  const filteredSales = useMemo(() => {
-    let filtered = [...sales];
+ const filteredSales = useMemo(() => {
+  let filtered = [...sales];
 
-    // Apply Status Filter
-    if (statusFilter !== "All") {
-      filtered = filtered.filter((item) => getStatusFromData(item) === statusFilter);
-    }
+  // Apply Status Filter
+  if (statusFilter !== "All") {
+    filtered = filtered.filter((item) => getStatusFromData(item) === statusFilter);
+  }
 
-    // Apply Date Period Filter
-    if (selectedPeriod === "All Time" || !selectedPeriod) return filtered;
+  // Apply Date Filter (including Custom Range)
+  const hasCustomDates = customFromDate || customToDate;
 
-    return filtered.filter((item) => {
-      if (!item.invoice_date) return false;
-      const invoiceDate = parseISO(item.invoice_date);
+  // If no period selected and no custom dates, show all
+  if (!selectedPeriod && !hasCustomDates) return filtered;
+
+  return filtered.filter((item) => {
+    if (!item.invoice_date) return false;
+    const invoiceDate = parseISO(item.invoice_date);
+
+    // Handle predefined periods
+    if (!hasCustomDates && selectedPeriod !== "Custom Range") {
+      if (selectedPeriod === "All Time") return true;
+
       const now = new Date();
 
       switch (selectedPeriod) {
@@ -121,20 +131,11 @@ const Sale = () => {
         case "Yesterday":
           return isYesterday(invoiceDate);
         case "This Week":
-          return isWithinInterval(invoiceDate, {
-            start: startOfWeek(now),
-            end: endOfWeek(now),
-          });
+          return isWithinInterval(invoiceDate, { start: startOfWeek(now), end: endOfWeek(now) });
         case "This Month":
-          return isWithinInterval(invoiceDate, {
-            start: startOfMonth(now),
-            end: endOfMonth(now),
-          });
+          return isWithinInterval(invoiceDate, { start: startOfMonth(now), end: endOfMonth(now) });
         case "This Year":
-          return isWithinInterval(invoiceDate, {
-            start: startOfYear(now),
-            end: endOfYear(now),
-          });
+          return isWithinInterval(invoiceDate, { start: startOfYear(now), end: endOfYear(now) });
         case "Last Year":
           const lastYear = new Date(now.getFullYear() - 1, 0, 1);
           return isWithinInterval(invoiceDate, {
@@ -144,8 +145,30 @@ const Sale = () => {
         default:
           return true;
       }
-    });
-  }, [sales, statusFilter, selectedPeriod]);
+    }
+
+    // Handle Custom Range: only apply if at least one date is selected
+    if (hasCustomDates) {
+      let matches = true;
+
+      if (customFromDate) {
+        const from = parseISO(customFromDate);
+        matches = matches && invoiceDate >= from;
+      }
+
+      if (customToDate) {
+        const to = parseISO(customToDate);
+        // Include the entire "to" day (set time to end of day)
+        to.setHours(23, 59, 59, 999);
+        matches = matches && invoiceDate <= to;
+      }
+
+      return matches;
+    }
+
+    return true;
+  });
+}, [sales, statusFilter, selectedPeriod, customFromDate, customToDate]);
 
   // Calculate totals from FILTERED data (Kept unchanged)
   const totals = useMemo(() => {
@@ -480,18 +503,52 @@ const Sale = () => {
                       )}
                     </div>
 
-                    {/* Date Range Display */}
-                    <div
-                      className="d-flex align-items-center gap-3 px-4 py-2 rounded-pill shadow-sm"
-                      style={{
-                        backgroundColor: "#e3f2fd",
-                        color: "#1565c0",
-                        fontWeight: "500",
-                      }}
-                    >
-                      01/01/2025 <span className="text-muted">To</span> 31/12/2025
-                    </div>
+                   {/* Custom Date Range Picker */}
+<div className="d-flex align-items-center gap-2">
+  <InputGroup size="sm" className="w-auto">
+    <Form.Control
+      type="date"
+      value={customFromDate}
+      onChange={(e) => setCustomFromDate(e.target.value)}
+      className="border-0"
+      style={{ backgroundColor: "#e3f2fd", color: "#1565c0", minWidth: "160px" }}
+    />
+    <InputGroup.Text className="bg-transparent border-0 text-primary">
+     
+    </InputGroup.Text>
+  </InputGroup>
 
+  <span className="text-muted mx-2">To</span>
+
+  <InputGroup size="sm" className="w-auto">
+    <Form.Control
+      type="date"
+      value={customToDate}
+      min={customFromDate}
+      onChange={(e) => setCustomToDate(e.target.value)}
+      className="border-0"
+      style={{ backgroundColor: "#e3f2fd", color: "#1565c0", minWidth: "160px" }}
+    />
+    <InputGroup.Text className="bg-transparent border-0 text-primary">
+     
+    </InputGroup.Text>
+  </InputGroup>
+
+  {(customFromDate || customToDate) && (
+    <Button
+      variant="outline-secondary"
+      size="sm"
+      className="ms-2 rounded-circle"
+      style={{ width: "32px", height: "32px", padding: 0 }}
+      onClick={() => {
+        setCustomFromDate("");
+        setCustomToDate("");
+      }}
+    >
+      ×
+    </Button>
+  )}
+</div>
                     {/* Firm Dropdown */}
                     <div className="position-relative">
                       <button
