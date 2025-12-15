@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -802,11 +801,16 @@ useEffect(() => {
   }, [partiesStatus, dispatch]);
 
   // Fetch units on mount
+  // useEffect(() => {
+  //   if (unitStatus === "idle") {
+  //     dispatch(fetchUnits());
+  //   }
+  // }, [unitStatus, dispatch]);
   useEffect(() => {
-    if (unitStatus === "idle") {
-      dispatch(fetchUnits());
-    }
-  }, [unitStatus, dispatch]);
+  if (unitStatus === "idle") {
+    dispatch(fetchUnits());
+  }
+}, [dispatch, unitStatus]);
 
   // Fetch sales for edit/view
   useEffect(() => {
@@ -868,9 +872,14 @@ useEffect(() => {
         product_id: p.product_id,
         hsn_code: p.hsn_code || "",
         salePrice: salePrice,
+        unit:p.unit_name|| " "
+
+        
       };
     });
   }, [products]);
+
+  
 
   // Generate unit options from database
   const unitOptions = React.useMemo(() => {
@@ -1990,8 +1999,8 @@ useEffect(() => {
                                         "category",
                                         cat
                                       );
-                                      const unitValue =
-                                        product.unit_value || "";
+                                     
+                                      const unitValue = product.unit || product.unit_name || product.unit_value || "NONE";
                                       onRowChange(
                                         row.id,
                                         "unit",
@@ -2141,29 +2150,37 @@ useEffect(() => {
                     }}
                   >
                     <span style={{ color: "#000" }}>
-                      {row.unit || "NONE"}
+                      {row.unit || " "}
                     </span>
                   </div>
                 ) : (
                   <Select
-                    value={
-                      unitOptions.find(
-                        (opt) => opt.value === row.unit
-                      ) || unitOptions[0]
-                    }
-                    options={unitOptions}
-                    onChange={(selectedOption) =>
-                      onRowChange(row.id, "unit", selectedOption.value)
-                    }
-                    isDisabled={isDisabled}
-                    menuPortalTarget={document.body}
-                    styles={{
-                      menuPortal: (base) => ({
-                        ...base,
-                        zIndex: 9999,
-                      }),
-                    }}
-                  />
+  value={
+    row.unit && row.unit !== "NONE"
+      ? {
+          value: row.unit,
+          label: units.find(u => u.unit_id === row.unit)?.short_name || row.unit
+        }
+      : { value: "NONE", label: "NONE" }
+  }
+  onChange={(selected) => {
+    const newRows = [...formData.rows];
+    newRows[index].unit = selected ? selected.value : "NONE";
+    setFormData({ ...formData, rows: newRows });
+    // trigger recalculation if needed
+  }}
+  options={[
+    { value: "NONE", label: "NONE" },
+    ...units.map(unit => ({
+      value: unit.unit_id,          
+      label:  unit.unit_name 
+    }))
+  ]}
+  isDisabled={isDisabled}
+  placeholder="Unit"
+  menuPortalTarget={document.body}
+  styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+/>
                 )}
               </td>
               <td>

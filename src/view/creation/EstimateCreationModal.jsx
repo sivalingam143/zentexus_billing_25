@@ -1956,8 +1956,7 @@ const EstimateCreation = ({ tabNumber = 1 }) => {
                                         "category",
                                         cat
                                       );
-                                      const unitValue =
-                                        product.unit_value || "NONE";
+                                     const unitValue = product.unit || product.unit_name || product.unit_value || "NONE";
                                       onRowChange(
                                         row.id,
                                         "unit",
@@ -2113,25 +2112,33 @@ const EstimateCreation = ({ tabNumber = 1 }) => {
                     </span>
                   </div>
                 ) : (
-                  <Select
-                    value={
-                      unitOptions.find(
-                        (opt) => opt.value === row.unit
-                      ) || unitOptions[0]
-                    }
-                    options={unitOptions}
-                    onChange={(selectedOption) =>
-                      onRowChange(row.id, "unit", selectedOption.value)
-                    }
-                    isDisabled={isDisabled}
-                    menuPortalTarget={document.body}
-                    styles={{
-                      menuPortal: (base) => ({
-                        ...base,
-                        zIndex: 9999,
-                      }),
-                    }}
-                  />
+                 <Select
+                   value={
+                     row.unit && row.unit !== "NONE"
+                       ? {
+                           value: row.unit,
+                           label: units.find(u => u.unit_id === row.unit)?.short_name || row.unit
+                         }
+                       : { value: "NONE", label: "NONE" }
+                   }
+                   onChange={(selected) => {
+                     const newRows = [...formData.rows];
+                     newRows[index].unit = selected ? selected.value : "NONE";
+                     setFormData({ ...formData, rows: newRows });
+                     // trigger recalculation if needed
+                   }}
+                   options={[
+                     { value: "NONE", label: "NONE" },
+                     ...units.map(unit => ({
+                       value: unit.unit_id,          
+                       label:  unit.unit_name 
+                     }))
+                   ]}
+                   isDisabled={isDisabled}
+                   placeholder="Unit"
+                   menuPortalTarget={document.body}
+                   styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
+                 />
                 )}
               </td>
               <td>
