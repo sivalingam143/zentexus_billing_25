@@ -1,6 +1,6 @@
 // src/pages/tabs/UnitsTab.jsx
 import React, { useEffect, useCallback } from "react";
-import { Button, Table, Col, Card, Spinner, DropdownButton, Dropdown } from "react-bootstrap";
+import { Button, Table, Col, Card, Spinner, DropdownButton, Dropdown,InputGroup,FormControl } from "react-bootstrap";
 import { FaSearch, FaEllipsisV, FaFileExcel } from "react-icons/fa";
 import AddUnit from "../creation/UnitModalCreation";
 import AddConvo from "../listings/UnitConversion";
@@ -12,6 +12,10 @@ import { fetchUnits, deleteUnit } from "../../slice/UnitSlice";
 
 export default function UnitsTab() {
   const dispatch = useDispatch();
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [txnSearch, setTxnSearch] = React.useState("");
+ // ← add at top with other states
+
 // REMOVED: const [conversions, setConversions] = React.useState([]); 
   const { units, status } = useSelector((state) => state.unit);
   const [selectedBaseUnitName, setSelectedBaseUnitName] = React.useState(null); // Renamed to clearly indicate it's the name
@@ -36,6 +40,10 @@ export default function UnitsTab() {
   const unitsList = Array.isArray(units) 
   ? [...units].sort((a, b) => a.unit_name.localeCompare(b.unit_name))
   : [];
+const filteredUnits = unitsList.filter(u =>
+  u.unit_name.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
 
   // Helper to find the currently selected unit object
   const selectedUnitObject = unitsList.find(u => u.unit_name === selectedBaseUnitName);
@@ -53,8 +61,10 @@ export default function UnitsTab() {
   if (!Array.isArray(list)) list = [list];
   return list.map(text => ({ displayText: text }));
 };
-
-  const unitRows = unitsList.map((unit) => (
+const filteredConversions = getConversionsForSelectedUnit().filter(c =>
+  c.displayText.toLowerCase().includes(txnSearch.toLowerCase())
+);
+  const unitRows = filteredUnits.map((unit) => (
     // Updated onClick to use the unit's name
     <tr key={unit.unit_id || unit.id} onClick={() => setSelectedBaseUnitName(unit.unit_name)}>
     <td>{unit.unit_name}</td>
@@ -111,7 +121,18 @@ export default function UnitsTab() {
         <Card className="h-100">
           <Card.Body className="d-flex flex-column p-0">
             <div className="p-3 d-flex justify-content-between align-items-center">
-              <FaSearch />
+             <InputGroup style={{ flexGrow: 1, marginRight: "8px" }}>
+     <InputGroup.Text className="bg-white border-end-0">
+       <FaSearch className="text-muted" />
+     </InputGroup.Text>
+     <FormControl
+       placeholder="Search Units"
+       value={searchTerm}
+       onChange={(e) => setSearchTerm(e.target.value)}
+       className="border-start-0"
+     />
+   </InputGroup> 
+
               <Button
                 variant="warning"
                 className="text-white fw-bold px-3"
@@ -156,7 +177,7 @@ export default function UnitsTab() {
         <div className="position-absolute top-0 end-0 mt-3 me-3 px-4  " style={{ zIndex: 10 }}>
           <Button
             variant="primary"
-            className="fw-semibold text-white bg-primary mt-4 px-2 py-2"
+            className="fw-semibold text-white bg-primary mt-3 p-2"
             style={{ borderRadius: "6px", fontSize: "14px" }}
             onClick={() => setShowConvoModal(true)}
           >
@@ -185,32 +206,40 @@ export default function UnitsTab() {
             <div className="d-flex justify-content-between align-items-center mb-2">
               <h5 className="mb-0">UNITS</h5>
               <div className="d-flex align-items-center" style={{ gap: "8px" }}>
-                <div style={{ position: "relative", width: "200px" }}>
-                  <FaSearch style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "gray" }} />
-                  <input type="text" className="form-control form-control-sm" style={{ paddingLeft: "30px" }} placeholder="Search..." />
-                </div>
+<InputGroup size="sm" style={{ width: "200px" }}>
+  <InputGroup.Text>
+    <FaSearch color="gray" />
+  </InputGroup.Text>
+  <FormControl
+    placeholder="Search conversions..."
+    value={txnSearch}
+    onChange={(e) => setTxnSearch(e.target.value)}
+  />
+</InputGroup>
+
                 <Button variant="light"><FaFileExcel size={20} color="#217346" /></Button>
               </div>
             </div>
                 {/* Filtered Conversions - Only show for selected unit */}
             {selectedBaseUnitName ? (
-              getConversionsForSelectedUnit().length > 0 ? (
-                getConversionsForSelectedUnit().map((c, i) => (
-                  <div key={i} className="border-bottom py-3 px-1">
-                    <div className="text-muted small">CONVERSION</div>
-                    <div className="mt-2 fw-medium">{c.displayText}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex-grow-1 d-flex justify-content-center align-items-center text-muted">
-                  No conversion added yet
-                </div>
-              )
-            ) : (
-              <div className="flex-grow-1 d-flex justify-content-center align-items-center text-muted">
-                Select a unit to view conversions
-              </div>
-            )}
+  filteredConversions.length > 0 ? (
+    filteredConversions.map((c, i) => (
+      <div key={i} className="border-bottom py-3 px-1">
+        <div className="text-muted small">CONVERSION</div>
+        <div className="mt-2 fw-medium">{c.displayText}</div>
+      </div>
+    ))
+  ) : (
+    <div className="flex-grow-1 d-flex justify-content-center align-items-center text-muted">
+      No conversion found
+    </div>
+  )
+) : (
+  <div className="flex-grow-1 d-flex justify-content-center align-items-center text-muted">
+    Select a unit to view conversions
+  </div>
+)}
+
           </Card.Body>
         </Card>
       </Col>

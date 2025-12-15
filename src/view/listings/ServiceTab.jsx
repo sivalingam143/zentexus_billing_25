@@ -1,12 +1,14 @@
 // src/pages/tabs/ServiceTab.jsx
 import React, { useState, useEffect } from "react";
-import { Button, Table, Col, Card, Row, DropdownButton, Dropdown } from "react-bootstrap";
+import { Button, Table, Col, Card, Row, DropdownButton, InputGroup,FormControl, Dropdown } from "react-bootstrap";
 import { FaSearch, FaFileExcel, FaEllipsisV } from "react-icons/fa";
 import AddItem from "../creation/ItemModalCreation";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchServices, deleteService } from "../../slice/serviceSlice";
 
 export default function ServiceTab() {
+  const [searchTerm, setSearchTerm] = useState("");
+const [txnSearch, setTxnSearch] = useState("");
   const [showAddItem, setShowAddItem] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [editService, setEditService] = useState(null);
@@ -43,12 +45,23 @@ export default function ServiceTab() {
       {/* LEFT PANEL - SERVICES LIST */}
       <Col md={3} className="p-3">
         <Card className="h-100 shadow-sm">
-          <Card.Body className="p-3 d-flex flex-column">
+          <Card.Body className="p-2 d-flex flex-column">
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <FaSearch className="text-muted" />
+                   
+           <InputGroup style={{ flexGrow: 1, marginRight: "8px" }}>
+     <InputGroup.Text className="bg-white border-end-0">
+       <FaSearch className="text-muted" />
+     </InputGroup.Text>
+     <FormControl
+       placeholder="Search"
+       value={searchTerm}
+       onChange={(e) => setSearchTerm(e.target.value)}
+       className="border-start-0"
+     />
+   </InputGroup> 
               <Button
                 variant="warning"
-                className="text-white fw-bold small"
+                 className="text-white fw-bold small ms-2" style={{minWidth: "150px" }}
                 onClick={() => {
                   setEditService(null);
                   setShowAddItem(true);
@@ -75,7 +88,10 @@ export default function ServiceTab() {
                       </td>
                     </tr>
                   ) : (
-                    services.map((service) =>
+                    services
+  .filter(service => service?.service_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  .map((service) =>
+
                       !service || !service.service_name ? null : (
                         <tr
                           key={service.service_id}
@@ -162,15 +178,17 @@ export default function ServiceTab() {
                   <h5 className="mb-0 fw-bold">TRANSACTIONS</h5>
 
                   <div className="d-flex gap-2">
-                    <div className="position-relative">
-                      <FaSearch className="position-absolute top-50 start-2 translate-middle-y text-muted" />
-                      <input
-                        type="text"
-                        className="form-control form-control-sm ps-5"
-                        placeholder="Search..."
-                        style={{ width: "200px" }}
-                      />
-                    </div>
+                     <InputGroup style={{ width: "250px" }}>
+                                   <InputGroup.Text className="bg-white border-end-0">
+                                     <FaSearch className="text-muted" />
+                                   </InputGroup.Text>
+                                   <FormControl
+                                     placeholder="Search services"
+                                     value={searchTerm}
+                                     onChange={(e) => setSearchTerm(e.target.value)}
+                                     className="border-start-0"
+                                   />
+                                 </InputGroup>
 
                     <Button variant="light">
                       <FaFileExcel size={20} className="text-success" />

@@ -22,7 +22,7 @@ import { fetchProducts } from "../../slice/ProductSlice";
 
 export default function CategoryTab() {
   const dispatch = useDispatch();
-
+  const [searchTerm, setSearchTerm] = useState("");
   const { categories = [], status: catStatus } = useSelector(
     (state) => state.category
   );
@@ -31,7 +31,7 @@ export default function CategoryTab() {
   );
 
   const [selectedCategory, setSelectedCategory] = useState(null); // null = uncategorized
-  const [searchTerm, setSearchTerm] = useState("");
+  
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState(null);
   const [showMoveModal, setShowMoveModal] = useState(false);
@@ -115,10 +115,20 @@ const handleMoveClick = () => {
         <Card className="h-100">
           <Card.Body className="d-flex flex-column p-0">
             <div className="p-3 d-flex justify-content-between align-items-center">
-              <FaSearch />
+              <InputGroup style={{ flexGrow: 1, marginRight: "8px" }}>
+    <InputGroup.Text className="bg-white border-end-0">
+      <FaSearch className="text-muted" />
+    </InputGroup.Text>
+    <FormControl
+      placeholder="Search categories..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+      className="border-start-0"
+    />
+  </InputGroup>
               <Button
                 variant="warning"
-                className="text-white fw-bold px-3"
+                                className="text-white fw-bold small ms-2" style={{minWidth: "155px" }}
                 onClick={() => {
                   setCategoryToEdit(null);
                   setShowCategoryModal(true);
@@ -175,7 +185,9 @@ const handleMoveClick = () => {
                     </td>
                   </tr>
                 ) : (
-                  categories.map((cat) => {
+                 categories.filter(cat => cat.category_name.toLowerCase().includes(searchTerm.toLowerCase()))
+          .map((cat) => {
+
                  const count = products.filter((p) => {
   if (!p.category_id) return false;
 
@@ -257,7 +269,7 @@ const handleMoveClick = () => {
               <Col className="text-end">
                 <Button
               variant="primary"
-              className="fw-semibold"
+              className="fw-semibold bg-primary text-white p-2"
               onClick={handleMoveClick}
               // disabled={!selectedCategory}
             >
@@ -278,7 +290,7 @@ const handleMoveClick = () => {
                   <FaSearch className="text-muted" />
                 </InputGroup.Text>
                 <FormControl
-                  placeholder="Search items..."
+                  placeholder="Search items"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="border-start-0"

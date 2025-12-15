@@ -65,22 +65,24 @@ useEffect(() => {
 
 const handleMove = async () => {
   if (!selectedItems.length) return;
+
   if (!targetCategoryId || !targetCategory) {
-    toast.error("Please select a valid target category.");
+    toast.error("Invalid target category");
     return;
   }
 
-  const targetCategoryName = targetCategory.category_name;
-
   setLoading(true);
+
   try {
-    const tasks = selectedItems.map((pid) => {
-      const product = allProducts.find(p => p.product_id === pid);
-      if (!product) return Promise.resolve();
+    const responses = [];
+
+    const tasks = selectedItems.map(async (pid) => {
+      const product = allProducts.find((p) => p.product_id === pid);
+      if (!product) return;
 
       const targetIdString = String(targetCategoryId);
 
-      // Parse existing IDs
+      // Parse existing category IDs
       const existingCategoryIds = product.category_id
         ? (() => {
             try {
@@ -91,7 +93,7 @@ const handleMove = async () => {
           })()
         : [];
 
-      // Parse existing Names
+      // Parse existing category names
       const existingCategoryNames = product.category_name
         ? (() => {
             try {
@@ -105,41 +107,46 @@ const handleMove = async () => {
       let finalCategoryIds = [];
       let finalCategoryNames = [];
 
-      // ✅ CHECKBOX ON → MOVE
+      // MOVE
       if (removeExisting) {
         finalCategoryIds = [targetIdString];
-        finalCategoryNames = [targetCategoryName];
+        finalCategoryNames = [targetCategory.category_name];
       }
-      // ✅ CHECKBOX OFF → COPY
+      // COPY
       else {
-        if (existingCategoryIds.includes(targetIdString)) {
-          return Promise.resolve();
-        }
+        if (existingCategoryIds.includes(targetIdString)) return;
 
         finalCategoryIds = [...existingCategoryIds, targetIdString];
-        finalCategoryNames = [...existingCategoryNames, targetCategoryName];
+        finalCategoryNames = [...existingCategoryNames, targetCategory.category_name];
       }
 
-      return axiosInstance.post("products.php", {
+      const res = await axiosInstance.post("products.php", {
         edit_product_id: pid,
         category_id: JSON.stringify(finalCategoryIds),
         category_name: JSON.stringify(finalCategoryNames),
       });
+
+      responses.push(res.data);
     });
 
     await Promise.all(tasks);
 
-    toast.success(
-      removeExisting
-        ? "Items moved successfully"
-        : "Items copied successfully"
-    );
+    // ✅ Use message from PHP
+    const successMsg =
+      responses.find((r) => r?.head?.code === 200)?.head?.msg ||
+      "Operation completed";
 
-    if (onMoveSuccess) onMoveSuccess();
+    toast.success(successMsg);
+
+    onMoveSuccess?.();
     onHide();
   } catch (err) {
-    console.error("Category update error:", err);
-    toast.error("Failed to process items");
+    console.error(err);
+
+    const errorMsg =
+      err?.response?.data?.head?.msg || "Failed to process items";
+
+    toast.error(errorMsg);
   } finally {
     setLoading(false);
   }

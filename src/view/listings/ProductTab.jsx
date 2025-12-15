@@ -1,6 +1,6 @@
 // src/pages/tabs/ProductTab.jsx
 import React, { useState, useEffect } from "react";
-import { Button, Table, Col, Card, Row ,DropdownButton, Dropdown} from "react-bootstrap";
+import { Button, Table, Col, Card, Row ,DropdownButton, Dropdown,InputGroup,FormControl} from "react-bootstrap";
 import { FaSearch, FaFileExcel,FaEllipsisV } from "react-icons/fa";
 import AdjustItem from "../creation/AdjustItemCreation";
 import AddItem from "../creation/ItemModalCreation";
@@ -11,6 +11,9 @@ import BulkUpdateModal from "../creation/BulkUpdateModal";
 import "../../App.css";
 
 export default function ProductTab() {
+  const [searchTerm, setSearchTerm] = useState("");
+const [txnSearch, setTxnSearch] = useState("");
+
   const $ = (json) => { try { return JSON.parse(json) } catch { return {} } };
   const [showAdjustItem, setShowAdjustItem] = useState(false);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -24,6 +27,9 @@ const [bulkModal, setBulkModal] = useState({ show: false, type: "" });
 
   // Filter products to only show ACTIVE items (status_code == 0)
   const activeProducts = products.filter(p => p.status_code == 0);
+const filteredProducts = activeProducts.filter((p) =>
+  p.product_name.toLowerCase().includes(searchTerm.toLowerCase())
+);
 
   // Fetch products on mount
   useEffect(() => {
@@ -70,12 +76,23 @@ useEffect(() => {
       {/* LEFT PANEL - LIST OF ITEMS */}
       <Col md={3} className="p-3">
         <Card className="h-100 shadow-sm">
-          <Card.Body className="p-3 d-flex flex-column">
+          <Card.Body className="p-2 d-flex flex-column">
             <div className="d-flex justify-content-between align-items-center mb-3">
-              <FaSearch className="text-muted" />
+  <InputGroup style={{ flexGrow: 1, marginRight: "8px" }}>
+     <InputGroup.Text className="bg-white border-end-0">
+       <FaSearch className="text-muted" />
+     </InputGroup.Text>
+     <FormControl
+       placeholder="Search"
+       value={searchTerm}
+       onChange={(e) => setSearchTerm(e.target.value)}
+       className="border-start-0"
+     />
+   </InputGroup> 
+
              <Button
   variant="warning"
-  className="text-white fw-bold small"
+  className="text-white fw-bold small ms-2" style={{minWidth: "120px" }}
   onClick={() => {
     setEditProduct(null);   // <-- RESET EDIT MODE
     setShowAddItem(true);   // <-- OPEN MODAL CLEAN
@@ -119,14 +136,16 @@ useEffect(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  {activeProducts.length === 0 ? (
+                  {filteredProducts.length === 0 ? (
+
                     <tr>
                       <td colSpan={2} className="text-center text-muted py-4">
                         No active items yet
                       </td>
                     </tr>
                   ) : (
-                    activeProducts.map((product) => { // <-- Use activeProducts here
+                    filteredProducts.map((product) => {
+// <-- Use activeProducts here
                       const salePrice = product.sale_price ? $(product.sale_price) : {};
                       const purchasePrice = product.purchase_price ? $(product.purchase_price) : {};
                       const stock = product.stock ? $(product.stock) : {};
@@ -251,10 +270,16 @@ const isPurchasePriceIncluded = purchase.tax_type === "Included" || purchase.tax
     <div className="d-flex justify-content-between align-items-center mb-3">
       <h5 className="mb-0 fw-bold">TRANSACTIONS</h5>
       <div className="d-flex gap-2">
-        <div className="position-relative">
-          <FaSearch className="position-absolute top-50 start-2 translate-middle-y text-muted" />
-          <input type="text" className="form-control form-control-sm ps-5" placeholder="Search..." style={{ width: "200px" }} />
-        </div>
+      <InputGroup size="sm" style={{ width: "200px" }}>
+  <InputGroup.Text>
+    <FaSearch color="gray" />
+  </InputGroup.Text>
+  <FormControl
+    placeholder="Search transactions"
+    value={txnSearch}
+    onChange={(e) => setTxnSearch(e.target.value)}
+  />
+</InputGroup>
         <Button variant="light"><FaFileExcel size={20} className="text-success" /></Button>
       </div>
     </div>
@@ -283,6 +308,39 @@ const isPurchasePriceIncluded = purchase.tax_type === "Included" || purchase.tax
             if (stock.opening_transaction) {
               transactions.unshift(stock.opening_transaction);
             }
+
+
+// 🔍 TRANSACTION SEARCH FILTER (ADD THIS)
+if (txnSearch.trim() !== "") {
+  const q = txnSearch.toLowerCase();
+
+  transactions = transactions.filter((t) => {
+    const name =
+      t.type === "Opening Stock"
+        ? "opening stock"
+        : t.reference?.toLowerCase() ||
+          t.type?.toLowerCase() ||
+          "";
+
+    return (
+      name.includes(q) ||
+      t.type?.toLowerCase().includes(q) ||
+      t.date?.includes(q) ||
+      String(t.quantity || "").includes(q)
+    );
+  });
+}
+
+// EMPTY STATE AFTER FILTER
+if (transactions.length === 0) {
+  return (
+    <tr>
+      <td colSpan={7} className="text-center text-muted py-5">
+        No matching transactions
+      </td>
+    </tr>
+  );
+}
 
             if (transactions.length === 0) {
               return (
