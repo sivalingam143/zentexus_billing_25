@@ -291,7 +291,8 @@ const handleConvertToSale = (item) => {
         ))}
       </div>
     </div>,
-    "Actions"
+    "Actions",
+    " Estimate Status"
   ];
 
   // Close dropdown on outside click
@@ -341,21 +342,7 @@ const handleConvertToSale = (item) => {
           >
             {/* Convert Dropdown */}
             <div className="position-relative">
-              {/* <button
-                className="btn btn-sm border rounded-pill d-flex align-items-center gap-1"
-                style={{
-                  backgroundColor: "#f8f9fa",
-                  color: "#495057",
-                  padding: "4px 10px",
-                  fontSize: "0.8rem",
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenShareId(openShareId === item.estimate_id ? null : item.estimate_id);
-                }}
-              >
-                Select <FaChevronDown size={10} />
-              </button> */}
+              
               <button
   disabled={isConverted}
   className={`btn btn-sm ${isConverted ? 'btn-secondary' : 'btn-primary'} rounded-pill`}
@@ -460,41 +447,76 @@ const handleConvertToSale = (item) => {
               </div>
             </div>
             
-            {/* Header - This is the Estimate/Quotation Dropdown */}
-            <Row className="align-items-center mb-4">
-              <Col>
-                <h5 style={{ cursor: "pointer" }}>
-                  Estimate / Quotation<FaChevronDown />
-                </h5>
+            
+            {/* Header - Estimate/Quotation Dropdown with Navigation */}
+<Row className="align-items-center mb-4">
+  <Col>
+    <h5 
+      style={{ cursor: "pointer" }} 
+      onClick={() => setOpen(!open)}
+    >
+      Estimate / Quotation<FaChevronDown />
+    </h5>
 
-                {open && (
-                  <div style={{
-                    position: "absolute",
-                    background: "white",
-                    border: "1px solid #ddd",
-                    borderRadius: "6px",
-                    padding: "5px 0",
-                    width: "180px",
-                    zIndex: 999,
-                  }}>
-                    {["Sale Invoices", "Estimate/Quotation", "Proforma Invoice", "Payment-In", "sale Order", "Delivery Challan", "sale Return", "Purchase Bill", "Payment-Out", "Expenses", "Purchase Order", "Purchase Return"].map((x) => (
-                      <div key={x} onClick={() => setOpen(false)} style={{ padding: "8px 12px", cursor: "pointer" }}>
-                        {x}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Col>
-              <Col className="text-end">
-                <Button
-                  variant="danger"
-                  className="btn-sm px-3 py-1 shadow rounded-pill fw-bold"
-                  style={{
-                  fontSize: "0.85rem",}}
-                   onClick={() => navigate("/estimate/create")}> + Add Estimate
-                </Button>
-              </Col>
-            </Row>
+    {open && (
+      <div style={{
+        position: "absolute",
+        background: "white",
+        border: "1px solid #ddd",
+        borderRadius: "6px",
+        padding: "5px 0",
+        width: "220px",
+        zIndex: 999,
+        boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+      }}>
+        {[
+          { label: "Sale Invoices", path: "/sale" },
+          { label: "Estimate/Quotation", path: "/estimate" },
+          { label: "Proforma Invoice", path: "/proforma" },
+          { label: "Payment-In", path: "/payment-in" },
+          { label: "sale Order", path: "/sale-order" },
+          { label: "Delivery Challan", path: "/delivery-challan" },
+          { label: "sale Return", path: "/sale-return" },
+          { label: "Purchase Bill", path: "/purchase" },
+          { label: "Payment-Out", path: "/payment-out" },
+          { label: "Expenses", path: "/expenses" },
+          { label: "Purchase Order", path: "/purchase-order" },
+          { label: "Purchase Return", path: "/purchase-return" },
+        ].map((item) => (
+          <div 
+            key={item.label}
+            onClick={() => {
+              setOpen(false);
+              if (item.path !== "/estimate") {
+                navigate(item.path);  // Navigate to the correct listing page
+              }
+            }} 
+            style={{ 
+              padding: "10px 16px", 
+              cursor: "pointer",
+              fontWeight: item.path === "/estimate" ? "bold" : "normal",
+              backgroundColor: item.path === "/estimate" ? "#f0f8ff" : "transparent",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = item.path === "/estimate" ? "#f0f8ff" : "transparent"}
+          >
+            {item.label}
+          </div>
+        ))}
+      </div>
+    )}
+  </Col>
+  <Col className="text-end">
+    <Button
+      variant="danger"
+      className="btn-sm px-3 py-1 shadow rounded-pill fw-bold"
+      style={{ fontSize: "0.85rem" }}
+      onClick={() => navigate("/estimate/create")}
+    >
+      + Add Estimate
+    </Button>
+  </Col>
+</Row>
 
             {/* Filter Card */}
             <Row className="mb-3">
@@ -646,6 +668,8 @@ const handleConvertToSale = (item) => {
                         <td>₹ {total}</td>
                         <td>{balanceDisplay}</td>
                         <td>{statusDisplay(item)}</td>
+                        
+                        
                         <td>
                           <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative", }}>
                             {/* Convert Dropdown */}
@@ -721,6 +745,13 @@ const handleConvertToSale = (item) => {
                             />
                           </div>
                         </td>
+                        <td>
+                        {item.converted_to_sale === 1 || item.converted_to_sale === "1" ? (
+                             <span style={{ color: "#0795f3ff", fontWeight: "600" }}> Converted</span>
+                         ) : (
+                        <span style={{ color: "#e74c3c" }}>Open</span>)}
+                        </td>
+                        
                       </tr>
                     );
                   })}
