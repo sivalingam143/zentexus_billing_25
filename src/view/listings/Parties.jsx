@@ -63,6 +63,9 @@ const [partyFilter, setPartyFilter] = useState("all");
 const [pendingFilter, setPendingFilter] = useState(partyFilter); 
 const filterDropdownRef = useRef(null);
 const [dropdownShow, setDropdownShow] = useState(false);
+// 💡 FIX: Added a ref for the transactions container
+const transactionContainerRef = useRef(null); 
+
   useEffect(() => {
     dispatch(searchPartiesAndSales(searchText));
   }, [dispatch, searchText]);
@@ -306,7 +309,8 @@ const filteredParties = partiesWithBalance.filter(p => {
   return true;
 });
  
-const TransactionMenu = ({ transaction, isOpening = false }) => {
+// 💡 FIX: Updated TransactionMenu to accept containerRef
+const TransactionMenu = ({ transaction, isOpening = false, containerRef }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -356,14 +360,20 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
   return (
     <>
       {/* Dropdown Menu */}
-      <Dropdown drop="up" align="end">
+      <Dropdown 
+        drop="up" 
+        align="end"
+        // 💡 CRITICAL FIX: Add data-bs-display="static" and use the container prop
+        data-bs-display="static"
+        container={containerRef.current || document.body} 
+      >
         <Dropdown.Toggle variant="link" bsPrefix="p-0" className="text-muted shadow-none">
           <FaEllipsisV />
         </Dropdown.Toggle>
 
         <Dropdown.Menu
           style={{ zIndex: 9999, minWidth: "220px", fontSize: "13.5px" }}
-          popperConfig={{ strategy: "fixed" }}
+          // popperConfig is often incompatible with scrolling containers, removed for simplicity
         >
           {isOpening ? (
             <>
@@ -726,9 +736,14 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                     </Card.Body>
                   </Card>
 
-                  <div className="bg-white shadow-sm rounded p-4" style={{ height: "100vh" }}>
-  <div style={{ maxHeight: "50vh", overflowY: "auto", overflowX: "visible" }}>
-    <h6 className="mb-3">Transactions</h6>
+                  {/* 💡 FIX: Attach the ref to the outer container */}
+                  <div 
+                    className="bg-white shadow-sm rounded p-4" 
+                    style={{ height: "100vh" }}
+                    ref={transactionContainerRef} 
+                  >
+                    <div style={{ maxHeight: "50vh", overflowY: "auto", overflowX: "visible" }}>
+                      <h6 className="mb-3">Transactions</h6>
                     <Table
                       responsive
                       bordered
@@ -766,26 +781,6 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                               });
                             }
 
-                            // sales
-                            //   .filter(s => s.parties_id === selectedParty.parties_id && s.delete_at == 0)
-                            //   .forEach(s => {
-                            //     const unpaid = parseFloat(s.total || 0) - parseFloat(s.paid_amount || 0);
-                            //     if (unpaid > 0) {
-                            //       rows.push({
-                            //         // FIX: Using s.sale_id for the ID to ensure correct routing/deletion ID is passed
-                            //         id: s.sale_id || s.id,
-                            //         // Including all sale properties for robustness in TransactionMenu
-                            //         ...s,
-                            //         type: "Sale",
-                            //         color: "green",
-                            //         number: s.invoice_no || s.id,
-                            //         date: s.invoice_date || s.date,
-                            //         total: parseFloat(s.total || 0),
-                            //         balance: unpaid,
-                            //       });
-                            //     }
-                            //   });
-
                             sales
                               .filter(s => s.parties_id === selectedParty.parties_id && s.delete_at == 0)
                               .forEach(s => {
@@ -815,7 +810,14 @@ const TransactionMenu = ({ transaction, isOpening = false }) => {
                                 <td>{new Date(t.date).toLocaleDateString("en-IN")}</td>
                                 <td>₹{t.total.toFixed(2)}</td>
                                 <td style={{ color: t.color, fontWeight: "bold" }}>₹{t.balance.toFixed(2)}</td>
-                                <td><TransactionMenu transaction={t} isOpening={t.id === "opening"} /></td>
+                                <td>
+                                  {/* 💡 FIX: Pass the containerRef to the TransactionMenu component */}
+                                  <TransactionMenu 
+                                    transaction={t} 
+                                    isOpening={t.id === "opening"} 
+                                    containerRef={transactionContainerRef}
+                                  />
+                                </td>
                               </tr>
                             )) : (
                               <tr><td colSpan={6} className="text-center text-muted py-4">No transactions yet</td></tr>

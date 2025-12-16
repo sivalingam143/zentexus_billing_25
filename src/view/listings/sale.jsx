@@ -452,6 +452,9 @@ const Sale = () => {
       } else if (x === "Estimate/Quotation") {
         navigate("/estimate");
       }
+      else if (x === "Proforma Invoice") {
+        navigate("/Proforma");
+      }
       // Add other navigations as needed
     }} 
     style={{ padding: "8px 12px", cursor: "pointer" }}

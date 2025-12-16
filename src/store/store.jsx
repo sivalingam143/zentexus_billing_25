@@ -6,7 +6,8 @@ import unitReducer from "../slice/UnitSlice";
 import categoryReducer from "../slice/CategorySlice";
 import productReducer from "../slice/ProductSlice";
 import serviceReducer from "../slice/serviceSlice";
-import estimateReducer from "../slice/estimateSlice"
+import estimateReducer from "../slice/estimateSlice";
+import ProformaReducer from "../slice/ProformaSlice";
 
 
 export const store = configureStore({
@@ -14,6 +15,7 @@ export const store = configureStore({
     party: partyReducer,
     sale: saleReducer,
     estimate: estimateReducer,
+    Proforma: ProformaReducer,
     unit: unitReducer,
     category: categoryReducer,
     product : productReducer,

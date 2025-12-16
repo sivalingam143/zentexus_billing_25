@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Container, Row, Col, Button, Table } from "react-bootstrap";
 import { FaSearch, FaChartBar, FaFileExcel, FaPrint } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { searchEstimates, deleteEstimate } from "../../slice/estimateSlice";
+import { searchProforma, deleteProforma } from "../../slice/ProformaSlice";
 import { TextInputform } from "../../components/Forms";
 import TableUI from "../../components/TableUI";
 import { ActionButton } from "../../components/Buttons";
@@ -17,8 +17,8 @@ import { FaWhatsapp, FaChevronDown, FaRegCalendarAlt } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
 import { MdSms } from "react-icons/md";
 import { Form, InputGroup } from "react-bootstrap";
-// IMPORT THE ESTIMATE CREATION COMPONENT
-import EstimateCreation from "../creation/EstimateCreationModal";
+// IMPORT THE Proforma CREATION COMPONENT
+import ProformaCreation from "../creation/ProformaCreation";
 
 // ADD THIS IMPORT - date-fns for filtering
 import {
@@ -34,13 +34,13 @@ import {
   parseISO,
 } from "date-fns";
 
-const Estimate = () => {
+const Proforma = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
-  // FIXED: Changed from sales to estimates
-  const { estimates = [] } = useSelector((state) => state.estimate);
+  // FIXED: Changed from sales to Proformas
+  const { Proforma = [] } = useSelector((state) => state.Proforma);
   
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,10 +60,10 @@ const Estimate = () => {
 
   // Fetch estimates on search change
   useEffect(() => {
-    dispatch(searchEstimates(searchTerm));
+    dispatch(searchProforma(searchTerm));
   }, [dispatch, searchTerm]);
 
-  // Get status from data (for status filter) - FIXED for estimates
+  // Get status from data (for status filter) - FIXED for Proforma
   const getStatusFromData = (item) => {
     // Use the status from database if available
     if (item.status) {
@@ -84,10 +84,10 @@ const Estimate = () => {
 
   // MAIN FILTERING LOGIC - Status + Date Period
   // MAIN FILTERING LOGIC - Status + Date Period + Custom Range
-const filteredEstimates = useMemo(() => {
-  if (!estimates || !Array.isArray(estimates)) return [];
+const filteredProforma = useMemo(() => {
+  if (!Proforma || !Array.isArray(Proforma)) return [];
 
-  let filtered = [...estimates];
+  let filtered = [...Proforma];
 
   // Apply Status Filter
   if (statusFilter !== "All") {
@@ -101,13 +101,13 @@ const filteredEstimates = useMemo(() => {
   if (!selectedPeriod && !hasCustomDates) return filtered;
 
   return filtered.filter((item) => {
-    if (!item.estimate_date) return false;
+    if (!item.Proforma_date) return false;
 
-    let estimateDate;
+    let ProformaDate;
     try {
-      estimateDate = parseISO(item.estimate_date);
+      ProformaDate = parseISO(item.Proforma_date);
     } catch (error) {
-      console.error("Invalid date:", item.estimate_date);
+      console.error("Invalid date:", item.Proforma_date);
       return false;
     }
 
@@ -117,14 +117,14 @@ const filteredEstimates = useMemo(() => {
 
       if (customFromDate) {
         const from = parseISO(customFromDate);
-        matches = matches && estimateDate >= from;
+        matches = matches && ProformaDate >= from;
       }
 
       if (customToDate) {
         const to = parseISO(customToDate);
         // Include full end day
         to.setHours(23, 59, 59, 999);
-        matches = matches && estimateDate <= to;
+        matches = matches && ProformaDate <= to;
       }
 
       return matches;
@@ -137,27 +137,27 @@ const filteredEstimates = useMemo(() => {
 
     switch (selectedPeriod) {
       case "Today":
-        return isToday(estimateDate);
+        return isToday(ProformaDate);
       case "Yesterday":
-        return isYesterday(estimateDate);
+        return isYesterday(ProformaDate);
       case "This Week":
-        return isWithinInterval(estimateDate, {
+        return isWithinInterval(ProformaDate, {
           start: startOfWeek(now),
           end: endOfWeek(now),
         });
       case "This Month":
-        return isWithinInterval(estimateDate, {
+        return isWithinInterval(ProformaDate, {
           start: startOfMonth(now),
           end: endOfMonth(now),
         });
       case "This Year":
-        return isWithinInterval(estimateDate, {
+        return isWithinInterval(ProformaDate, {
           start: startOfYear(now),
           end: endOfYear(now),
         });
       case "Last Year":
         const lastYear = new Date(now.getFullYear() - 1, 0, 1);
-        return isWithinInterval(estimateDate, {
+        return isWithinInterval(ProformaDate, {
           start: startOfYear(lastYear),
           end: endOfYear(lastYear),
         });
@@ -165,30 +165,30 @@ const filteredEstimates = useMemo(() => {
         return true;
     }
   });
-}, [estimates, statusFilter, selectedPeriod, customFromDate, customToDate]);
+}, [Proforma, statusFilter, selectedPeriod, customFromDate, customToDate]);
 
   
 const totals = useMemo(() => {
-  if (!filteredEstimates || !Array.isArray(filteredEstimates)) {
+  if (!filteredProforma || !Array.isArray(filteredProforma)) {
     return { /* default */ };
   }
 
-  const totalQuotations = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
-  const totalReceived = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.received_amount || 0), 0);
-  const totalBalance = filteredEstimates.reduce((sum, s) => sum + parseFloat(s.balance_due || 0), 0);
+  const totalQuotations = filteredProforma.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  const totalReceived = filteredProforma.reduce((sum, s) => sum + parseFloat(s.received_amount || 0), 0);
+  const totalBalance = filteredProforma.reduce((sum, s) => sum + parseFloat(s.balance_due || 0), 0);
 
  
-  const convertedEstimates = filteredEstimates.filter(item => 
+  const convertedProforma = filteredProforma.filter(item => 
     item.converted_to_sale === 1 || item.converted_to_sale === "1"
   );
 
-  const openEstimates = filteredEstimates.filter(item => 
+  const openProforma = filteredProforma.filter(item => 
     (item.converted_to_sale !== 1 && item.converted_to_sale !== "1") &&
     getStatusFromData(item) !== "Cancelled"
   );
 
-  const totalConverted = convertedEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
-  const totalOpen = openEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  const totalConverted = convertedProforma.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  const totalOpen = openProforma.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
 
   return {
     totalQuotations: totalQuotations.toFixed(2),
@@ -197,20 +197,20 @@ const totals = useMemo(() => {
     totalConverted: totalConverted.toFixed(2),
     totalOpen: totalOpen.toFixed(2),
   };
-}, [filteredEstimates]);
+}, [filteredProforma]);
 
   // Calculate percentage change vs last year
   const comparisonTotals = useMemo(() => {
     if (selectedPeriod !== "This Year") return null;
-    if (!estimates || !Array.isArray(estimates)) return 0;
+    if (!Proforma || !Array.isArray(Proforma)) return 0;
 
     const lastYearStart = new Date(new Date().getFullYear() - 1, 0, 1);
     const lastYearEnd = new Date(new Date().getFullYear() - 1, 11, 31);
 
-    const lastYearEstimates = estimates.filter((item) => {
-      if (!item.estimate_date) return false;
+    const lastYearProforma = Proforma.filter((item) => {
+      if (!item.Proforma_date) return false;
       try {
-        const date = parseISO(item.estimate_date);
+        const date = parseISO(item.Proforma_date);
         return date >= lastYearStart && date <= lastYearEnd;
       } catch (error) {
         console.error("Error parsing date for comparison:", error);
@@ -218,8 +218,8 @@ const totals = useMemo(() => {
       }
     });
 
-    return lastYearEstimates.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
-  }, [estimates, selectedPeriod]);
+    return lastYearProforma.reduce((sum, s) => sum + parseFloat(s.total || 0), 0);
+  }, [Proforma, selectedPeriod]);
 
   const percentageChange = comparisonTotals !== null && comparisonTotals > 0
     ? ((parseFloat(totals.totalQuotations) - comparisonTotals) / comparisonTotals) * 100
@@ -236,41 +236,40 @@ const totals = useMemo(() => {
     return <span style={{ color: colorMap[status], fontWeight: "600" }}>{status}</span>;
   };
 
-  // Navigation - FIXED for estimates
-  const handleCreate = () => navigate("/estimate/create");
-  const handleEdit = (estimate) => navigate(`/estimate/edit/${estimate.estimate_id}`);
-  const handleView = (estimate) => navigate(`/estimate/view/${estimate.estimate_id}`);
+  // Navigation - FIXED for Proforma
+  const handleCreate = () => navigate("/Proforma/create");
+  const handleEdit = (Proforma) => navigate(`/Proforma/edit/${Proforma.Proforma_id}`);
+  const handleView = (Proforma) => navigate(`/Proforma/view/${Proforma.Proforma_id}`);
 
-  const handleDelete = async (estimateId) => {
-    if (!window.confirm("Are you sure you want to delete this estimate?")) return;
+  const handleDelete = async (ProformaId) => {
+    if (!window.confirm("Are you sure you want to delete this Proforma?")) return;
     try {
-      await dispatch(deleteEstimate(estimateId)).unwrap();
-      NotifyData("Estimate Deleted Successfully", "success");
+      await dispatch(deleteProforma(ProformaId)).unwrap();
+      NotifyData("Proforma Deleted Successfully", "success");
     } catch {
-      NotifyData("Estimate Deletion Failed", "error");
+      NotifyData("Proforma Deletion Failed", "error");
     }
   };
 const handleConvertToSale = (item) => {
   navigate("/sale/create", {
     state: {
-      fromEstimate: true,
-      estimateData: item,
+      fromProforma: true,
+      ProformaData: item,
     },
   });
 };
 
   // Handle Convert to Order
-  const handleConvertToOrder = (estimate) => {
-    NotifyData(`Converting estimate ${estimate.estimate_no} to order`, "info");
+  const handleConvertToOrder = (Proforma) => {
+    NotifyData(`Converting Proforma ${Proforma.Proforma_no} to order`, "info");
     setOpenShareId(null);
-    // Add your conversion logic here
-    // Example: navigate(`/order/create?estimateId=${estimate.estimate_id}`);
+   
   };
 
   // Table headers
-  const EstimateHead = [
+  const ProformaHead = [
     "Date",
-    "Estimate No",
+    "Proforma No",
     "Party Name",
     "Transaction",
     "Payment Type",
@@ -323,7 +322,7 @@ const handleConvertToSale = (item) => {
       </div>
     </div>,
     "Actions",
-    " Estimate Status"
+    " Proforma Status"
   ];
 
   // Close dropdown on outside click
@@ -336,12 +335,12 @@ const handleConvertToSale = (item) => {
   }, []);
 
   // Prepare table data with useMemo
-  const EstimateData = useMemo(() => {
-    if (!filteredEstimates || !Array.isArray(filteredEstimates) || filteredEstimates.length === 0) {
+  const ProformaData = useMemo(() => {
+    if (!filteredProforma || !Array.isArray(filteredProforma) || filteredProforma.length === 0) {
       return [];
     }
     
-    return filteredEstimates.map((item) => {
+    return filteredProforma.map((item) => {
       const total = Number(item.total || 0).toFixed(2);
       const balance = Number(item.balance_due || 0).toFixed(2);
       const isConverted = item.converted_to_sale === 1 || item.converted_to_sale === "1";
@@ -354,16 +353,16 @@ const handleConvertToSale = (item) => {
       return {
         icon: <TbCircleLetterI />,
         values: [
-          item.estimate_date || "-",
-          item.estimate_no || "-",
+          item.Proforma_date || "-",
+          item.Proforma_no || "-",
           item.name || "-",
-          "Estimate",
+          "Proforma",
           item.payment_type || "Cash",
           `₹ ${total}`,
           balanceDisplay,
           statusDisplay(item),
           <div
-            key={item.estimate_id}
+            key={item.Proforma_id}
             style={{
               position: "relative",
               display: "flex",
@@ -382,7 +381,7 @@ const handleConvertToSale = (item) => {
   {isConverted ? 'Converted' : 'Select'} <FaChevronDown />
 </button>
 
-              {openShareId === item.estimate_id && (
+              {openShareId === item.Proforma_id && (
                 <div
                   style={{
                     position: "absolute",
@@ -432,7 +431,7 @@ const handleConvertToSale = (item) => {
               options={[
                 { label: "View", icon: <TbCircleLetterI />, onClick: () => handleView(item) },
                 { label: "Edit", icon: <TbCircleLetterI />, onClick: () => handleEdit(item) },
-                { label: "Delete", icon: <MdOutlineDelete />, onClick: () => handleDelete(item.estimate_id) },
+                { label: "Delete", icon: <MdOutlineDelete />, onClick: () => handleDelete(item.Proforma_id) },
                 { label: "Duplicate", icon: <TbCircleLetterI />},
                 { label: "Open PDF", icon: <TbCircleLetterI />},
                 { label: "Preview", icon: <TbCircleLetterI />},
@@ -444,7 +443,7 @@ const handleConvertToSale = (item) => {
         ],
       };
     });
-  }, [filteredEstimates, openShareId]);
+  }, [filteredProforma, openShareId]);
 
   return (
     <div id="main" style={{ backgroundColor: "#DEE2E6", minHeight: "100vh" }}>
@@ -483,14 +482,14 @@ const handleConvertToSale = (item) => {
             </div>
             
             
-            {/* Header - Estimate/Quotation Dropdown with Navigation */}
+            {/* Header -proforma Dropdown with Navigation */}
 <Row className="align-items-center mb-4">
   <Col>
     <h5 
       style={{ cursor: "pointer" }} 
       onClick={() => setOpen(!open)}
     >
-      Estimate / Quotation<FaChevronDown />
+      Proforma Invoices<FaChevronDown />
     </h5>
 
     {open && (
@@ -522,18 +521,18 @@ const handleConvertToSale = (item) => {
             key={item.label}
             onClick={() => {
               setOpen(false);
-              if (item.path !== "/estimate") {
+              if (item.path !== "/Proforma") {
                 navigate(item.path);  // Navigate to the correct listing page
               }
             }} 
             style={{ 
               padding: "10px 16px", 
               cursor: "pointer",
-              fontWeight: item.path === "/estimate" ? "bold" : "normal",
-              backgroundColor: item.path === "/estimate" ? "#f0f8ff" : "transparent",
+              fontWeight: item.path === "/Proforma" ? "bold" : "normal",
+              backgroundColor: item.path === "/Proforma" ? "#f0f8ff" : "transparent",
             }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = item.path === "/estimate" ? "#f0f8ff" : "transparent"}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = item.path === "/Proforma" ? "#f0f8ff" : "transparent"}
           >
             {item.label}
           </div>
@@ -546,9 +545,9 @@ const handleConvertToSale = (item) => {
       variant="danger"
       className="btn-sm px-3 py-1 shadow rounded-pill fw-bold"
       style={{ fontSize: "0.85rem" }}
-      onClick={() => navigate("/estimate/create")}
+      onClick={() => navigate("/Proforma/create")}
     >
-      + Add Estimate
+      + Add Proforma
     </Button>
   </Col>
 </Row>
@@ -709,17 +708,17 @@ const handleConvertToSale = (item) => {
             </Row>
 
             {/* Simple Table - Direct rendering (safer approach) */}
-            {filteredEstimates.length > 0 ? (
+            {filteredProforma.length > 0 ? (
               <Table striped bordered hover responsive className="bg-white">
                 <thead className="table-light">
                   <tr>
-                    {EstimateHead.map((head, index) => (
+                    {ProformaHead.map((head, index) => (
                       <th key={index}>{head}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEstimates.map((item, index) => {
+                  {filteredProforma.map((item, index) => {
                     const total = Number(item.total || 0).toFixed(2);
                     const balance = Number(item.balance_due || 0).toFixed(2);
 
@@ -730,11 +729,11 @@ const handleConvertToSale = (item) => {
                     );
 
                     return (
-                      <tr key={item.estimate_id || index}>
-                        <td>{item.estimate_date || "-"}</td>
-                        <td>{item.estimate_no || "-"}</td>
+                      <tr key={item.Proforma_id || index}>
+                        <td>{item.Proforma_date || "-"}</td>
+                        <td>{item.Proforma_no || "-"}</td>
                         <td>{item.name || "-"}</td>
-                        <td>Estimate</td>
+                        <td>Proforma</td>
                         <td>{item.payment_type || " "}</td>
                         <td>₹ {total}</td>
                         <td>{balanceDisplay}</td>
@@ -754,12 +753,12 @@ const handleConvertToSale = (item) => {
                                   fontSize: "0.85rem",
                                   
                                 }}
-                                onClick={() => setOpenShareId(openShareId === item.estimate_id ? null : item.estimate_id)}
+                                onClick={() => setOpenShareId(openShareId === item.Proforma_id ? null : item.estimate_id)}
                               >
                                 Select <FaChevronDown size={10} />
                               </button>
 
-                              {openShareId === item.estimate_id && (
+                              {openShareId === item.Proforma_id && (
                                 <div
                                   style={{
                                     position: "absolute",
@@ -833,7 +832,7 @@ const handleConvertToSale = (item) => {
                 style={{ minHeight: "60vh" }}
               >
                 <div className="text-center">
-                  <p className="text-muted mb-4">No estimates found</p>
+                  <p className="text-muted mb-4">No Proforma found</p>
                   <Button
                     variant="danger"
                     size="sm"
@@ -842,9 +841,9 @@ const handleConvertToSale = (item) => {
                       fontSize: "1.2rem",
                       letterSpacing: "0.5px",
                     }}
-                    onClick={() => navigate("/estimate/create")}
+                    onClick={() => navigate("/Proforma/create")}
                   >
-                    + Add Estimate
+                    + Add Proforma
                   </Button>
                 </div>
               </div>
@@ -856,4 +855,4 @@ const handleConvertToSale = (item) => {
   );
 };
 
-export default Estimate;
+export default Proforma;

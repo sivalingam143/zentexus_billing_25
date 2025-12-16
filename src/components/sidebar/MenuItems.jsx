@@ -41,12 +41,17 @@ const MenuItems = [
   },
   {
     path:"/sale",
-    text: "Sales Invoices",
+    text: " *Sales Invoices",
   
   },
   {
     path:"/estimate",
-    text: "Estimate/Quotation",
+    text: " *Estimate/Quotation",
+  
+  },
+   {
+    path:"/proforma",
+    text: " *Proforma Invoices",
   
   },
   {

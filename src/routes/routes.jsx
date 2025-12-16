@@ -13,6 +13,8 @@ import DashboardSale from "../view/creation/SalesModalCreation";
 import DashboardPurchase from "../view/creation/PurchaseModalCreation";
 import EstimateCreation from "../view/creation/EstimateCreationModal";
 import Estimate from "../view/listings/Estimate";
+import Proforma from "../view/listings/Proforma";
+import ProformaCreation from "../view/creation/ProformaCreation";
 
 const routes = [
   {
@@ -62,6 +64,22 @@ const routes = [
   {
     path: "/estimate/view/:id",
     component: EstimateCreation,
+  },
+   {
+    path: "/Proforma",
+    component: Proforma,
+  },
+  {
+    path: "/Proforma/create",
+    component: ProformaCreation,
+  },
+  {
+    path: "/Proforma/edit/:id",
+    component: ProformaCreation,
+  },
+  {
+    path: "/Proforma/view/:id",
+    component: ProformaCreation,
   },
   {
     path: "/purchase",
